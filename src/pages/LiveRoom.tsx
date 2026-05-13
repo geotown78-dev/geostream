@@ -58,17 +58,34 @@ export default function LiveRoom() {
         .viewer-mode .lk-control-bar,
         .viewer-mode .lk-participant-list,
         .viewer-mode .lk-sidebar,
-        .viewer-mode .lk-settings-menu-modal {
+        .viewer-mode .lk-settings-menu-modal,
+        .viewer-mode .lk-participant-name,
+        .viewer-mode .lk-participant-metadata,
+        .viewer-mode .lk-audio-visualizer,
+        .viewer-mode .lk-connection-quality,
+        .viewer-mode .lk-participant-placeholder {
           display: none !important;
         }
         
         /* Make the main video area fill the space properly when parts are hidden */
         .viewer-mode .lk-video-conference-inner {
           flex-direction: column !important;
+          background: transparent !important;
         }
-        
+
         .viewer-mode .lk-grid-layout {
           padding: 0 !important;
+          background: transparent !important;
+        }
+
+        .viewer-mode .lk-focus-layout {
+          padding: 0 !important;
+        }
+
+        /* Ensure the video tile itself doesn't have a background or border that shows placeholders */
+        .viewer-mode .lk-participant-tile {
+          background: transparent !important;
+          border: none !important;
         }
       `}</style>
 
