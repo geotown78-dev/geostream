@@ -4,6 +4,7 @@ import { Search, User, Play, LogOut } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '../contexts/AuthContext';
+import { ADMIN_EMAILS } from '../constants';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -18,7 +19,6 @@ export function Navbar() {
     { name: 'LIVE', path: '/live' },
     { name: 'SCHEDULE', path: '/schedule' },
     { name: 'TEAMS', path: '/teams' },
-    { name: 'ACCOUNT', path: '/account' },
   ];
 
   return (
@@ -60,12 +60,22 @@ export function Navbar() {
           
           {user ? (
             <div className="flex items-center gap-3">
-              <Link to="/admin" className="w-10 h-10 bg-brand-surface rounded-full border border-brand-border flex items-center justify-center hover:bg-brand-surface-light transition-colors group">
-                <User size={18} className="text-zinc-100" />
-                <div className="absolute top-20 right-6 bg-brand-surface border border-brand-border p-2 rounded-xl scale-0 group-hover:scale-100 transition-transform origin-top-right text-[10px] font-bold uppercase tracking-widest">
-                  {user.email}
+              {ADMIN_EMAILS.includes(user.email || '') && (
+                <Link to="/admin" className="w-10 h-10 bg-brand-surface rounded-full border border-brand-border flex items-center justify-center hover:bg-brand-surface-light transition-colors group">
+                  <User size={18} className="text-zinc-100" />
+                  <div className="absolute top-20 right-6 bg-brand-surface border border-brand-border p-2 rounded-xl scale-0 group-hover:scale-100 transition-transform origin-top-right text-[10px] font-bold uppercase tracking-widest">
+                    ADMIN: {user.email}
+                  </div>
+                </Link>
+              )}
+              {!ADMIN_EMAILS.includes(user.email || '') && (
+                <div className="w-10 h-10 bg-brand-surface rounded-full border border-brand-border flex items-center justify-center group">
+                  <User size={18} className="text-zinc-400" />
+                  <div className="absolute top-20 right-6 bg-brand-surface border border-brand-border p-2 rounded-xl scale-0 group-hover:scale-100 transition-transform origin-top-right text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
+                    {user.email}
+                  </div>
                 </div>
-              </Link>
+              )}
               <button 
                 onClick={signOut}
                 className="p-2 text-zinc-500 hover:text-red-500 transition-colors"
