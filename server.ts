@@ -13,7 +13,7 @@ app.use(express.json());
 
 const apiKey = process.env.LIVEKIT_API_KEY;
 const apiSecret = process.env.LIVEKIT_API_SECRET;
-const livekitUrl = process.env.LIVEKIT_URL;
+const livekitUrl = process.env.LIVEKIT_URL?.replace('wss://', 'https://').replace('ws://', 'http://');
 
 const ingressClient = new IngressClient(livekitUrl || "", apiKey || "", apiSecret || "");
 
@@ -53,16 +53,24 @@ app.post("/api/create-ingress", async (req, res) => {
     return res.status(400).json({ error: "roomName is required" });
   }
 
+  if (!apiKey || !apiSecret || !livekitUrl) {
+    return res.status(500).json({ error: "LiveKit credentials not configured in environment" });
+  }
+
   try {
     const ingress = await ingressClient.createIngress(IngressInput.RTMP_INPUT, {
       roomName: roomName as string,
-      participantIdentity: `rtmp-${Math.floor(Math.random() * 10000)}`,
-      participantName: "RTMP Broadcaster",
+      participantIdentity: `obs-rtmp-${Math.floor(Math.random() * 10000)}`,
+      participantName: "OBS RTMP",
     });
     res.json(ingress);
-  } catch (e) {
+  } catch (e: any) {
     console.error("Ingress Error:", e);
-    res.status(500).json({ error: e instanceof Error ? e.message : "Failed to create ingress" });
+    // Return specific error message to help user diagnose
+    res.status(500).json({ 
+      error: e?.message || "Failed to create ingress",
+      details: "თქვენი LiveKit პროექტი არ უჭერს მხარს RTMP-ს (საჭიროებს Ingress სერვისის გააქტიურებას)."
+    });
   }
 });
 
