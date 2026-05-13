@@ -5,8 +5,6 @@ import {
   VideoConference,
   ControlBar,
   useLocalParticipant,
-  RoomAudioRenderer,
-  LocalParticipantContext,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { Loader2, ArrowLeft, Monitor, Mic, Camera, StopCircle, Share2, Terminal } from 'lucide-react';
@@ -56,13 +54,15 @@ export default function BroadcasterRoom() {
   const [obsIdentity, setObsIdentity] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isObsMenuOpen, setIsObsMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'whip' | 'rtmp'>('whip');
+  const [activeTab, setActiveTab] = useState<'whip' | 'rtmp' | 'virtual'>('virtual');
   const [ingressData, setIngressData] = useState<any>(null);
   const [isGeneratingIngress, setIsGeneratingIngress] = useState(false);
+  const [ingressError, setIngressError] = useState<string>('');
 
   const generateIngress = async () => {
-    if (ingressData) return;
+    if (ingressData || isGeneratingIngress) return;
     setIsGeneratingIngress(true);
+    setIngressError('');
     try {
       const resp = await fetch('/api/create-ingress', {
         method: 'POST',
@@ -70,10 +70,14 @@ export default function BroadcasterRoom() {
         body: JSON.stringify({ roomName: roomId }),
       });
       const data = await resp.json();
-      if (data.error) throw new Error(data.error);
+      if (data.error) {
+        setIngressError(data.details || data.error);
+        throw new Error(data.error);
+      }
       setIngressData(data);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setIngressError(e.message || 'Failed to initialize RTMP');
     } finally {
       setIsGeneratingIngress(false);
     }
@@ -212,15 +216,24 @@ export default function BroadcasterRoom() {
                 </button>
              </div>
 
-             <div className="flex gap-2 mb-6">
+             <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none">
+               <button 
+                onClick={() => setActiveTab('virtual')}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                  activeTab === 'virtual' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
+                )}
+               >
+                 Virtual Camera (Easiest)
+               </button>
                <button 
                 onClick={() => setActiveTab('whip')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                  "px-4 py-2 rounded-lg text-[10px) font-black uppercase tracking-widest transition-all whitespace-nowrap",
                   activeTab === 'whip' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
                 )}
                >
-                 WHIP (New)
+                 WHIP (Direct)
                </button>
                <button 
                 onClick={() => {
@@ -228,7 +241,7 @@ export default function BroadcasterRoom() {
                   generateIngress();
                 }}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                   activeTab === 'rtmp' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
                 )}
                >
@@ -236,8 +249,29 @@ export default function BroadcasterRoom() {
                </button>
              </div>
 
-             {activeTab === 'whip' ? (
-               <>
+             {activeTab === 'virtual' && (
+               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                 <div className="bg-black/40 p-5 rounded-xl border border-white/5">
+                   <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                     <Camera size={18} className="text-brand-primary" />
+                     როგორ გამოვიყენოთ Virtual Camera (რეკომენდებულია)
+                   </h3>
+                   <ol className="text-xs text-zinc-400 space-y-3 list-decimal pl-4 leading-relaxed">
+                     <li>გახსენით <b>OBS</b> და გაამზადეთ სცენა.</li>
+                     <li>დააჭირეთ ღილაკს <b>"Start Virtual Camera"</b> (OBS-ის მარჯვენა ქვედა კუთხეში).</li>
+                     <li>ამ გვერდზე (ბრაუზერში), დააჭირეთ ქვემოთ <b>Camera</b> ღილაკს.</li>
+                     <li>აირჩიეთ <b>"OBS Virtual Camera"</b>.</li>
+                     <li><b>მზად არის!</b> ბრაუზერი პირდაპირ OBS-იდან აიღებს მაღალი ხარისხის გამოსახულებას.</li>
+                   </ol>
+                 </div>
+                 <p className="text-[10px] text-zinc-500 italic">
+                   * ეს მეთოდი ყველაზე სტაბილურია და არ საჭიროებს სერვერის რთულ კონფიგურაციებს.
+                 </p>
+               </div>
+             )}
+
+             {activeTab === 'whip' && (
+               <div className="animate-in fade-in zoom-in-95 duration-200">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div className="space-y-2">
                      <label className="text-[10px] font-bold text-zinc-500 uppercase">Server URL (WHIP)</label>
@@ -254,24 +288,23 @@ export default function BroadcasterRoom() {
                  </div>
 
                  <div className="mt-4 p-4 bg-black/40 rounded-lg border border-white/10 space-y-3">
-                   <h3 className="text-[10px] font-black uppercase text-brand-primary tracking-widest">Recommended OBS Settings for 60 FPS:</h3>
+                   <h3 className="text-[10px] font-black uppercase text-brand-primary tracking-widest">OBS Settings for WHIP:</h3>
                    <ul className="text-[10px] text-zinc-400 space-y-1.5 list-disc pl-4">
                      <li><b>Service:</b> WHIP</li>
                      <li><b>Output Mode:</b> Advanced</li>
                      <li><b>Rate Control:</b> CBR (Bitrate: 4000-6000 Kbps)</li>
                      <li><b>Keyframe Interval:</b> 1s or 2s (Mandatory)</li>
-                     <li><b>CPU Usage Preset:</b> veryfast or faster</li>
-                     <li><b>Profile:</b> main</li>
                      <li><b>Tune:</b> zerolatency</li>
-                     <li><b>Video:</b> Output Resolution 1080p, FPS 60</li>
                    </ul>
-                   <div className="mt-4 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-[9px] text-yellow-200/80 leading-relaxed">
-                     <b>მნიშვნელოვანი:</b> თუ კავშირი მაინც ვერ ხერხდება, დარწმუნდით რომ OBS-ში <b>Bearer Token</b>-ის ველში მხოლოდ გრძელი კოდი გიწერიათ (ტექსტის "Bearer" გარეშე).
+                   <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded text-[9px] text-red-200/80 leading-relaxed">
+                     <b>შენიშვნა:</b> თუ WHIP კავშირი მაინც ვერ ხერხდება, გამოიყენეთ <b>Virtual Camera</b> მეთოდი (პირველი ტაბი).
                    </div>
                  </div>
-               </>
-             ) : (
-               <div className="space-y-4">
+               </div>
+             )}
+
+             {activeTab === 'rtmp' && (
+               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
                  {isGeneratingIngress ? (
                    <div className="py-8 flex flex-col items-center justify-center gap-3">
                      <Loader2 className="animate-spin text-brand-primary" size={24} />
@@ -298,17 +331,15 @@ export default function BroadcasterRoom() {
                         <p className="text-[10px] text-zinc-400">
                           Settings {'>'} Stream {'>'} Service: <b>Custom...</b> {'>'} Server: [RTMP URL] {'>'} Stream Key: [Stream Key]
                         </p>
-                        <p className="text-[9px] text-zinc-500 italic mt-2">
-                          * RTMP უფრო სტაბილურია ძველ ქსელებში, მაგრამ შეიძლება ჰქონდეს მცირე დაგვიანება (Lag).
-                        </p>
                       </div>
                    </>
                  ) : (
-                   <div className="py-8 text-center">
-                     <p className="text-xs text-red-400 mb-4 font-bold">RTMP Ingress not available. Please check your LiveKit configuration.</p>
+                   <div className="py-8 text-center bg-red-500/5 rounded-xl border border-red-500/10">
+                     <p className="text-xs text-red-400 mb-2 font-bold uppercase tracking-wider italic">RTMP ERROR</p>
+                     <p className="text-[10px] text-zinc-500 mb-4 px-6">{ingressError || "RTMP Ingress not available."}</p>
                      <button 
                       onClick={generateIngress}
-                      className="bg-brand-primary text-black px-6 py-2 rounded-xl text-[10px] font-black uppercase"
+                      className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all"
                      >
                        Try Again
                      </button>
