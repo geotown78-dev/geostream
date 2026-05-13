@@ -2,12 +2,24 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor } from 'lucide-react';
 import { MOCK_EVENTS } from '../constants';
+import { supabase } from '../lib/supabase';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [roomId, setRoomId] = useState('');
 
-  const startStream = (id: string) => {
+  const startStream = async (id: string) => {
+    try {
+      // Mark as active in Supabase
+      await supabase.from('active_streams').upsert({ 
+        id: 'global-stream', 
+        room_id: id, 
+        is_active: true,
+        updated_at: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error('Failed to sync stream status:', e);
+    }
     navigate(`/broadcast/${id}`);
   };
 
