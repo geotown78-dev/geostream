@@ -95,7 +95,7 @@ export default function BroadcasterRoom() {
     };
   }, [roomId]);
 
-  const whipUrl = `${import.meta.env.VITE_LIVEKIT_URL?.replace('wss://', 'https://').replace('ws://', 'http://')}/whip`;
+  const whipUrl = `${import.meta.env.VITE_LIVEKIT_URL?.replace('wss://', 'https://').replace('ws://', 'http://')}/whip?room=${roomId}`;
 
   if (error) {
     return (
