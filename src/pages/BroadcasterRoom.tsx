@@ -10,11 +10,21 @@ import {
 import '@livekit/components-styles';
 import { Loader2, ArrowLeft, Monitor, Mic, Camera, StopCircle } from 'lucide-react';
 
+import { supabase } from '../lib/supabase';
+
 export default function BroadcasterRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [token, setToken] = useState<string>('');
   const [error, setError] = useState<string>('');
+
+  const endStream = async () => {
+    try {
+      await supabase.from('active_streams').update({ is_active: false }).eq('id', 'global-stream');
+    } catch (e) {
+      console.error('Failed to end stream:', e);
+    }
+  };
 
   useEffect(() => {
     if (!roomId) return;
@@ -34,6 +44,10 @@ export default function BroadcasterRoom() {
     };
 
     fetchToken();
+
+    return () => {
+      endStream();
+    };
   }, [roomId]);
 
   if (error) {
