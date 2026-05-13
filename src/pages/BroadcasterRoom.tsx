@@ -124,11 +124,15 @@ export default function BroadcasterRoom() {
             }}
             publishDefaults={{
               videoSimulcast: true,
-              screenShareSimulcast: true,
+              screenShareSimulcast: false, // Disable simulcast for screen sharing to prioritize pure quality
               videoCodec: 'h264',
               dtlsRetransmissions: true,
               stopMicTrackOnMute: true,
               red: true,
+              screenShareEncoding: {
+                maxBitrate: 3_000_000, // 3 Mbps for screen sharing
+                maxFramerate: 60,
+              }
             }}
             onDisconnected={() => navigate('/admin')}
             data-lk-theme="default"
