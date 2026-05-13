@@ -52,6 +52,7 @@ export default function BroadcasterRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [token, setToken] = useState<string>('');
+  const [obsToken, setObsToken] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isObsMenuOpen, setIsObsMenuOpen] = useState(false);
 
@@ -66,28 +67,35 @@ export default function BroadcasterRoom() {
   useEffect(() => {
     if (!roomId) return;
 
-    const fetchToken = async () => {
+    const fetchTokens = async () => {
       try {
+        // Browser token
         const participantName = `admin-${Math.floor(Math.random() * 1000)}`;
         const resp = await fetch(`/api/get-token?roomName=${roomId}&participantName=${participantName}`);
         const data = await resp.json();
-        
         if (data.error) throw new Error(data.error);
         setToken(data.token);
+
+        // OBS token (separate identity)
+        const obsIdentity = `obs-broadcaster-${Math.floor(Math.random() * 1000)}`;
+        const obsResp = await fetch(`/api/get-token?roomName=${roomId}&participantName=${obsIdentity}`);
+        const obsData = await obsResp.json();
+        if (obsData.error) throw new Error(obsData.error);
+        setObsToken(obsData.token);
       } catch (e) {
         console.error(e);
         setError('Failed to load broadcast session.');
       }
     };
 
-    fetchToken();
+    fetchTokens();
 
     return () => {
       endStream();
     };
   }, [roomId]);
 
-  const whipUrl = import.meta.env.VITE_LIVEKIT_URL?.replace('wss://', 'https://').replace('ws://', 'http://') + '/whip';
+  const whipUrl = `${import.meta.env.VITE_LIVEKIT_URL?.replace('wss://', 'https://').replace('ws://', 'http://')}/whip`;
 
   if (error) {
     return (
@@ -176,7 +184,7 @@ export default function BroadcasterRoom() {
                <div className="space-y-2">
                  <label className="text-[10px] font-bold text-zinc-500 uppercase">Stream Key (Bearer Token)</label>
                  <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
-                   {token}
+                   {obsToken}
                  </div>
                </div>
              </div>
