@@ -122,6 +122,14 @@ export default function BroadcasterRoom() {
               resolution: { width: 1920, height: 1080 },
               frameRate: 60,
             }}
+            publishDefaults={{
+              videoSimulcast: true,
+              screenShareSimulcast: true,
+              videoCodec: 'h264',
+              dtlsRetransmissions: true,
+              stopMicTrackOnMute: true,
+              red: true,
+            }}
             onDisconnected={() => navigate('/admin')}
             data-lk-theme="default"
             className="h-full broadcaster-mode"
