@@ -53,6 +53,7 @@ export default function BroadcasterRoom() {
   const navigate = useNavigate();
   const [token, setToken] = useState<string>('');
   const [obsToken, setObsToken] = useState<string>('');
+  const [obsIdentity, setObsIdentity] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isObsMenuOpen, setIsObsMenuOpen] = useState(false);
 
@@ -77,8 +78,9 @@ export default function BroadcasterRoom() {
         setToken(data.token);
 
         // OBS token (separate identity)
-        const obsIdentity = `obs-broadcaster-${Math.floor(Math.random() * 1000)}`;
-        const obsResp = await fetch(`/api/get-token?roomName=${roomId}&participantName=${obsIdentity}`);
+        const newObsIdentity = `obs-${Math.floor(Math.random() * 100000)}`;
+        setObsIdentity(newObsIdentity);
+        const obsResp = await fetch(`/api/get-token?roomName=${roomId}&participantName=${newObsIdentity}`);
         const obsData = await obsResp.json();
         if (obsData.error) throw new Error(obsData.error);
         setObsToken(obsData.token);
@@ -95,7 +97,18 @@ export default function BroadcasterRoom() {
     };
   }, [roomId]);
 
-  const whipUrl = `${import.meta.env.VITE_LIVEKIT_URL?.replace('wss://', 'https://').replace('ws://', 'http://')}/whip?room=${roomId}`;
+  const getWhipUrl = () => {
+    const base = import.meta.env.VITE_LIVEKIT_URL || '';
+    let protocol = base.startsWith('ws') 
+      ? base.replace('wss://', 'https://').replace('ws://', 'http://') 
+      : (base.includes('://') ? base : `https://${base}`);
+    
+    // Ensure it ends correctly and add parameters
+    const cleanBase = protocol.split('?')[0].replace(/\/$/, '');
+    return `${cleanBase}/whip?room=${roomId}&identity=${obsIdentity}`;
+  };
+
+  const whipUrl = getWhipUrl();
 
   if (error) {
     return (
@@ -189,9 +202,20 @@ export default function BroadcasterRoom() {
                </div>
              </div>
 
-             <div className="mt-4 p-3 bg-brand-primary/5 rounded-lg border border-brand-primary/10">
-               <p className="text-[11px] text-zinc-400">
-                 <b>OBS Settings:</b> Settings {'>'} Stream {'>'} Service: <b>WHIP</b> {'>'} Server: [URL] {'>'} Bearer Token: [Key]
+             <div className="mt-4 p-4 bg-black/40 rounded-lg border border-white/10 space-y-3">
+               <h3 className="text-[10px] font-black uppercase text-brand-primary tracking-widest">Recommended OBS Settings for 60 FPS:</h3>
+               <ul className="text-[10px] text-zinc-400 space-y-1.5 list-disc pl-4">
+                 <li><b>Service:</b> WHIP</li>
+                 <li><b>Output Mode:</b> Advanced</li>
+                 <li><b>Rate Control:</b> CBR (Bitrate: 4000-6000 Kbps)</li>
+                 <li><b>Keyframe Interval:</b> 1s or 2s (Mandatory)</li>
+                 <li><b>CPU Usage Preset:</b> veryfast or faster</li>
+                 <li><b>Profile:</b> main</li>
+                 <li><b>Tune:</b> zerolatency</li>
+                 <li><b>Video:</b> Output Resolution 1080p, FPS 60</li>
+               </ul>
+               <p className="text-[9px] text-yellow-500/80 italic mt-2">
+                 * თუ მაინც ვერ უკავშირდება, სცადეთ URL-იდან <b>?room=...</b> ნაწილის წაშლა (დატოვეთ მხოლოდ /whip-მდე).
                </p>
              </div>
           </div>
