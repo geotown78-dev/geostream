@@ -5,11 +5,10 @@ import { MOCK_EVENTS } from '../constants';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeStream, setActiveStream] = useState<string | null>(null);
+  const [roomId, setRoomId] = useState('');
 
-  const startStream = (roomId: string) => {
-    setActiveStream(roomId);
-    navigate(`/watch/${roomId}`);
+  const startStream = (id: string) => {
+    navigate(`/broadcast/${id}`);
   };
 
   return (
@@ -30,41 +29,36 @@ export default function AdminDashboard() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-          <section className="col-span-12 md:col-span-12 lg:col-span-5 space-y-6">
+          <section className="col-span-12 md:col-span-12 lg:col-span-12 space-y-6">
             <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500 flex items-center gap-3">
               <Radio size={14} className="text-brand-primary" /> Session Initialization
             </h2>
-            <div className="bento-card p-10 bg-zinc-900/40 space-y-8">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Stream Room Identifier</label>
-                <input 
-                  type="text" 
-                  placeholder="CHAMPIONS-LEAGUE-FINAL"
-                  className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-xl uppercase tracking-tighter placeholder:text-zinc-800"
-                />
-              </div>
-              <button className="w-full py-5 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_-15px_rgba(99,102,241,0.5)]">
-                <Play fill="white" size={18} /> INITIALIZE BROADCAST
-              </button>
-            </div>
-            
-            <div className="bento-card p-6 bg-brand-secondary/5 border-brand-secondary/20 flex flex-col justify-between h-40">
-              <div className="flex justify-between items-start">
-                <span className="text-[10px] font-black uppercase tracking-widest text-brand-secondary">Bitrate Stats</span>
-                <TrendingUp size={16} className="text-brand-secondary" />
-              </div>
-              <div>
-                <p className="text-3xl font-black tracking-tighter">18.4 <span className="text-zinc-500 text-sm font-bold uppercase">Mbps</span></p>
-                <div className="h-1 w-full bg-brand-secondary/20 rounded-full mt-2">
-                  <div className="h-full bg-brand-secondary w-[85%]" />
+            <div className="bento-card p-10 bg-brand-primary/5 border-brand-primary/20 space-y-8">
+              <div className="grid md:grid-cols-2 gap-8 items-end">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Stream Room Identifier</label>
+                  <input 
+                    type="text" 
+                    value={roomId}
+                    onChange={(e) => setRoomId(e.target.value)}
+                    placeholder="CHAMPIONS-LEAGUE-FINAL"
+                    className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-xl uppercase tracking-tighter placeholder:text-zinc-800 text-white"
+                  />
                 </div>
+                <button 
+                  onClick={() => roomId && startStream(roomId)}
+                  disabled={!roomId}
+                  className="w-full py-5 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_-15px_rgba(99,102,241,0.5)] disabled:opacity-50"
+                >
+                  <Monitor size={20} /> START SCREEN SHARE SESSION
+                </button>
               </div>
             </div>
           </section>
 
-          <section className="col-span-12 md:col-span-12 lg:col-span-7 space-y-6">
-            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500">Relational Queue (Mock Data)</h2>
-            <div className="space-y-4">
+          <section className="col-span-12 md:col-span-12 lg:col-span-12 space-y-6">
+            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500">Manage Active / Scheduled BROADCASTS</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {MOCK_EVENTS.map((event) => (
                 <div key={event.id} className="p-6 bento-card bg-zinc-900/40 flex items-center justify-between group hover:border-brand-primary/30 transition-colors">
                   <div className="flex items-center gap-6">
@@ -73,14 +67,14 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <h4 className="font-black text-xl tracking-tight leading-tight mb-1">{event.title}</h4>
-                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{event.sport} • {new Date(event.start_time).toLocaleTimeString()} • PROD-CLUSTER-A</p>
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{event.sport} • {new Date(event.start_time).toLocaleTimeString()}</p>
                     </div>
                   </div>
                   <button 
                     onClick={() => startStream(event.room_name)}
                     className="px-6 py-3 bg-brand-surface border border-brand-border hover:bg-brand-primary hover:border-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
                   >
-                    DEPLOY
+                    GO LIVE
                   </button>
                 </div>
               ))}
