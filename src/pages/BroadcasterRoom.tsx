@@ -6,17 +6,54 @@ import {
   ControlBar,
   useLocalParticipant,
   RoomAudioRenderer,
+  LocalParticipantContext,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
-import { Loader2, ArrowLeft, Monitor, Mic, Camera, StopCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Monitor, Mic, Camera, StopCircle, Share2, Terminal } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
+import { cn } from '../lib/utils';
+
+function TrackEnhancer() {
+  const { localParticipant } = useLocalParticipant();
+
+  useEffect(() => {
+    const handleTrackPublished = (publication: any) => {
+      if ((publication.source === 'screen_share' || publication.source === 'camera') && publication.track) {
+        if (publication.track.mediaStreamTrack) {
+          // @ts-ignore
+          publication.track.mediaStreamTrack.contentHint = 'motion';
+          console.log(`Set contentHint to motion for ${publication.source}`);
+        }
+      }
+    };
+
+    localParticipant.on('trackPublished', handleTrackPublished);
+    
+    // Check existing tracks
+    localParticipant.trackPublications.forEach((p) => {
+      if ((p.source === 'screen_share' || p.source === 'camera') && p.track) {
+        if (p.track.mediaStreamTrack) {
+          // @ts-ignore
+          p.track.mediaStreamTrack.contentHint = 'motion';
+        }
+      }
+    });
+
+    return () => {
+      localParticipant.off('trackPublished', handleTrackPublished);
+    };
+  }, [localParticipant]);
+
+  return null;
+}
 
 export default function BroadcasterRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [token, setToken] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isObsMenuOpen, setIsObsMenuOpen] = useState(false);
 
   const endStream = async () => {
     try {
@@ -49,6 +86,8 @@ export default function BroadcasterRoom() {
       endStream();
     };
   }, [roomId]);
+
+  const whipUrl = import.meta.env.VITE_LIVEKIT_URL?.replace('wss://', 'https://').replace('ws://', 'http://') + '/whip';
 
   if (error) {
     return (
@@ -101,12 +140,54 @@ export default function BroadcasterRoom() {
           </div>
           
           <div className="flex items-center gap-3">
+             <button 
+              onClick={() => setIsObsMenuOpen(!isObsMenuOpen)}
+              className="bg-brand-surface border border-brand-border px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-brand-border transition-all"
+             >
+               <Terminal size={16} className="text-brand-primary" />
+               OBS Setup
+             </button>
              <div className="bg-red-600 text-white px-3 py-1 rounded-md text-[10px] font-black flex items-center gap-2 uppercase">
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> 
                 ON AIR
               </div>
           </div>
         </div>
+
+        {isObsMenuOpen && (
+          <div className="mb-6 bento-card p-6 bg-brand-primary/10 border-brand-primary/30 animate-in fade-in slide-in-from-top-4">
+             <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-lg font-black uppercase text-brand-primary mb-2 italic">Stream via OBS (Recommended for 60 FPS)</h2>
+                  <p className="text-xs text-zinc-400 mb-4 max-w-2xl">
+                    საუკეთესო ხარისხის და 60 FPS-ის მისაღებად გამოიყენეთ OBS. აირჩიეთ <b>"WHIP"</b> სერვისი OBS-ის სტრიმინგის პარამეტრებში.
+                  </p>
+                </div>
+                <button onClick={() => setIsObsMenuOpen(false)} className="text-zinc-500 hover:text-white">Close</button>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <label className="text-[10px] font-bold text-zinc-500 uppercase">Server URL (WHIP)</label>
+                 <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
+                   {whipUrl}
+                 </div>
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-bold text-zinc-500 uppercase">Stream Key (Bearer Token)</label>
+                 <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
+                   {token}
+                 </div>
+               </div>
+             </div>
+
+             <div className="mt-4 p-3 bg-brand-primary/5 rounded-lg border border-brand-primary/10">
+               <p className="text-[11px] text-zinc-400">
+                 <b>OBS Settings:</b> Settings {'>'} Stream {'>'} Service: <b>WHIP</b> {'>'} Server: [URL] {'>'} Bearer Token: [Key]
+               </p>
+             </div>
+          </div>
+        )}
 
         <div className="flex-1 bento-card relative bg-black shadow-2xl">
           <LiveKitRoom
@@ -138,6 +219,7 @@ export default function BroadcasterRoom() {
             data-lk-theme="default"
             className="h-full broadcaster-mode"
           >
+            <TrackEnhancer />
             <VideoConference />
             {/* The default VideoConference UI includes a Screen Share button in its ControlBar */}
           </LiveKitRoom>
