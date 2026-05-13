@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   LiveKitRoom, 
-  VideoConference, 
+  VideoConference,
+  RoomAudioRenderer,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { Loader2, ArrowLeft, Play } from 'lucide-react';
@@ -52,27 +53,47 @@ export default function LiveRoom() {
 
   return (
     <div className="min-h-screen bg-brand-black pt-32 pb-12 px-6">
+      <style>{`
+        /* Hide participant list, control bar and sidebar for viewers */
+        .viewer-mode .lk-control-bar,
+        .viewer-mode .lk-participant-list,
+        .viewer-mode .lk-sidebar,
+        .viewer-mode .lk-settings-menu-modal {
+          display: none !important;
+        }
+        
+        /* Make the main video area fill the space properly when parts are hidden */
+        .viewer-mode .lk-video-conference-inner {
+          flex-direction: column !important;
+        }
+        
+        .viewer-mode .lk-grid-layout {
+          padding: 0 !important;
+        }
+      `}</style>
+
       <div className="max-w-[1600px] mx-auto gap-6 grid grid-cols-12 overflow-hidden h-[calc(100vh-10rem)]">
         {/* Main Stream Area */}
         <div className="col-span-12 lg:col-span-9 flex flex-col gap-6 h-full overflow-hidden">
           <div className="flex-1 bg-brand-surface rounded-[2.5rem] overflow-hidden border border-brand-border relative group shadow-2xl">
             <LiveKitRoom
-              video={true}
-              audio={true}
+              video={false}
+              audio={false}
               token={token}
               serverUrl={import.meta.env.VITE_LIVEKIT_URL}
               onDisconnected={() => navigate('/')}
               data-lk-theme="default"
-              className="h-full w-full"
+              className="h-full w-full viewer-mode"
             >
               <VideoConference />
+              <RoomAudioRenderer />
             </LiveKitRoom>
             
             {/* Custom Overlay */}
             <div className="absolute top-6 left-6 z-20 flex gap-3 pointer-events-none">
               <div className="bg-red-600 text-white px-3 py-1 rounded-md text-[10px] font-black flex items-center gap-2 uppercase">
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> 
-                RECORDING LIVE
+                LIVE BROADCAST
               </div>
               <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">
                 4K • 60 FPS
