@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   LiveKitRoom, 
   VideoConference, 
-  formatDataString,
-  useTokenCustomization
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { Loader2, ArrowLeft, Play } from 'lucide-react';
