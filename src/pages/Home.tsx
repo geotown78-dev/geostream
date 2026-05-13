@@ -7,9 +7,39 @@ import { supabase, Event } from '../lib/supabase';
 
 export default function Home() {
   const [events, setEvents] = useState<Event[]>(MOCK_EVENTS);
+  const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Initial fetch for active stream
+    const fetchActiveStream = async () => {
+      const { data } = await supabase
+        .from('active_streams')
+        .select('*')
+        .eq('id', 'global-stream')
+        .single();
+      
+      if (data?.is_active) {
+        setActiveBroadcast(data);
+      }
+    };
+
+    fetchActiveStream();
+
+    // Real-time subscription
+    const channel = supabase
+      .channel('active-streams-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'active_streams' },
+        (payload: any) => {
+          if (payload.new && payload.new.id === 'global-stream') {
+            setActiveBroadcast(payload.new.is_active ? payload.new : null);
+          }
+        }
+      )
+      .subscribe();
+
     async function fetchEvents() {
       try {
         const { data, error } = await supabase
@@ -29,11 +59,15 @@ export default function Home() {
     }
 
     fetchEvents();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return (
     <div className="min-h-screen pb-20">
-      <Hero />
+      <Hero activeBroadcast={activeBroadcast} />
       
       <main className="max-w-[1600px] mx-auto px-6 mt-16 space-y-12">
         {/* Bento Grid Header */}
