@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Play, StopCircle, Settings, TrendingUp } from 'lucide-react';
+import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor } from 'lucide-react';
 import { MOCK_EVENTS } from '../constants';
 
 export default function AdminDashboard() {
