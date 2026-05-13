@@ -48,3 +48,5 @@ export const SCHEDULE = [
   { time: '20:30', team1: 'Lakers', team2: 'Warriors', sport: 'Basketball' },
   { time: '22:00', team1: 'UFC 300', team2: 'Main Card', sport: 'MMA' },
 ];
+
+export const ADMIN_EMAILS = ['georgetchedia@gmail.com'];
