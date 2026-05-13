@@ -56,6 +56,28 @@ export default function BroadcasterRoom() {
   const [obsIdentity, setObsIdentity] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isObsMenuOpen, setIsObsMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'whip' | 'rtmp'>('whip');
+  const [ingressData, setIngressData] = useState<any>(null);
+  const [isGeneratingIngress, setIsGeneratingIngress] = useState(false);
+
+  const generateIngress = async () => {
+    if (ingressData) return;
+    setIsGeneratingIngress(true);
+    try {
+      const resp = await fetch('/api/create-ingress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomName: roomId }),
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      setIngressData(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGeneratingIngress(false);
+    }
+  };
 
   const endStream = async () => {
     try {
@@ -178,47 +200,122 @@ export default function BroadcasterRoom() {
 
         {isObsMenuOpen && (
           <div className="mb-6 bento-card p-6 bg-brand-primary/10 border-brand-primary/30 animate-in fade-in slide-in-from-top-4">
-             <div className="flex items-start justify-between">
+             <div className="flex items-start justify-between mb-6">
                 <div>
                   <h2 className="text-lg font-black uppercase text-brand-primary mb-2 italic">Stream via OBS (Recommended for 60 FPS)</h2>
-                  <p className="text-xs text-zinc-400 mb-4 max-w-2xl">
-                    საუკეთესო ხარისხის და 60 FPS-ის მისაღებად გამოიყენეთ OBS. აირჩიეთ <b>"WHIP"</b> სერვისი OBS-ის სტრიმინგის პარამეტრებში.
+                  <p className="text-xs text-zinc-400 max-w-2xl">
+                    საუკეთესო ხარისხის და 60 FPS-ის მისაღებად გამოიყენეთ OBS.
                   </p>
                 </div>
-                <button onClick={() => setIsObsMenuOpen(false)} className="text-zinc-500 hover:text-white">Close</button>
+                <button onClick={() => setIsObsMenuOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
+                  <StopCircle size={24} className="rotate-45" />
+                </button>
              </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <label className="text-[10px] font-bold text-zinc-500 uppercase">Server URL (WHIP)</label>
-                 <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
-                   {whipUrl}
-                 </div>
-               </div>
-               <div className="space-y-2">
-                 <label className="text-[10px] font-bold text-zinc-500 uppercase">Stream Key (Bearer Token)</label>
-                 <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
-                   {obsToken}
-                 </div>
-               </div>
+             <div className="flex gap-2 mb-6">
+               <button 
+                onClick={() => setActiveTab('whip')}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                  activeTab === 'whip' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
+                )}
+               >
+                 WHIP (New)
+               </button>
+               <button 
+                onClick={() => {
+                  setActiveTab('rtmp');
+                  generateIngress();
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                  activeTab === 'rtmp' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
+                )}
+               >
+                 RTMP (Legacy)
+               </button>
              </div>
 
-             <div className="mt-4 p-4 bg-black/40 rounded-lg border border-white/10 space-y-3">
-               <h3 className="text-[10px] font-black uppercase text-brand-primary tracking-widest">Recommended OBS Settings for 60 FPS:</h3>
-               <ul className="text-[10px] text-zinc-400 space-y-1.5 list-disc pl-4">
-                 <li><b>Service:</b> WHIP</li>
-                 <li><b>Output Mode:</b> Advanced</li>
-                 <li><b>Rate Control:</b> CBR (Bitrate: 4000-6000 Kbps)</li>
-                 <li><b>Keyframe Interval:</b> 1s or 2s (Mandatory)</li>
-                 <li><b>CPU Usage Preset:</b> veryfast or faster</li>
-                 <li><b>Profile:</b> main</li>
-                 <li><b>Tune:</b> zerolatency</li>
-                 <li><b>Video:</b> Output Resolution 1080p, FPS 60</li>
-               </ul>
-               <div className="mt-4 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-[9px] text-yellow-200/80 leading-relaxed">
-                 <b>მნიშვნელოვანი:</b> თუ კავშირი მაინც ვერ ხერხდება, დარწმუნდით რომ OBS-ში <b>Bearer Token</b>-ის ველში მხოლოდ გრძელი კოდი გიწერიათ (ტექსტის "Bearer" გარეშე).
+             {activeTab === 'whip' ? (
+               <>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-bold text-zinc-500 uppercase">Server URL (WHIP)</label>
+                     <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
+                       {whipUrl}
+                     </div>
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-bold text-zinc-500 uppercase">Stream Key (Bearer Token)</label>
+                     <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
+                       {obsToken}
+                     </div>
+                   </div>
+                 </div>
+
+                 <div className="mt-4 p-4 bg-black/40 rounded-lg border border-white/10 space-y-3">
+                   <h3 className="text-[10px] font-black uppercase text-brand-primary tracking-widest">Recommended OBS Settings for 60 FPS:</h3>
+                   <ul className="text-[10px] text-zinc-400 space-y-1.5 list-disc pl-4">
+                     <li><b>Service:</b> WHIP</li>
+                     <li><b>Output Mode:</b> Advanced</li>
+                     <li><b>Rate Control:</b> CBR (Bitrate: 4000-6000 Kbps)</li>
+                     <li><b>Keyframe Interval:</b> 1s or 2s (Mandatory)</li>
+                     <li><b>CPU Usage Preset:</b> veryfast or faster</li>
+                     <li><b>Profile:</b> main</li>
+                     <li><b>Tune:</b> zerolatency</li>
+                     <li><b>Video:</b> Output Resolution 1080p, FPS 60</li>
+                   </ul>
+                   <div className="mt-4 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-[9px] text-yellow-200/80 leading-relaxed">
+                     <b>მნიშვნელოვანი:</b> თუ კავშირი მაინც ვერ ხერხდება, დარწმუნდით რომ OBS-ში <b>Bearer Token</b>-ის ველში მხოლოდ გრძელი კოდი გიწერიათ (ტექსტის "Bearer" გარეშე).
+                   </div>
+                 </div>
+               </>
+             ) : (
+               <div className="space-y-4">
+                 {isGeneratingIngress ? (
+                   <div className="py-8 flex flex-col items-center justify-center gap-3">
+                     <Loader2 className="animate-spin text-brand-primary" size={24} />
+                     <p className="text-[10px] font-black uppercase text-zinc-500">Generating RTMP Endpoint...</p>
+                   </div>
+                 ) : ingressData ? (
+                   <>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div className="space-y-2">
+                         <label className="text-[10px] font-bold text-zinc-500 uppercase">RTMP URL</label>
+                         <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
+                           {ingressData.url}
+                         </div>
+                       </div>
+                       <div className="space-y-2">
+                         <label className="text-[10px] font-bold text-zinc-500 uppercase">Stream Key</label>
+                         <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
+                           {ingressData.streamKey}
+                         </div>
+                       </div>
+                     </div>
+                     <div className="mt-4 p-4 bg-black/40 rounded-lg border border-white/10 space-y-3">
+                        <h3 className="text-[10px] font-black uppercase text-brand-primary tracking-widest">OBS Settings for RTMP:</h3>
+                        <p className="text-[10px] text-zinc-400">
+                          Settings {'>'} Stream {'>'} Service: <b>Custom...</b> {'>'} Server: [RTMP URL] {'>'} Stream Key: [Stream Key]
+                        </p>
+                        <p className="text-[9px] text-zinc-500 italic mt-2">
+                          * RTMP უფრო სტაბილურია ძველ ქსელებში, მაგრამ შეიძლება ჰქონდეს მცირე დაგვიანება (Lag).
+                        </p>
+                      </div>
+                   </>
+                 ) : (
+                   <div className="py-8 text-center">
+                     <p className="text-xs text-red-400 mb-4 font-bold">RTMP Ingress not available. Please check your LiveKit configuration.</p>
+                     <button 
+                      onClick={generateIngress}
+                      className="bg-brand-primary text-black px-6 py-2 rounded-xl text-[10px] font-black uppercase"
+                     >
+                       Try Again
+                     </button>
+                   </div>
+                 )}
                </div>
-             </div>
+             )}
           </div>
         )}
 
