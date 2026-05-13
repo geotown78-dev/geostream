@@ -11,9 +11,10 @@ const PORT = 3000;
 
 app.use(express.json());
 
-const apiKey = process.env.LIVEKIT_API_KEY;
-const apiSecret = process.env.LIVEKIT_API_SECRET;
-const livekitUrl = process.env.LIVEKIT_URL?.replace('wss://', 'https://').replace('ws://', 'http://');
+const apiKey = process.env.LIVEKIT_API_KEY?.replace(/['"]/g, '');
+const apiSecret = process.env.LIVEKIT_API_SECRET?.replace(/['"]/g, '');
+const rawUrl = (process.env.LIVEKIT_URL || process.env.VITE_LIVEKIT_URL)?.replace(/['"]/g, '');
+const livekitUrl = rawUrl?.replace('wss://', 'https://').replace('ws://', 'http://');
 
 const ingressClient = new IngressClient(livekitUrl || "", apiKey || "", apiSecret || "");
 
@@ -54,7 +55,15 @@ app.post("/api/create-ingress", async (req, res) => {
   }
 
   if (!apiKey || !apiSecret || !livekitUrl) {
-    return res.status(500).json({ error: "LiveKit credentials not configured in environment" });
+    const missing = [];
+    if (!apiKey) missing.push("LIVEKIT_API_KEY");
+    if (!apiSecret) missing.push("LIVEKIT_API_SECRET");
+    if (!livekitUrl) missing.push("LIVEKIT_URL/VITE_LIVEKIT_URL");
+    
+    return res.status(500).json({ 
+      error: "LiveKit configuration incomplete", 
+      details: `აკლია ცვლადები: ${missing.join(", ")}. დარწმუნდით რომ Secrets-ში სწორად გიწერიათ.`
+    });
   }
 
   try {
