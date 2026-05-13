@@ -103,9 +103,10 @@ export default function BroadcasterRoom() {
       ? base.replace('wss://', 'https://').replace('ws://', 'http://') 
       : (base.includes('://') ? base : `https://${base}`);
     
-    // Ensure it ends correctly and add parameters
+    // Most LiveKit versions expect just the /whip endpoint
+    // The token itself contains the room and identity info
     const cleanBase = protocol.split('?')[0].replace(/\/$/, '');
-    return `${cleanBase}/whip?room=${roomId}&identity=${obsIdentity}`;
+    return `${cleanBase}/whip`;
   };
 
   const whipUrl = getWhipUrl();
@@ -214,9 +215,9 @@ export default function BroadcasterRoom() {
                  <li><b>Tune:</b> zerolatency</li>
                  <li><b>Video:</b> Output Resolution 1080p, FPS 60</li>
                </ul>
-               <p className="text-[9px] text-yellow-500/80 italic mt-2">
-                 * თუ მაინც ვერ უკავშირდება, სცადეთ URL-იდან <b>?room=...</b> ნაწილის წაშლა (დატოვეთ მხოლოდ /whip-მდე).
-               </p>
+               <div className="mt-4 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-[9px] text-yellow-200/80 leading-relaxed">
+                 <b>მნიშვნელოვანი:</b> თუ კავშირი მაინც ვერ ხერხდება, დარწმუნდით რომ OBS-ში <b>Bearer Token</b>-ის ველში მხოლოდ გრძელი კოდი გიწერიათ (ტექსტის "Bearer" გარეშე).
+               </div>
              </div>
           </div>
         )}
