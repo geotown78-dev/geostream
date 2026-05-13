@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import LiveRoom from './pages/LiveRoom';
 import AdminDashboard from './pages/AdminDashboard';
 import AuthPage from './pages/Auth';
+import BroadcasterRoom from './pages/BroadcasterRoom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AnimatePresence } from 'motion/react';
 
@@ -31,6 +32,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/broadcast/:roomId" 
+            element={
+              <ProtectedRoute>
+                <BroadcasterRoom />
               </ProtectedRoute>
             } 
           />
