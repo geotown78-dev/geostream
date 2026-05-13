@@ -1,10 +1,36 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Hero, EventCard } from '../components/UI';
 import { MOCK_EVENTS, SCHEDULE } from '../constants';
 import { Calendar, TrendingUp, Play } from 'lucide-react';
+import { supabase, Event } from '../lib/supabase';
 
 export default function Home() {
+  const [events, setEvents] = useState<Event[]>(MOCK_EVENTS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .order('start_time', { ascending: true });
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setEvents(data);
+        }
+      } catch (err) {
+        console.warn('Could not fetch from Supabase, using mock data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchEvents();
+  }, []);
+
   return (
     <div className="min-h-screen pb-20">
       <Hero />
@@ -18,7 +44,7 @@ export default function Home() {
               <div className="bg-brand-surface border border-brand-border px-3 py-1 rounded-full text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Real-time Feed</div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {MOCK_EVENTS.map((event) => (
+              {events.map((event) => (
                 <motion.div
                   key={event.id}
                   initial={{ opacity: 0, scale: 0.95 }}
