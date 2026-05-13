@@ -11,16 +11,24 @@ export default function AdminDashboard() {
   const startStream = async (id: string) => {
     try {
       // Mark as active in Supabase
-      await supabase.from('active_streams').upsert({ 
+      const { error } = await supabase.from('active_streams').upsert({ 
         id: 'global-stream', 
         room_id: id, 
         is_active: true,
         updated_at: new Date().toISOString()
       });
+      
+      if (error) {
+        console.error('Supabase Error:', error);
+        alert(`სინქრონიზაცია ვერ მოხერხდა: ${error.message}. დარწმუნდით რომ active_streams ცხრილი შექმნილია.`);
+        return;
+      }
+      
+      navigate(`/broadcast/${id}`);
     } catch (e) {
       console.error('Failed to sync stream status:', e);
+      alert('დაფიქსირდა შეცდომა სერვერთან კავშირისას.');
     }
-    navigate(`/broadcast/${id}`);
   };
 
   return (
