@@ -63,7 +63,10 @@ function ViewerStream() {
       )}
 
       {/* Control Overlay */}
-      <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity z-30">
+      <div className={cn(
+        "absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity z-30",
+        isPaused ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+      )}>
         <div className="flex items-center gap-4">
           <button 
             onClick={() => setIsPaused(!isPaused)}
@@ -186,6 +189,7 @@ export default function LiveRoom() {
               token={token}
               serverUrl={import.meta.env.VITE_LIVEKIT_URL}
               onDisconnected={() => navigate('/')}
+              adaptiveStream={true}
               data-lk-theme="default"
               className="h-full w-full viewer-mode"
             >
