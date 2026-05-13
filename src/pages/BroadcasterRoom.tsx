@@ -114,6 +114,14 @@ export default function BroadcasterRoom() {
             audio={false}
             token={token}
             serverUrl={import.meta.env.VITE_LIVEKIT_URL}
+            videoCaptureDefaults={{
+              resolution: { width: 1920, height: 1080 },
+              frameRate: 60,
+            }}
+            screenShareCaptureDefaults={{
+              resolution: { width: 1920, height: 1080 },
+              frameRate: 60,
+            }}
             onDisconnected={() => navigate('/admin')}
             data-lk-theme="default"
             className="h-full broadcaster-mode"
