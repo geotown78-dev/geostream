@@ -9,14 +9,9 @@ import {
   VideoTrack,
 } from '@livekit/components-react';
 import { Track } from 'livekit-client';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '../lib/utils';
 import '@livekit/components-styles';
 import { Loader2, ArrowLeft, Play, Pause, Maximize } from 'lucide-react';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 function ViewerStream() {
   const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
