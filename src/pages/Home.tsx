@@ -13,14 +13,25 @@ export default function Home() {
   useEffect(() => {
     // Initial fetch for active stream
     const fetchActiveStream = async () => {
-      const { data } = await supabase
-        .from('active_streams')
-        .select('*')
-        .eq('id', 'global-stream')
-        .single();
-      
-      if (data?.is_active) {
-        setActiveBroadcast(data);
+      try {
+        const { data, error } = await supabase
+          .from('active_streams')
+          .select('*')
+          .eq('id', 'global-stream')
+          .single();
+        
+        if (error) {
+          if (error.code !== 'PGRST116') { // Ignore "no rows found" error
+            console.warn('Active stream check skipped (Table might not exist):', error.message);
+          }
+          return;
+        }
+
+        if (data?.is_active) {
+          setActiveBroadcast(data);
+        }
+      } catch (err) {
+        console.warn('Network issue checking stream status');
       }
     };
 
