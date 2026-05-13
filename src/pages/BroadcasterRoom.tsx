@@ -72,6 +72,17 @@ export default function BroadcasterRoom() {
 
   return (
     <div className="min-h-screen bg-brand-black pt-32 pb-12 px-6">
+      <style>{`
+        /* Hide participant list/tiles in Broadcaster Studio */
+        .broadcaster-mode .lk-participant-list,
+        .broadcaster-mode .lk-sidebar {
+          display: none !important;
+        }
+        
+        .broadcaster-mode .lk-video-conference-inner {
+          flex-direction: column !important;
+        }
+      `}</style>
       <div className="max-w-[1600px] mx-auto flex flex-col h-[calc(100vh-10rem)]">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
@@ -105,7 +116,7 @@ export default function BroadcasterRoom() {
             serverUrl={import.meta.env.VITE_LIVEKIT_URL}
             onDisconnected={() => navigate('/admin')}
             data-lk-theme="default"
-            className="h-full"
+            className="h-full broadcaster-mode"
           >
             <VideoConference />
             {/* The default VideoConference UI includes a Screen Share button in its ControlBar */}
