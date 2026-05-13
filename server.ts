@@ -28,12 +28,14 @@ app.get("/api/get-token", async (req, res) => {
 
   const at = new AccessToken(apiKey, apiSecret, {
     identity: participantName as string,
+    ttl: '24h', // OBS sessions might need longer survival
   });
 
   at.addGrant({ 
     roomJoin: true, 
     room: roomName as string,
-    canPublish: true, // Let's keep it simple for now, refine with roles later
+    canPublish: true,
+    canPublishData: true,
     canSubscribe: true 
   });
 
