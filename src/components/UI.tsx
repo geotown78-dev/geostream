@@ -98,7 +98,7 @@ export function Navbar() {
   );
 }
 
-export function Hero() {
+export function Hero({ activeBroadcast }: { activeBroadcast?: any }) {
   return (
     <section className="relative h-[60vh] flex items-center justify-center overflow-hidden pt-20 rounded-[2.5rem] mt-6 mx-6">
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541252260730-0412e3e2108e?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center">
@@ -107,18 +107,27 @@ export function Hero() {
       </div>
       
       <div className="relative z-10 text-center px-4 max-w-4xl">
-        <div className="inline-flex items-center gap-2 bg-red-600/20 text-red-500 border border-red-500/30 px-3 py-1 rounded-full text-[10px] font-black uppercase mb-6 tracking-widest">
-          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> 
-          Live Network Active
+        <div className={cn(
+          "inline-flex items-center gap-2 border px-3 py-1 rounded-full text-[10px] font-black uppercase mb-6 tracking-widest transition-all duration-500",
+          activeBroadcast 
+            ? "bg-red-600/20 text-red-500 border-red-500/30 animate-pulse" 
+            : "bg-zinc-800/20 text-zinc-500 border-zinc-500/30"
+        )}>
+          <span className={cn("w-2 h-2 rounded-full", activeBroadcast ? "bg-red-500" : "bg-zinc-600")}></span> 
+          {activeBroadcast ? 'Live Network Active' : 'Network Standby'}
         </div>
-        <h1 className="text-6xl md:text-8xl font-black tracking-tight mb-8 text-white drop-shadow-2xl">
-          ELEVATE YOUR GAME
+        <h1 className="text-6xl md:text-8xl font-black tracking-tight mb-8 text-white drop-shadow-2xl uppercase">
+          {activeBroadcast ? (
+            <>STREAMING NOW: <span className="text-brand-primary">{activeBroadcast.room_id}</span></>
+          ) : (
+            'ELEVATE YOUR GAME'
+          )}
         </h1>
         <Link 
-          to="/live" 
+          to={activeBroadcast ? `/watch/${activeBroadcast.room_id}` : "/live"} 
           className="inline-flex items-center gap-3 px-10 py-5 bg-brand-primary text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_-10px_rgba(99,102,241,0.5)]"
         >
-          WATCH APEX LIVE
+          {activeBroadcast ? 'JOIN STREAM' : 'WATCH APEX LIVE'}
           <Play fill="white" size={16} />
         </Link>
       </div>
