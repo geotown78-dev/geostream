@@ -11,13 +11,31 @@ import { AnimatePresence } from 'motion/react';
 
 import { ADMIN_EMAILS } from './constants';
 
-function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  adminOnly?: boolean;
+}
+
+function ProtectedRoute({ children, adminOnly }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" />;
   
-  if (adminOnly && !ADMIN_EMAILS.includes(user.email || '')) {
-    return <Navigate to="/" />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  const userEmail = user.email || '';
+  const isAdmin = ADMIN_EMAILS.includes(userEmail);
+
+  if (adminOnly && !isAdmin) {
+    return <Navigate to="/" replace />;
   }
   
   return <>{children}</>;
