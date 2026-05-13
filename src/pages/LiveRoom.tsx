@@ -4,9 +4,96 @@ import {
   LiveKitRoom, 
   VideoConference,
   RoomAudioRenderer,
+  ControlBar,
+  useTracks,
+  VideoTrack,
 } from '@livekit/components-react';
+import { Track } from 'livekit-client';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import '@livekit/components-styles';
-import { Loader2, ArrowLeft, Play } from 'lucide-react';
+import { Loader2, ArrowLeft, Play, Pause, Maximize } from 'lucide-react';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+function ViewerStream() {
+  const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
+  const [isPaused, setIsPaused] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  const activeTrack = tracks.find(t => t.source === Track.Source.ScreenShare) || tracks.find(t => t.source === Track.Source.Camera);
+
+  return (
+    <div ref={containerRef} className="relative h-full w-full group overflow-hidden bg-black">
+      {activeTrack ? (
+        <VideoTrack 
+          trackRef={activeTrack} 
+          className={cn(
+            "h-full w-full object-contain transition-all duration-300",
+            isPaused ? 'opacity-40 grayscale blur-sm' : ''
+          )} 
+        />
+      ) : (
+        <div className="h-full w-full flex items-center justify-center text-zinc-500 font-black uppercase tracking-widest bg-zinc-950">
+          Waiting for stream...
+        </div>
+      )}
+
+      {/* Audio is rendered globally, we can't easily mute individual tracks here without more complex logic, 
+          but as a viewer with only one stream, it works well enough to just use RoomAudioRenderer.
+          Actually, for a real pause, we'd want to stop track subscription or mute the element. */}
+      
+      {isPaused && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+          <div className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center animate-pulse border border-white/20">
+            <Pause size={40} className="text-white ml-1" fill="white" />
+          </div>
+        </div>
+      )}
+
+      {/* Control Overlay */}
+      <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity z-30">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setIsPaused(!isPaused)}
+            className="w-12 h-12 rounded-2xl bg-brand-primary/20 border border-brand-primary/30 backdrop-blur-md flex items-center justify-center hover:bg-brand-primary/40 transition-all shadow-lg"
+          >
+            {isPaused ? <Play size={24} fill="white" className="ml-1" /> : <Pause size={24} fill="white" />}
+          </button>
+          
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-brand-primary uppercase tracking-widest">
+              {isPaused ? 'PAUSED' : 'LIVE'}
+            </span>
+            <span className="text-xs font-bold text-white uppercase tracking-tighter">
+              {activeTrack?.source === Track.Source.ScreenShare ? 'Screen Share' : 'Camera Feed'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={toggleFullscreen}
+            className="w-12 h-12 rounded-2xl bg-zinc-800/40 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-zinc-800 transition-all"
+          >
+            <Maximize size={20} className="text-white" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LiveRoom() {
   const { roomId } = useParams();
@@ -102,7 +189,7 @@ export default function LiveRoom() {
               data-lk-theme="default"
               className="h-full w-full viewer-mode"
             >
-              <VideoConference />
+              <ViewerStream />
               <RoomAudioRenderer />
             </LiveKitRoom>
             
