@@ -9,10 +9,17 @@ import BroadcasterRoom from './pages/BroadcasterRoom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AnimatePresence } from 'motion/react';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+import { ADMIN_EMAILS } from './constants';
+
+function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" />;
+  
+  if (adminOnly && !ADMIN_EMAILS.includes(user.email || '')) {
+    return <Navigate to="/" />;
+  }
+  
   return <>{children}</>;
 }
 
@@ -30,7 +37,7 @@ function AppContent() {
           <Route 
             path="/admin" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly={true}>
                 <AdminDashboard />
               </ProtectedRoute>
             } 
@@ -38,7 +45,7 @@ function AppContent() {
           <Route 
             path="/broadcast/:roomId" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly={true}>
                 <BroadcasterRoom />
               </ProtectedRoute>
             } 
