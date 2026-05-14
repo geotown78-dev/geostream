@@ -294,29 +294,40 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {schedule.map((item, idx) => (
-                <div key={item.id || idx} className="p-6 bento-card bg-zinc-900/20 flex flex-col justify-between h-36 group relative hover:bg-brand-primary/5 transition-colors">
-                  {isAdmin && item.id && (
-                    <div className="absolute top-2 right-2 z-30 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => navigate('/admin')}
-                        className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-brand-primary transition-colors"
-                      >
-                        <Edit3 size={10} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete('site_schedule', item.id)}
-                        className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-red-600 transition-colors"
-                      >
-                        <Trash2 size={10} />
-                      </button>
-                    </div>
+                <div key={item.id || idx} className="p-6 bento-card bg-zinc-900/20 flex flex-col justify-between h-36 group relative hover:bg-brand-primary/5 transition-all overflow-hidden">
+                  {item.thumbnail && (
+                    <img 
+                      src={item.thumbnail} 
+                      className="absolute inset-0 w-full h-full object-cover opacity-10 group-hover:opacity-20 group-hover:scale-105 transition-all duration-700 pointer-events-none" 
+                      alt="" 
+                    />
                   )}
-                  <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded uppercase tracking-widest">{item.sport}</span>
-                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{item.time} დღეს</span>
-                  </div>
-                  <div className="text-lg font-black tracking-tight leading-none group-hover:text-brand-primary transition-colors">
-                    {item.team1} <span className="text-zinc-600 block text-sm font-normal">წინააღმდეგ</span> {item.team2}
+                  <div className="relative z-10 h-full flex flex-col justify-between">
+                    {isAdmin && item.id && (
+                      <div className="absolute top-0 right-0 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => navigate('/admin')}
+                          className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-brand-primary transition-colors"
+                        >
+                          <Edit3 size={10} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete('site_schedule', item.id)}
+                          className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-red-600 transition-colors"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-start">
+                      <span className="text-[10px] font-black text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded uppercase tracking-widest">{item.sport}</span>
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                        {new Date(item.time).toLocaleString('ka-GE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="text-lg font-black tracking-tight leading-none group-hover:text-brand-primary transition-colors">
+                      {item.team1} <span className="text-zinc-600 block text-sm font-normal">წინააღმდეგ</span> {item.team2}
+                    </div>
                   </div>
                 </div>
               ))}
