@@ -96,17 +96,17 @@ export default function Home() {
       try {
         // Fetch Events
         const { data: eData, error: eErr } = await supabase.from('events').select('*').order('created_at', { ascending: false });
-        if (eErr) console.warn('Error fetching events:', eErr);
+        if (eErr && eErr.code !== 'PGRST205') console.warn('Error fetching events:', eErr);
         if (eData && eData.length > 0) setEvents(eData);
 
         // Fetch Highlights
         const { data: hData, error: hErr } = await supabase.from('highlights').select('*').order('created_at', { ascending: false });
-        if (hErr) console.warn('Error fetching highlights:', hErr);
+        if (hErr && hErr.code !== 'PGRST205') console.warn('Error fetching highlights:', hErr);
         if (hData && hData.length > 0) setHighlights(hData);
 
         // Fetch Schedule
         const { data: scData, error: scErr } = await supabase.from('schedule').select('*').order('created_at', { ascending: false });
-        if (scErr) console.warn('Error fetching schedule:', scErr);
+        if (scErr && scErr.code !== 'PGRST205') console.warn('Error fetching schedule:', scErr);
         if (scData && scData.length > 0) setSchedule(scData);
 
       } catch (err) {
