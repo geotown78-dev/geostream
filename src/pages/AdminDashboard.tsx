@@ -46,7 +46,17 @@ export default function AdminDashboard() {
       return publicUrl;
     } catch (error: any) {
       console.error('Error uploading image:', error);
-      alert(`ფოტოს ატვირთვა ვერ მოხერხდა: ${error.message || 'გთხოვთ დარწმუნდეთ, რომ Supabase Storage-ში შექმნილი გაქვთ საჯარო bucket სახელად "site-assets".'}`);
+      let errorMsg = 'ფოტოს ატვირთვა ვერ მოხერხდა';
+      
+      if (error.message === 'Bucket not found') {
+        errorMsg = 'შეცდომა: საცავი "site-assets" ვერ მოიძებნა.\n\nგთხოვთ შეამოწმოთ Supabase-ში:\n1. ბუკეტის სახელი ზუსტად არის "site-assets".\n2. ბუკეტი არის "Public".\n3. Policies ტაბში დაამატეთ ახალი პოლიტიკა: "Allow access for authenticated users" და მონიშნეთ INSERT, SELECT, UPDATE.';
+      } else if (error.message?.includes('policy') || error.status === 403 || error.status === 401) {
+        errorMsg = 'შეცდომა: წვდომა უარყოფილია (Policy error).\n\nგთხოვთ Supabase Storage -> Policies-ში "site-assets" ბუკეტისთვის დაამატეთ უფლება (INSERT და SELECT) მომხმარებლებისთვის.';
+      } else {
+        errorMsg += `: ${error.message || 'უცნობი შეცდომა'}`;
+      }
+      
+      alert(errorMsg);
       return null;
     } finally {
       setUploading(null);
