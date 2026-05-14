@@ -7,7 +7,7 @@ import {
   useLocalParticipant,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
-import { Loader2, ArrowLeft, Monitor, Mic, Camera, StopCircle, Share2, Terminal } from 'lucide-react';
+import { Loader2, ArrowLeft, Monitor, Mic, Camera, StopCircle, Share2, Terminal, Pause } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
