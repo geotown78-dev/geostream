@@ -11,11 +11,14 @@ import {
 import { Track } from 'livekit-client';
 import { cn } from '../lib/utils';
 import '@livekit/components-styles';
-import { Loader2, ArrowLeft, Play, Pause, Maximize } from 'lucide-react';
+import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
-function ViewerStream() {
+function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
   const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
   const [isPaused, setIsPaused] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   const toggleFullscreen = () => {
@@ -28,6 +31,17 @@ function ViewerStream() {
   };
 
   const activeTrack = tracks.find(t => t.source === Track.Source.ScreenShare) || tracks.find(t => t.source === Track.Source.Camera);
+  const audioTrack = useTracks([Track.Source.Microphone, Track.Source.ScreenShareAudio])[0];
+
+  useEffect(() => {
+    if (audioTrack?.publication?.track) {
+      const vol = isMuted || isGlobalPaused ? 0 : volume;
+      // @ts-ignore
+      audioTrack.publication.track.setVolume(vol);
+    }
+  }, [audioTrack, volume, isMuted, isGlobalPaused]);
+
+  const effectivePaused = isPaused || isGlobalPaused;
 
   return (
     <div ref={containerRef} className="relative h-full w-full group overflow-hidden bg-black">
@@ -36,7 +50,7 @@ function ViewerStream() {
           trackRef={activeTrack} 
           className={cn(
             "h-full w-full object-contain transition-all duration-300",
-            isPaused ? 'opacity-40 grayscale blur-sm' : ''
+            effectivePaused ? 'opacity-40 grayscale blur-sm' : ''
           )} 
         />
       ) : (
@@ -49,10 +63,17 @@ function ViewerStream() {
           but as a viewer with only one stream, it works well enough to just use RoomAudioRenderer.
           Actually, for a real pause, we'd want to stop track subscription or mute the element. */}
       
-      {isPaused && (
+      {effectivePaused && (
         <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-          <div className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center animate-pulse border border-white/20">
-            <Pause size={40} className="text-white ml-1" fill="white" />
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center animate-pulse border border-white/20">
+              <Pause size={40} className="text-white ml-1" fill="white" />
+            </div>
+            {isGlobalPaused && (
+              <span className="text-[10px] font-black uppercase text-brand-primary tracking-[0.3em] bg-black/40 px-4 py-1 rounded-full border border-brand-primary/20 backdrop-blur-md">
+                Broadcaster Paused
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -60,23 +81,51 @@ function ViewerStream() {
       {/* Control Overlay */}
       <div className={cn(
         "absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity z-30",
-        isPaused ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        effectivePaused ? "opacity-100" : "opacity-0 group-hover:opacity-100"
       )}>
         <div className="flex items-center gap-4">
           <button 
             onClick={() => setIsPaused(!isPaused)}
-            className="w-12 h-12 rounded-2xl bg-brand-primary/20 border border-brand-primary/30 backdrop-blur-md flex items-center justify-center hover:bg-brand-primary/40 transition-all shadow-lg"
+            disabled={isGlobalPaused}
+            className={cn(
+              "w-12 h-12 rounded-2xl border backdrop-blur-md flex items-center justify-center transition-all shadow-lg",
+              isGlobalPaused 
+                ? "bg-zinc-800/50 border-white/5 cursor-not-allowed opacity-50" 
+                : "bg-brand-primary/20 border-brand-primary/30 hover:bg-brand-primary/40"
+            )}
           >
-            {isPaused ? <Play size={24} fill="white" className="ml-1" /> : <Pause size={24} fill="white" />}
+            {effectivePaused ? <Play size={24} fill="white" className="ml-1" /> : <Pause size={24} fill="white" />}
           </button>
           
           <div className="flex flex-col">
             <span className="text-[10px] font-black text-brand-primary uppercase tracking-widest">
-              {isPaused ? 'PAUSED' : 'LIVE'}
+              {effectivePaused ? (isGlobalPaused ? 'PAUSED BY ADMIN' : 'PAUSED') : 'LIVE'}
             </span>
             <span className="text-xs font-bold text-white uppercase tracking-tighter">
               {activeTrack?.source === Track.Source.ScreenShare ? 'Screen Share' : 'Camera Feed'}
             </span>
+          </div>
+          
+          {/* Volume Control */}
+          <div className="flex items-center gap-3 ml-6 bg-black/40 p-2 px-4 rounded-xl border border-white/5 backdrop-blur-md">
+             <button 
+              onClick={() => setIsMuted(!isMuted)}
+              className="text-white hover:text-brand-primary transition-colors"
+             >
+               {isMuted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+             </button>
+             <input 
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={isMuted ? 0 : volume}
+              onChange={(e) => {
+                setVolume(parseFloat(e.target.value));
+                if (isMuted) setIsMuted(false);
+              }}
+              className="w-24 h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+             />
           </div>
         </div>
 
@@ -98,9 +147,30 @@ export default function LiveRoom() {
   const navigate = useNavigate();
   const [token, setToken] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isGlobalPaused, setIsGlobalPaused] = useState(false);
 
   useEffect(() => {
     if (!roomId) return;
+
+    // Check initial pause state and subscribe
+    const syncPauseState = async () => {
+      const { data } = await supabase.from('active_streams').select('is_paused').eq('id', 'global-stream').single();
+      if (data) setIsGlobalPaused(!!data.is_paused);
+    };
+
+    syncPauseState();
+
+    const channel = supabase
+      .channel('pause-sync')
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'active_streams',
+        filter: `id=eq.global-stream`
+      }, (payload) => {
+        setIsGlobalPaused(!!payload.new.is_paused);
+      })
+      .subscribe();
 
     const fetchToken = async () => {
       try {
@@ -117,6 +187,10 @@ export default function LiveRoom() {
     };
 
     fetchToken();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [roomId]);
 
   if (error) {
@@ -188,7 +262,7 @@ export default function LiveRoom() {
               data-lk-theme="default"
               className="h-full w-full viewer-mode"
             >
-              <ViewerStream />
+              <ViewerStream isGlobalPaused={isGlobalPaused} />
               <RoomAudioRenderer />
             </LiveKitRoom>
             
