@@ -71,6 +71,9 @@ export default function AdminDashboard() {
   };
 
   const fetchCMSData = async () => {
+    if (!supabase || !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('placeholder')) {
+      return;
+    }
     setLoading(true);
     try {
       // Use actual table names from the schema hint
