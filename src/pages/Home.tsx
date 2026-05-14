@@ -95,18 +95,18 @@ export default function Home() {
     async function fetchCMSData() {
       try {
         // Fetch Events
-        const { data: eData, error: eErr } = await supabase.from('site_events').select('*').order('created_at', { ascending: false });
-        if (eErr) console.warn('Error fetching site_events:', eErr);
+        const { data: eData, error: eErr } = await supabase.from('events').select('*').order('created_at', { ascending: false });
+        if (eErr) console.warn('Error fetching events:', eErr);
         if (eData && eData.length > 0) setEvents(eData);
 
         // Fetch Highlights
-        const { data: hData, error: hErr } = await supabase.from('site_highlights').select('*').order('created_at', { ascending: false });
-        if (hErr) console.warn('Error fetching site_highlights:', hErr);
+        const { data: hData, error: hErr } = await supabase.from('highlights').select('*').order('created_at', { ascending: false });
+        if (hErr) console.warn('Error fetching highlights:', hErr);
         if (hData && hData.length > 0) setHighlights(hData);
 
         // Fetch Schedule
-        const { data: scData, error: scErr } = await supabase.from('site_schedule').select('*').order('created_at', { ascending: false });
-        if (scErr) console.warn('Error fetching site_schedule:', scErr);
+        const { data: scData, error: scErr } = await supabase.from('schedule').select('*').order('created_at', { ascending: false });
+        if (scErr) console.warn('Error fetching schedule:', scErr);
         if (scData && scData.length > 0) setSchedule(scData);
 
       } catch (err) {
@@ -132,9 +132,9 @@ export default function Home() {
       if (error) throw error;
       
       // Refresh local state
-      if (table === 'site_events') setEvents(prev => prev.filter(e => e.id !== id));
-      if (table === 'site_highlights') setHighlights(prev => prev.filter(h => h.id !== id));
-      if (table === 'site_schedule') setSchedule(prev => prev.filter(s => (s.id && s.id !== id))); 
+      if (table === 'events') setEvents(prev => prev.filter(e => e.id !== id));
+      if (table === 'highlights') setHighlights(prev => prev.filter(h => h.id !== id));
+      if (table === 'schedule') setSchedule(prev => prev.filter(s => (s.id && s.id !== id))); 
       
       // Full refresh to be sure
       window.location.reload();
@@ -174,7 +174,7 @@ export default function Home() {
                         <Edit3 size={14} />
                       </button>
                       <button 
-                        onClick={(e) => { e.preventDefault(); handleDelete('site_events', event.id); }}
+                        onClick={(e) => { e.preventDefault(); handleDelete('events', event.id); }}
                         className="p-2 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-red-600 transition-colors"
                       >
                         <Trash2 size={14} />
@@ -268,7 +268,7 @@ export default function Home() {
                         <Edit3 size={12} />
                       </button>
                       <button 
-                        onClick={() => handleDelete('site_highlights', h.id)}
+                        onClick={() => handleDelete('highlights', h.id)}
                         className="p-2 bg-brand-surface/80 backdrop-blur-md border border-brand-border rounded-lg text-white hover:bg-red-600 transition-colors"
                       >
                         <Trash2 size={12} />
@@ -315,7 +315,7 @@ export default function Home() {
                           <Edit3 size={10} />
                         </button>
                         <button 
-                          onClick={() => handleDelete('site_schedule', item.id)}
+                          onClick={() => handleDelete('schedule', item.id)}
                           className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-red-600 transition-colors"
                         >
                           <Trash2 size={10} />
