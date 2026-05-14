@@ -63,8 +63,12 @@ export default function BroadcasterRoom() {
   const toggleGlobalPause = async () => {
     const nextState = !isPausedGlobal;
     setIsPausedGlobal(nextState);
+    if (!supabase || !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('placeholder')) return;
     try {
-      await supabase.from('active_streams').update({ is_paused: nextState }).eq('id', 'global-stream');
+      const { error } = await supabase.from('active_streams').update({ is_paused: nextState }).eq('id', 'global-stream');
+      if (error && error.code === 'PGRST205') {
+        console.warn('active_streams table not found.');
+      }
     } catch (e) {
       console.error('Failed to sync pause state:', e);
     }
@@ -95,8 +99,12 @@ export default function BroadcasterRoom() {
   };
 
   const endStream = async () => {
+    if (!supabase || !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('placeholder')) return;
     try {
-      await supabase.from('active_streams').update({ is_active: false }).eq('id', 'global-stream');
+      const { error } = await supabase.from('active_streams').update({ is_active: false }).eq('id', 'global-stream');
+      if (error && error.code === 'PGRST205') {
+        console.warn('active_streams table not found.');
+      }
     } catch (e) {
       console.error('Failed to end stream:', e);
     }
