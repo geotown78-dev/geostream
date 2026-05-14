@@ -2,58 +2,62 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { storage } from '../lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { MOCK_EVENTS } from '../constants';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [roomId, setRoomId] = useState('');
-  const [activeTab, setActiveTab] = useState<'sessions' | 'streams' | 'highlights' | 'schedule'>('sessions');
+  const [activeTab, setActiveTab ] = useState<'sessions' | 'streams' | 'highlights' | 'schedule'>('sessions');
 
   // CMS States
   const [streams, setStreams] = useState<any[]>([]);
   const [highlights, setHighlights] = useState<any[]>([]);
-  const [schedule, setSchedule] = useState<any[]>([]);
+  const [schedule, setSchedule ] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState<string | null>(null);
+  const [uploading, setUploading ] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCMSData();
   }, [activeTab]);
 
-  const handleFileUpload = async (file: File, bucket: string = 'site-assets') => {
+  const handleFileUpload = async (file: File, bucketName: string = 'site-assets') => {
     try {
-      if (!storage) {
-        throw new Error('Firebase Storage არ არის კონფიგურირებული. გთხოვთ დაამატოთ Firebase-ის პარამეტრები Settings-დან.');
-      }
-
       // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         alert('ფაილის ზომა არ უნდა აღემატებოდეს 5MB-ს');
         return null;
       }
 
-      setUploading(bucket);
+      setUploading(bucketName);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const folder = bucket || 'uploads';
-      const filePath = `${folder}/${fileName}`;
+      const filePath = `${bucketName}/${fileName}`;
 
-      // Upload to Firebase Storage
-      const storageRef = ref(storage, filePath);
-      await uploadBytes(storageRef, file);
-      const publicUrl = await getDownloadURL(storageRef);
+      // Upload to Supabase Storage
+      const { data, error: uploadError } = await supabase.storage
+        .from('site-assets')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('site-assets')
+        .getPublicUrl(filePath);
 
       return publicUrl;
     } catch (error: any) {
-      console.error('Error uploading image to Firebase:', error);
-      let errorMsg = 'ფოტოს ატვირთვა ვერ მოხერხდა Firebase-ზე';
+      console.error('Error uploading image to Supabase:', error);
+      let errorMsg = 'ფოტოს ატვირთვა ვერ მოხერხდა';
       
-      if (error.code === 'storage/unauthorized') {
-        errorMsg = 'შეცდომა: წვდომა უარყოფილია (Firebase Storage Rules).\n\nგთხოვთ Firebase Console-ში Storage -> Rules-ში შეცვალოთ წესები, რომ ყველას ჰქონდეს წაკითხვის და ჩაწერის უფლება:\n\nservice firebase.storage {\n  match /b/{bucket}/o {\n    match /{allPaths=**} {\n      allow read, write: if true;\n    }\n  }\n}';
-      } else if (error.message.includes('Firebase Storage არ არის კონფიგურირებული')) {
-        errorMsg = error.message;
+      if (error.message === 'Bucket not found') {
+        errorMsg = `შეცდომა: საცავი "site-assets" ვერ მოიძებნა.\n\nგთხოვთ Supabase Dashboard-ზე:\n1. გადადით Storage განყოფილებაში\n2. შექმენით ახალი ბუკეტი სახელით "site-assets"\n3. გახადეთ ის "Public"`;
+      } else if (error.error === 'Payload too large') {
+        errorMsg = 'შეცდომა: ფაილი ზედმეტად დიდია.';
+      } else if (error.message?.includes('policy')) {
+        errorMsg = 'შეცდომა: წვდომა უარყოფილია (RLS Policy).\n\nგთხოვთ Supabase Storage-ში პოლიტიკებში დაამატეთ "INSERT" და "SELECT" უფლებები ანონიმური მომხმარებლებისთვის.';
       } else {
         errorMsg += `: ${error.message || 'უცნობი შეცდომა'}`;
       }
