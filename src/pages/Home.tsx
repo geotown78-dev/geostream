@@ -7,6 +7,8 @@ import { supabase, Event } from '../lib/supabase';
 
 export default function Home() {
   const [events, setEvents] = useState<Event[]>(MOCK_EVENTS);
+  const [highlights, setHighlights] = useState<any[]>([]);
+  const [schedule, setSchedule] = useState<any[]>(SCHEDULE);
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [onlineCount, setOnlineCount] = useState(1);
@@ -83,25 +85,28 @@ export default function Home() {
       )
       .subscribe();
 
-    async function fetchEvents() {
+    async function fetchCMSData() {
       try {
-        const { data, error } = await supabase
-          .from('events')
-          .select('*')
-          .order('start_time', { ascending: true });
+        // Fetch Events
+        const { data: eData } = await supabase.from('site_events').select('*').order('created_at', { ascending: false });
+        if (eData && eData.length > 0) setEvents(eData);
 
-        if (error) throw error;
-        if (data && data.length > 0) {
-          setEvents(data);
-        }
+        // Fetch Highlights
+        const { data: hData } = await supabase.from('site_highlights').select('*').order('created_at', { ascending: false });
+        if (hData && hData.length > 0) setHighlights(hData);
+
+        // Fetch Schedule
+        const { data: scData } = await supabase.from('site_schedule').select('*').order('created_at', { ascending: false });
+        if (scData && scData.length > 0) setSchedule(scData);
+
       } catch (err) {
-        console.warn('Could not fetch from Supabase, using mock data:', err);
+        console.warn('CMS data fetch skipped:', err);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchEvents();
+    fetchCMSData();
 
     return () => {
       supabase.removeChannel(channel);
@@ -184,31 +189,35 @@ export default function Home() {
         </div>
 
         {/* Trending Highlights */}
-        <section className="bento-card p-8 bg-brand-surface/40">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-black italic tracking-tighter uppercase">პოპულარული <span className="text-brand-primary">მომენტები</span></h2>
-            <TrendingUp size={20} className="text-brand-primary" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="space-y-4 group">
-                <div className="aspect-[16/10] bg-brand-surface-light rounded-[1.5rem] overflow-hidden relative border border-brand-border group-hover:border-brand-primary/30 transition-colors">
-                  <img 
-                    src={`https://images.unsplash.com/photo-${1500000000000 + (i * 100)}?auto=format&fit=crop&q=80&w=800`}
-                    className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
-                    alt="Highlight"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-12 h-12 bg-brand-primary rounded-full flex items-center justify-center shadow-lg">
-                      <Play fill="white" size={20} className="ml-1" />
+        {(highlights.length > 0 || !loading) && (
+          <section className="bento-card p-8 bg-brand-surface/40">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-black italic tracking-tighter uppercase">პოპულარული <span className="text-brand-primary">მომენტები</span></h2>
+              <TrendingUp size={20} className="text-brand-primary" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {(highlights.length > 0 ? highlights : [1, 2, 3]).map((h, i) => (
+                <div key={h.id || i} className="space-y-4 group">
+                  <div className="aspect-[16/10] bg-brand-surface-light rounded-[1.5rem] overflow-hidden relative border border-brand-border group-hover:border-brand-primary/30 transition-colors">
+                    <img 
+                      src={h.thumbnail || `https://images.unsplash.com/photo-${1500000000000 + (i * 100)}?auto=format&fit=crop&q=80&w=800`}
+                      className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
+                      alt={h.title || "Highlight"}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="w-12 h-12 bg-brand-primary rounded-full flex items-center justify-center shadow-lg">
+                        <Play fill="white" size={20} className="ml-1" />
+                      </div>
                     </div>
                   </div>
+                  <h4 className="font-bold text-zinc-400 group-hover:text-zinc-100 transition-colors">
+                    {h.title || `მომენტები: GeoStream სერიებიდან #${i}`}
+                  </h4>
                 </div>
-                <h4 className="font-bold text-zinc-400 group-hover:text-zinc-100 transition-colors">მომენტები: GeoStream სერიებიდან #{i}</h4>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Upcoming Schedule */}
         <section className="pb-12">
