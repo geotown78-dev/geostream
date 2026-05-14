@@ -204,7 +204,7 @@ export default function AdminDashboard() {
               <section className="space-y-6">
                 <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500">სწრაფი წვდომა სტრიმებზე</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(streams.length > 0 ? streams : MOCK_EVENTS).map((event) => (
+                  {streams.map((event) => (
                     <div key={event.id} className="p-6 bento-card bg-zinc-900/40 flex items-center justify-between group hover:border-brand-primary/30 transition-colors">
                       <div className="flex items-center gap-6">
                         <div className="w-16 h-16 rounded-2xl border border-brand-border overflow-hidden rotate-[-2deg] group-hover:rotate-0 transition-transform duration-500">
