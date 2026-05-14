@@ -67,6 +67,27 @@ app.post("/api/create-ingress", async (req, res) => {
   }
 
   try {
+    // 1. Try to find an existing ingress for this room
+    const existingIngresses = await ingressClient.listIngress({ roomName: roomName as string });
+    if (existingIngresses.length > 0) {
+      return res.json(existingIngresses[0]);
+    }
+
+    // 2. If room-specific fails, try to see if we have ANY ingress we can reuse (to stay under limit)
+    const allIngresses = await ingressClient.listIngress({});
+    if (allIngresses.length > 0) {
+      const reuse = allIngresses[0];
+      // Update the existing ingress to target the current room
+      const updated = await ingressClient.updateIngress(reuse.ingressId, {
+        name: "OBS RTMP (Updated)",
+        roomName: roomName as string,
+        participantIdentity: `obs-rtmp-${Math.floor(Math.random() * 10000)}`,
+        participantName: "OBS RTMP",
+      });
+      return res.json(updated);
+    }
+
+    // 3. Create a new one if none exist
     const ingress = await ingressClient.createIngress(IngressInput.RTMP_INPUT, {
       roomName: roomName as string,
       participantIdentity: `obs-rtmp-${Math.floor(Math.random() * 10000)}`,
@@ -75,10 +96,17 @@ app.post("/api/create-ingress", async (req, res) => {
     res.json(ingress);
   } catch (e: any) {
     console.error("Ingress Error:", e);
-    // Return specific error message to help user diagnose
+    
+    if (e?.message?.includes("limit exceeded")) {
+      return res.status(500).json({
+        error: "Ingress Limit Reached",
+        details: "თქვენს LiveKit პროექტში ლიმიტი ამოიწურა. გთხოვთ წაშალოთ ძველი Ingress-ები LiveKit Dashboard-იდან."
+      });
+    }
+
     res.status(500).json({ 
       error: e?.message || "Failed to create ingress",
-      details: "თქვენი LiveKit პროექტი არ უჭერს მხარს RTMP-ს (საჭიროებს Ingress სერვისის გააქტიურებას)."
+      details: "თქვენი LiveKit პროექტი არ უჭერს მხარს RTMP-ს ან სერვერი დროებით მიუწვდომელია."
     });
   }
 });
