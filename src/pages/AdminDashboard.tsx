@@ -73,14 +73,14 @@ export default function AdminDashboard() {
   const fetchCMSData = async () => {
     setLoading(true);
     try {
-      // Use underscores as per standard Supabase naming
-      const { data: sData, error: sErr } = await supabase.from('site_events').select('*').order('created_at', { ascending: false });
-      const { data: hData, error: hErr } = await supabase.from('site_highlights').select('*').order('created_at', { ascending: false });
-      const { data: scData, error: scErr } = await supabase.from('site_schedule').select('*').order('created_at', { ascending: false });
+      // Use actual table names from the schema hint
+      const { data: sData, error: sErr } = await supabase.from('events').select('*').order('created_at', { ascending: false });
+      const { data: hData, error: hErr } = await supabase.from('highlights').select('*').order('created_at', { ascending: false });
+      const { data: scData, error: scErr } = await supabase.from('schedule').select('*').order('created_at', { ascending: false });
       
-      if (sErr) console.error('Error fetching site_events:', sErr);
-      if (hErr) console.error('Error fetching site_highlights:', hErr);
-      if (scErr) console.error('Error fetching site_schedule:', scErr);
+      if (sErr) console.error('Error fetching events:', sErr);
+      if (hErr) console.error('Error fetching highlights:', hErr);
+      if (scErr) console.error('Error fetching schedule:', scErr);
 
       if (sData) setStreams(sData);
       if (hData) setHighlights(hData);
@@ -121,21 +121,21 @@ export default function AdminDashboard() {
 
   const addStream = async () => {
     if (!newStream.title || !newStream.room_name) return;
-    await supabase.from('site_events').insert([{ ...newStream, is_live: true, start_time: new Date().toISOString() }]);
+    await supabase.from('events').insert([{ ...newStream, is_live: true, start_time: new Date().toISOString() }]);
     setNewStream({ title: '', sport: '', thumbnail: '', room_name: '' });
     fetchCMSData();
   };
 
   const addHighlight = async () => {
     if (!newHighlight.title) return;
-    await supabase.from('site_highlights').insert([newHighlight]);
+    await supabase.from('highlights').insert([newHighlight]);
     setNewHighlight({ title: '', thumbnail: '' });
     fetchCMSData();
   };
 
   const addSchedule = async () => {
     if (!newSchedule.team1 || !newSchedule.team2 || !newSchedule.time) return;
-    await supabase.from('site_schedule').insert([newSchedule]);
+    await supabase.from('schedule').insert([newSchedule]);
     setNewSchedule({ team1: '', team2: '', time: '', sport: '', thumbnail: '' });
     fetchCMSData();
   };
@@ -266,7 +266,7 @@ export default function AdminDashboard() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const url = await handleFileUpload(file, 'stream-thumbs');
+                            const url = await handleFileUpload(file, 'private'); // Match folder in policy
                             if (url) setNewStream({ ...newStream, thumbnail: url });
                           }
                         }}
@@ -287,7 +287,7 @@ export default function AdminDashboard() {
                         <p className="text-[10px] text-zinc-500 uppercase">{s.sport}</p>
                       </div>
                     </div>
-                    <button onClick={() => deleteItem('site_events', s.id)} className="text-zinc-600 hover:text-red-500">
+                    <button onClick={() => deleteItem('events', s.id)} className="text-zinc-600 hover:text-red-500">
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -325,7 +325,7 @@ export default function AdminDashboard() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const url = await handleFileUpload(file, 'highlight-thumbs');
+                            const url = await handleFileUpload(file, 'private'); // Use private folder to match policy
                             if (url) setNewHighlight({ ...newHighlight, thumbnail: url });
                           }
                         }}
@@ -342,7 +342,7 @@ export default function AdminDashboard() {
                     <img src={h.thumbnail} className="w-full aspect-video object-cover rounded-lg" alt="" />
                     <div className="flex justify-between items-center">
                       <h4 className="font-bold text-sm truncate pr-4">{h.title}</h4>
-                      <button onClick={() => deleteItem('site_highlights', h.id)} className="text-zinc-600 hover:text-red-500 shrink-0">
+                      <button onClick={() => deleteItem('highlights', h.id)} className="text-zinc-600 hover:text-red-500 shrink-0">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -358,7 +358,7 @@ export default function AdminDashboard() {
                 <h3 className="text-xl font-black uppercase italic italic text-brand-primary flex items-center gap-2">
                   <Calendar size={20} /> ლაივის დაგეგმვა (მატჩის განრიგი)
                 </h3>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">პირველი გუნდი</label>
                     <input 
@@ -413,7 +413,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const url = await handleFileUpload(file, 'schedule-thumbs');
+                              const url = await handleFileUpload(file, 'private');
                               if (url) setNewSchedule({ ...newSchedule, thumbnail: url });
                             }
                           }}
@@ -442,7 +442,7 @@ export default function AdminDashboard() {
                         </p>
                       </div>
                     </div>
-                    <button onClick={() => deleteItem('site_schedule', sc.id)} className="p-2 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all">
+                    <button onClick={() => deleteItem('schedule', sc.id)} className="p-2 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all">
                       <Trash2 size={18} />
                     </button>
                   </div>
