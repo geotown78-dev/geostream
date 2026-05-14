@@ -37,7 +37,8 @@ export default function AdminDashboard() {
       setUploading(bucket);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `uploads/${fileName}`;
+      const folder = bucket || 'uploads';
+      const filePath = `${folder}/${fileName}`;
 
       // Upload to Firebase Storage
       const storageRef = ref(storage, filePath);
@@ -50,7 +51,7 @@ export default function AdminDashboard() {
       let errorMsg = 'ფოტოს ატვირთვა ვერ მოხერხდა Firebase-ზე';
       
       if (error.code === 'storage/unauthorized') {
-        errorMsg = 'შეცდომა: წვდომა უარყოფილია (Firebase Storage Rules).\n\nგთხოვთ Firebase Console-ში Storage -> Rules-ში დაამატეთ უფლება (allow read, write).';
+        errorMsg = 'შეცდომა: წვდომა უარყოფილია (Firebase Storage Rules).\n\nგთხოვთ Firebase Console-ში Storage -> Rules-ში შეცვალოთ წესები, რომ ყველას ჰქონდეს წაკითხვის და ჩაწერის უფლება:\n\nservice firebase.storage {\n  match /b/{bucket}/o {\n    match /{allPaths=**} {\n      allow read, write: if true;\n    }\n  }\n}';
       } else if (error.message.includes('Firebase Storage არ არის კონფიგურირებული')) {
         errorMsg = error.message;
       } else {
@@ -255,7 +256,7 @@ export default function AdminDashboard() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const url = await handleFileUpload(file, 'site-assets');
+                            const url = await handleFileUpload(file, 'stream-thumbs');
                             if (url) setNewStream({ ...newStream, thumbnail: url });
                           }
                         }}
@@ -314,7 +315,7 @@ export default function AdminDashboard() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const url = await handleFileUpload(file, 'site-assets');
+                            const url = await handleFileUpload(file, 'highlight-thumbs');
                             if (url) setNewHighlight({ ...newHighlight, thumbnail: url });
                           }
                         }}
@@ -402,7 +403,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const url = await handleFileUpload(file, 'site-assets');
+                              const url = await handleFileUpload(file, 'schedule-thumbs');
                               if (url) setNewSchedule({ ...newSchedule, thumbnail: url });
                             }
                           }}
