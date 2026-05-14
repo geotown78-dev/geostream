@@ -74,15 +74,15 @@ function AppContent() {
       <footer className="border-t border-brand-border py-12 mt-20">
         <div className="max-w-[1600px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-xl font-bold tracking-tight uppercase italic text-brand-primary">
-            APEX <span className="text-white">STREAM</span>
+            GEO <span className="text-white">STREAM</span>
           </div>
           <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-zinc-600">
-            <a href="#" className="hover:text-brand-primary transition-colors">PRIVACY POLICY</a>
-            <a href="#" className="hover:text-brand-primary transition-colors">TERMS OF SERVICE</a>
-            <a href="#" className="hover:text-brand-primary transition-colors">CONTACT US</a>
+            <a href="#" className="hover:text-brand-primary transition-colors">კონფიდენციალურობის პოლიტიკა</a>
+            <a href="#" className="hover:text-brand-primary transition-colors">წესები და პირობები</a>
+            <a href="#" className="hover:text-brand-primary transition-colors">კონტაქტი</a>
           </div>
           <div className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest">
-            © 2024 APEX NETWORK. CLOUD RUN DEPLOYED.
+            © 2024 GEOSTREAM ქსელი.
           </div>
         </div>
       </footer>
