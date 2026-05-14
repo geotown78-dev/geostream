@@ -55,7 +55,7 @@ function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
         />
       ) : (
         <div className="h-full w-full flex items-center justify-center text-zinc-500 font-black uppercase tracking-widest bg-zinc-950">
-          Waiting for stream...
+          სტრიმის მოლოდინი...
         </div>
       )}
 
@@ -71,7 +71,7 @@ function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
             </div>
             {isGlobalPaused && (
               <span className="text-[10px] font-black uppercase text-brand-primary tracking-[0.3em] bg-black/40 px-4 py-1 rounded-full border border-brand-primary/20 backdrop-blur-md">
-                Broadcaster Paused
+                სტრიმერმა დააპაუზა
               </span>
             )}
           </div>
@@ -99,10 +99,10 @@ function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
           
           <div className="flex flex-col">
             <span className="text-[10px] font-black text-brand-primary uppercase tracking-widest">
-              {effectivePaused ? (isGlobalPaused ? 'PAUSED BY ADMIN' : 'PAUSED') : 'LIVE'}
+              {effectivePaused ? (isGlobalPaused ? 'დაპაუზებულია ადმინის მიერ' : 'დაპაუზებულია') : 'ლაივი'}
             </span>
             <span className="text-xs font-bold text-white uppercase tracking-tighter">
-              {activeTrack?.source === Track.Source.ScreenShare ? 'Screen Share' : 'Camera Feed'}
+              {activeTrack?.source === Track.Source.ScreenShare ? 'ეკრანის გაზიარება' : 'კამერა'}
             </span>
           </div>
           
@@ -270,7 +270,7 @@ export default function LiveRoom() {
             <div className="absolute top-6 left-6 z-20 flex gap-3 pointer-events-none">
               <div className="bg-red-600 text-white px-3 py-1 rounded-md text-[10px] font-black flex items-center gap-2 uppercase">
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> 
-                LIVE BROADCAST
+                პირდაპირი ეთერი
               </div>
               <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">
                 4K • 60 FPS
@@ -280,10 +280,10 @@ export default function LiveRoom() {
             <div className="absolute bottom-8 right-8 z-20 flex items-center gap-4 text-xs font-black bg-black/40 backdrop-blur-md p-2 px-4 rounded-xl border border-white/10 pointer-events-none">
               <div className="text-zinc-100 flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-brand-primary" />
-                124.5K WATCHING
+                124.5K მაყურებელი
               </div>
               <div className="h-4 w-[1px] bg-white/20" />
-              <div className="text-brand-primary uppercase tracking-widest">LOW LATENCY</div>
+              <div className="text-brand-primary uppercase tracking-widest">დაბალი დაყოვნება</div>
             </div>
           </div>
           
@@ -291,15 +291,15 @@ export default function LiveRoom() {
             <div className="flex justify-between items-end">
               <div>
                 <h1 className="text-4xl font-black mb-2 uppercase tracking-tighter italic">
-                  WATCHING: <span className="text-brand-primary">{roomId?.replace(/-/g, ' ')}</span>
+                  უყურებთ: <span className="text-brand-primary">{roomId?.replace(/-/g, ' ')}</span>
                 </h1>
-                <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.2em]">Broadcast Session: {roomId}-prod-01</p>
+                <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.2em]">სესიის ID: {roomId}-prod-01</p>
               </div>
               <button 
                 onClick={() => navigate('/')}
                 className="px-6 py-3 bg-brand-surface border border-brand-border rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-surface-light transition-all flex items-center gap-2"
               >
-                <ArrowLeft size={14} /> Exit Stream
+                <ArrowLeft size={14} /> სტრიმიდან გამოსვლა
               </button>
             </div>
           </div>
@@ -308,8 +308,8 @@ export default function LiveRoom() {
         {/* Chat Side Panel */}
         <aside className="hidden lg:flex col-span-3 bento-card flex-col overflow-hidden h-full bg-zinc-900/40">
           <div className="p-6 border-b border-brand-border flex justify-between items-center bg-zinc-950/40">
-            <h3 className="font-black uppercase text-[10px] tracking-widest text-zinc-400">Live Reaction Chat</h3>
-            <span className="text-[10px] text-brand-primary font-black animate-pulse">● SYNCING</span>
+            <h3 className="font-black uppercase text-[10px] tracking-widest text-zinc-400">ლაივ ჩატი</h3>
+            <span className="text-[10px] text-brand-primary font-black animate-pulse">● სინქრონიზაცია</span>
           </div>
           
           <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
@@ -331,7 +331,7 @@ export default function LiveRoom() {
 
           <div className="p-6 bg-zinc-950/40 border-t border-brand-border">
             <div className="bg-brand-surface p-4 rounded-2xl text-[10px] text-zinc-500 flex justify-between items-center font-bold uppercase tracking-widest border border-brand-border cursor-text hover:border-brand-primary/50 transition-colors">
-              Type your message...
+              დაწერეთ შეტყობინება...
               <Play size={12} className="rotate-[-45deg] text-brand-primary" fill="currentColor" />
             </div>
           </div>
