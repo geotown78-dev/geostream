@@ -224,18 +224,17 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Next Big Event Bento Box */}
-            <div className="bg-brand-primary rounded-[2rem] p-8 flex flex-col justify-between relative overflow-hidden group">
-              <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
-                <Calendar size={200} />
+            {/* Upcoming/Info Bento Box */}
+            <div className="bg-brand-surface border border-brand-border rounded-[2rem] p-8 flex flex-col justify-between relative overflow-hidden group">
+              <div className="absolute -right-8 -bottom-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                <TrendingUp size={200} />
               </div>
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/50">მალე დაიწყება</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">ინფორმაცია</h3>
               <div>
-                <p className="text-3xl font-black leading-tight text-white mb-4">Wimbledon 2024: მამაკაცთა ფინალი</p>
-                <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-xl text-xs font-bold text-white backdrop-blur-sm border border-white/10">
-                  <Calendar size={14} />
-                  20:00 • 15 ივლისი
-                </div>
+                <p className="text-2xl font-black leading-tight text-white mb-4 italic uppercase">გახდი <span className="text-brand-primary">გეოსტრიმერი</span></p>
+                <p className="text-xs text-zinc-500 font-bold uppercase tracking-wide leading-relaxed">
+                  შემოუერთდი პირველ ქართულ სტრიმინგ პლატფორმას და გაუზიარე შენი თამაში სხვებს.
+                </p>
               </div>
             </div>
           </aside>
