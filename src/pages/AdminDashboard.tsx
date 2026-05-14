@@ -20,7 +20,8 @@ export default function AdminDashboard() {
     fetchCMSData();
   }, [activeTab]);
 
-  const handleFileUpload = async (file: File, bucketName: string = 'SITE-ASSETS') => {
+  const handleFileUpload = async (file: File, folder: string = 'uploads') => {
+    const bucketName = 'SITE-ASSETS';
     try {
       // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
@@ -28,14 +29,14 @@ export default function AdminDashboard() {
         return null;
       }
 
-      setUploading(bucketName);
+      setUploading(folder);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${bucketName}/${fileName}`;
+      const filePath = `${folder}/${fileName}`;
 
       // Upload to Supabase Storage
       const { data, error: uploadError } = await supabase.storage
-        .from('SITE-ASSETS')
+        .from(bucketName)
         .upload(filePath, file);
 
       if (uploadError) {
@@ -44,7 +45,7 @@ export default function AdminDashboard() {
 
       // Get Public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('SITE-ASSETS')
+        .from(bucketName)
         .getPublicUrl(filePath);
 
       return publicUrl;
@@ -53,7 +54,7 @@ export default function AdminDashboard() {
       let errorMsg = 'ფოტოს ატვირთვა ვერ მოხერხდა';
       
       if (error.message === 'Bucket not found') {
-        errorMsg = `შეცდომა: საცავი "SITE-ASSETS" ვერ მოიძებნა.\n\nგთხოვთ Supabase Dashboard-ზე:\n1. გადადით Storage განყოფილებაში\n2. შექმენით ახალი ბუკეტი სახელით "SITE-ASSETS"\n3. გახადეთ ის "Public"`;
+        errorMsg = `შეცდომა: საცავი "${bucketName}" ვერ მოიძებნა.\n\nგთხოვთ Supabase Dashboard-ზე:\n1. გადადით Storage განყოფილებაში\n2. შექმენით ახალი ბუკეტი სახელით "${bucketName}"\n3. გახადეთ ის "Public"`;
       } else if (error.error === 'Payload too large') {
         errorMsg = 'შეცდომა: ფაილი ზედმეტად დიდია.';
       } else if (error.message?.includes('policy')) {
