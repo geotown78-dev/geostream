@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { AccessToken, IngressClient, IngressInput } from "livekit-server-sdk";
+import { AccessToken, IngressClient, IngressInput, RoomServiceClient } from "livekit-server-sdk";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -17,6 +17,29 @@ const rawUrl = (process.env.LIVEKIT_URL || process.env.VITE_LIVEKIT_URL)?.replac
 const livekitUrl = rawUrl?.replace('wss://', 'https://').replace('ws://', 'http://');
 
 const ingressClient = new IngressClient(livekitUrl || "", apiKey || "", apiSecret || "");
+const roomService = new RoomServiceClient(livekitUrl || "", apiKey || "", apiSecret || "");
+
+// API: Get Live Stats
+app.get("/api/stats", async (req, res) => {
+  try {
+    const rooms = await roomService.listRooms();
+    let totalParticipants = 0;
+    
+    // Count participants across all rooms
+    rooms.forEach(room => {
+      totalParticipants += room.numParticipants;
+    });
+
+    res.json({
+      activeRooms: rooms.length,
+      totalParticipants: totalParticipants,
+      timestamp: Date.now()
+    });
+  } catch (e) {
+    console.error("Stats Error:", e);
+    res.status(500).json({ activeRooms: 0, totalParticipants: 0 });
+  }
+});
 
 // API: Generate LiveKit Token
 app.get("/api/get-token", async (req, res) => {
