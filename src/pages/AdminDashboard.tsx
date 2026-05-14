@@ -20,7 +20,7 @@ export default function AdminDashboard() {
     fetchCMSData();
   }, [activeTab]);
 
-  const handleFileUpload = async (file: File, bucketName: string = 'site-assets') => {
+  const handleFileUpload = async (file: File, bucketName: string = 'SITE-ASSETS') => {
     try {
       // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
 
       // Upload to Supabase Storage
       const { data, error: uploadError } = await supabase.storage
-        .from('site-assets')
+        .from('SITE-ASSETS')
         .upload(filePath, file);
 
       if (uploadError) {
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
 
       // Get Public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('site-assets')
+        .from('SITE-ASSETS')
         .getPublicUrl(filePath);
 
       return publicUrl;
@@ -53,7 +53,7 @@ export default function AdminDashboard() {
       let errorMsg = 'ფოტოს ატვირთვა ვერ მოხერხდა';
       
       if (error.message === 'Bucket not found') {
-        errorMsg = `შეცდომა: საცავი "site-assets" ვერ მოიძებნა.\n\nგთხოვთ Supabase Dashboard-ზე:\n1. გადადით Storage განყოფილებაში\n2. შექმენით ახალი ბუკეტი სახელით "site-assets"\n3. გახადეთ ის "Public"`;
+        errorMsg = `შეცდომა: საცავი "SITE-ASSETS" ვერ მოიძებნა.\n\nგთხოვთ Supabase Dashboard-ზე:\n1. გადადით Storage განყოფილებაში\n2. შექმენით ახალი ბუკეტი სახელით "SITE-ASSETS"\n3. გახადეთ ის "Public"`;
       } else if (error.error === 'Payload too large') {
         errorMsg = 'შეცდომა: ფაილი ზედმეტად დიდია.';
       } else if (error.message?.includes('policy')) {
