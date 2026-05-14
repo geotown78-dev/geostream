@@ -78,9 +78,9 @@ export default function AdminDashboard() {
       const { data: hData, error: hErr } = await supabase.from('highlights').select('*').order('created_at', { ascending: false });
       const { data: scData, error: scErr } = await supabase.from('schedule').select('*').order('created_at', { ascending: false });
       
-      if (sErr) console.error('Error fetching events:', sErr);
-      if (hErr) console.error('Error fetching highlights:', hErr);
-      if (scErr) console.error('Error fetching schedule:', scErr);
+      if (sErr && sErr.code !== 'PGRST205') console.error('Error fetching events:', sErr);
+      if (hErr && hErr.code !== 'PGRST205') console.error('Error fetching highlights:', hErr);
+      if (scErr && scErr.code !== 'PGRST205') console.error('Error fetching schedule:', scErr);
 
       if (sData) setStreams(sData);
       if (hData) setHighlights(hData);
