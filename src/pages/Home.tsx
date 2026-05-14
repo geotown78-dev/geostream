@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Hero, EventCard } from '../components/UI';
 import { MOCK_EVENTS, SCHEDULE } from '../constants';
-import { Calendar, TrendingUp, Play } from 'lucide-react';
+import { Calendar, TrendingUp, Play, Trash2, Edit3 } from 'lucide-react';
 import { supabase, Event } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { ADMIN_EMAILS } from '../constants';
 
 export default function Home() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
+
   const [events, setEvents] = useState<Event[]>(MOCK_EVENTS);
   const [highlights, setHighlights] = useState<any[]>([]);
   const [schedule, setSchedule] = useState<any[]>(SCHEDULE);
@@ -115,6 +122,24 @@ export default function Home() {
     };
   }, []);
 
+  const handleDelete = async (table: string, id: string) => {
+    if (!window.confirm('ნამდვილად გსურთ წაშლა?')) return;
+    try {
+      const { error } = await supabase.from(table).delete().eq('id', id);
+      if (error) throw error;
+      
+      // Refresh local state
+      if (table === 'site_events') setEvents(prev => prev.filter(e => e.id !== id));
+      if (table === 'site_highlights') setHighlights(prev => prev.filter(h => h.id !== id));
+      if (table === 'site_schedule') setSchedule(prev => prev.filter(s => (s.id && s.id !== id))); 
+      
+      // Full refresh to be sure
+      window.location.reload();
+    } catch (e) {
+      console.error('Delete error:', e);
+    }
+  };
+
   return (
     <div className="min-h-screen pb-20">
       <Hero activeBroadcast={activeBroadcast} />
@@ -134,8 +159,25 @@ export default function Home() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
+                  className="relative group/admin"
                 >
                   <EventCard event={event} />
+                  {isAdmin && (
+                    <div className="absolute top-4 right-4 z-30 flex gap-2 opacity-0 group-hover/admin:opacity-100 transition-opacity">
+                      <button 
+                        onClick={(e) => { e.preventDefault(); navigate('/admin'); }}
+                        className="p-2 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-brand-primary transition-colors"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.preventDefault(); handleDelete('site_events', event.id); }}
+                        className="p-2 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-red-600 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -197,7 +239,7 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {(highlights.length > 0 ? highlights : [1, 2, 3]).map((h, i) => (
-                <div key={h.id || i} className="space-y-4 group">
+                <div key={h.id || i} className="space-y-4 group relative">
                   <div className="aspect-[16/10] bg-brand-surface-light rounded-[1.5rem] overflow-hidden relative border border-brand-border group-hover:border-brand-primary/30 transition-colors">
                     <img 
                       src={h.thumbnail || `https://images.unsplash.com/photo-${1500000000000 + (i * 100)}?auto=format&fit=crop&q=80&w=800`}
@@ -210,6 +252,22 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
+                  {isAdmin && h.id && (
+                    <div className="absolute top-2 right-2 z-30 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => navigate('/admin')}
+                        className="p-2 bg-brand-surface/80 backdrop-blur-md border border-brand-border rounded-lg text-white hover:bg-brand-primary transition-colors"
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete('site_highlights', h.id)}
+                        className="p-2 bg-brand-surface/80 backdrop-blur-md border border-brand-border rounded-lg text-white hover:bg-red-600 transition-colors"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  )}
                   <h4 className="font-bold text-zinc-400 group-hover:text-zinc-100 transition-colors">
                     {h.title || `მომენტები: GeoStream სერიებიდან #${i}`}
                   </h4>
@@ -230,8 +288,24 @@ export default function Home() {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {SCHEDULE.map((item, idx) => (
-              <div key={idx} className="p-6 bento-card bg-zinc-900/20 flex flex-col justify-between h-36 group hover:bg-brand-primary/5 transition-colors">
+            {schedule.map((item, idx) => (
+              <div key={item.id || idx} className="p-6 bento-card bg-zinc-900/20 flex flex-col justify-between h-36 group relative hover:bg-brand-primary/5 transition-colors">
+                {isAdmin && item.id && (
+                  <div className="absolute top-2 right-2 z-30 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => navigate('/admin')}
+                      className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-brand-primary transition-colors"
+                    >
+                      <Edit3 size={10} />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete('site_schedule', item.id)}
+                      className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-red-600 transition-colors"
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  </div>
+                )}
                 <div className="flex justify-between items-start">
                   <span className="text-[10px] font-black text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded uppercase tracking-widest">{item.sport}</span>
                   <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{item.time} დღეს</span>
