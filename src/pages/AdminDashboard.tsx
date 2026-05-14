@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard } from 'lucide-react';
+import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { MOCK_EVENTS } from '../constants';
 
@@ -14,10 +14,38 @@ export default function AdminDashboard() {
   const [highlights, setHighlights] = useState<any[]>([]);
   const [schedule, setSchedule] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCMSData();
   }, [activeTab]);
+
+  const handleFileUpload = async (file: File, bucket: string = 'site-assets') => {
+    try {
+      setUploading(bucket);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('ფოტოს ატვირთვა ვერ მოხერხდა');
+      return null;
+    } finally {
+      setUploading(null);
+    }
+  };
 
   const fetchCMSData = async () => {
     setLoading(true);
@@ -61,7 +89,7 @@ export default function AdminDashboard() {
 
   const [newStream, setNewStream] = useState({ title: '', sport: '', thumbnail: '', room_name: '' });
   const [newHighlight, setNewHighlight] = useState({ title: '', thumbnail: '' });
-  const [newSchedule, setNewSchedule] = useState({ team1: '', team2: '', time: '', sport: '' });
+  const [newSchedule, setNewSchedule] = useState({ team1: '', team2: '', time: '', sport: '', thumbnail: '' });
 
   const addStream = async () => {
     if (!newStream.title || !newStream.room_name) return;
@@ -78,9 +106,9 @@ export default function AdminDashboard() {
   };
 
   const addSchedule = async () => {
-    if (!newSchedule.team1 || !newSchedule.team2) return;
+    if (!newSchedule.team1 || !newSchedule.team2 || !newSchedule.time) return;
     await supabase.from('site_schedule').insert([newSchedule]);
-    setNewSchedule({ team1: '', team2: '', time: '', sport: '' });
+    setNewSchedule({ team1: '', team2: '', time: '', sport: '', thumbnail: '' });
     fetchCMSData();
   };
 
@@ -194,12 +222,29 @@ export default function AdminDashboard() {
                     onChange={(e) => setNewStream({ ...newStream, room_name: e.target.value })}
                     className="bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
                   />
-                  <input 
-                    placeholder="სურათის URL" 
-                    value={newStream.thumbnail}
-                    onChange={(e) => setNewStream({ ...newStream, thumbnail: e.target.value })}
-                    className="bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
-                  />
+                  <div className="flex gap-2">
+                    <input 
+                      placeholder="სურათის URL" 
+                      value={newStream.thumbnail}
+                      onChange={(e) => setNewStream({ ...newStream, thumbnail: e.target.value })}
+                      className="flex-1 bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
+                    />
+                    <label className="cursor-pointer bg-brand-surface border border-brand-border p-3 rounded-xl hover:bg-brand-surface-light transition-colors flex items-center justify-center min-w-[50px]">
+                      {uploading === 'stream-thumbs' ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const url = await handleFileUpload(file, 'stream-thumbs');
+                            if (url) setNewStream({ ...newStream, thumbnail: url });
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
                 <button onClick={addStream} className="w-full bg-brand-primary py-4 rounded-xl font-black uppercase text-xs tracking-widest">დამატება</button>
               </div>
@@ -236,12 +281,29 @@ export default function AdminDashboard() {
                     onChange={(e) => setNewHighlight({ ...newHighlight, title: e.target.value })}
                     className="bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
                   />
-                  <input 
-                    placeholder="სურათის URL" 
-                    value={newHighlight.thumbnail}
-                    onChange={(e) => setNewHighlight({ ...newHighlight, thumbnail: e.target.value })}
-                    className="bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
-                  />
+                  <div className="flex gap-2">
+                    <input 
+                      placeholder="სურათის URL" 
+                      value={newHighlight.thumbnail}
+                      onChange={(e) => setNewHighlight({ ...newHighlight, thumbnail: e.target.value })}
+                      className="flex-1 bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
+                    />
+                    <label className="cursor-pointer bg-brand-surface border border-brand-border p-3 rounded-xl hover:bg-brand-surface-light transition-colors flex items-center justify-center min-w-[50px]">
+                      {uploading === 'highlight-thumbs' ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const url = await handleFileUpload(file, 'highlight-thumbs');
+                            if (url) setNewHighlight({ ...newHighlight, thumbnail: url });
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
                 <button onClick={addHighlight} className="w-full bg-brand-primary py-4 rounded-xl font-black uppercase text-xs tracking-widest">დამატება</button>
               </div>
@@ -266,46 +328,94 @@ export default function AdminDashboard() {
             <section className="space-y-6">
               <div className="bento-card p-8 bg-zinc-900/40 space-y-6">
                 <h3 className="text-xl font-black uppercase italic italic text-brand-primary flex items-center gap-2">
-                  <Calendar size={20} /> განრიგის დამატება
+                  <Calendar size={20} /> ლაივის დაგეგმვა (მატჩის განრიგი)
                 </h3>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <input 
-                    placeholder="გუნდი 1" 
-                    value={newSchedule.team1}
-                    onChange={(e) => setNewSchedule({ ...newSchedule, team1: e.target.value })}
-                    className="bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
-                  />
-                  <input 
-                    placeholder="გუნდი 2" 
-                    value={newSchedule.team2}
-                    onChange={(e) => setNewSchedule({ ...newSchedule, team2: e.target.value })}
-                    className="bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
-                  />
-                  <input 
-                    placeholder="დრო (მაგ: 21:45)" 
-                    value={newSchedule.time}
-                    onChange={(e) => setNewSchedule({ ...newSchedule, time: e.target.value })}
-                    className="bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
-                  />
-                  <input 
-                    placeholder="სპორტი" 
-                    value={newSchedule.sport}
-                    onChange={(e) => setNewSchedule({ ...newSchedule, sport: e.target.value })}
-                    className="bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
-                  />
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">პირველი გუნდი</label>
+                    <input 
+                      placeholder="მაგ: რეალ მადრიდი" 
+                      value={newSchedule.team1}
+                      onChange={(e) => setNewSchedule({ ...newSchedule, team1: e.target.value })}
+                      className="w-full bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">მეორე გუნდი</label>
+                    <input 
+                      placeholder="მაგ: ბარსელონა" 
+                      value={newSchedule.team2}
+                      onChange={(e) => setNewSchedule({ ...newSchedule, team2: e.target.value })}
+                      className="w-full bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">დაწყების დრო</label>
+                    <input 
+                      type="datetime-local"
+                      value={newSchedule.time}
+                      onChange={(e) => setNewSchedule({ ...newSchedule, time: e.target.value })}
+                      className="w-full bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary text-white" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სპორტის სახეობა</label>
+                    <input 
+                      placeholder="მაგ: ფეხბურთი" 
+                      value={newSchedule.sport}
+                      onChange={(e) => setNewSchedule({ ...newSchedule, sport: e.target.value })}
+                      className="w-full bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
+                    />
+                  </div>
+                  <div className="space-y-2 lg:col-span-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">POSTER (URL ან ატვირთვა)</label>
+                    <div className="flex gap-2">
+                      <input 
+                        placeholder="https://images.unsplash.com/..." 
+                        value={newSchedule.thumbnail}
+                        onChange={(e) => setNewSchedule({ ...newSchedule, thumbnail: e.target.value })}
+                        className="flex-1 bg-black border border-brand-border p-3 rounded-xl outline-none focus:border-brand-primary" 
+                      />
+                      <label className="cursor-pointer bg-brand-surface border border-brand-border p-3 rounded-xl hover:bg-brand-surface-light transition-colors flex items-center justify-center min-w-[50px]">
+                        {uploading === 'schedule-thumbs' ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+                        <input 
+                          type="file" 
+                          className="hidden" 
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const url = await handleFileUpload(file, 'schedule-thumbs');
+                              if (url) setNewSchedule({ ...newSchedule, thumbnail: url });
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
                 </div>
-                <button onClick={addSchedule} className="w-full bg-brand-primary py-4 rounded-xl font-black uppercase text-xs tracking-widest">დამატება</button>
+                <button onClick={addSchedule} className="w-full bg-brand-primary py-4 rounded-xl font-black uppercase text-xs tracking-widest hover:scale-[1.01] transition-transform">სისტემაში დამატება</button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {schedule.map((sc) => (
-                  <div key={sc.id} className="p-4 bento-card bg-zinc-900/40 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold">{sc.team1} VS {sc.team2}</h4>
-                      <p className="text-[10px] text-zinc-500 uppercase">{sc.sport} • {sc.time}</p>
+                  <div key={sc.id} className="p-4 bento-card bg-zinc-900/40 flex items-center justify-between group">
+                    <div className="flex items-center gap-4">
+                      {sc.thumbnail && <img src={sc.thumbnail} className="w-16 h-10 object-cover rounded-lg border border-white/5" alt="" />}
+                      <div>
+                        <h4 className="font-black italic uppercase tracking-tighter">{sc.team1} <span className="text-brand-primary">VS</span> {sc.team2}</h4>
+                        <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">
+                          {sc.sport} • {new Date(sc.time).toLocaleString('ka-GE', { 
+                            day: 'numeric', 
+                            month: 'long', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </p>
+                      </div>
                     </div>
-                    <button onClick={() => deleteItem('site_schedule', sc.id)} className="text-zinc-600 hover:text-red-500">
-                      <Trash2 size={16} />
+                    <button onClick={() => deleteItem('site_schedule', sc.id)} className="p-2 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all">
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 ))}
