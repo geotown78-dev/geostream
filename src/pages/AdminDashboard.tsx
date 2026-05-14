@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { storage } from '../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { MOCK_EVENTS } from '../constants';
 
 export default function AdminDashboard() {
@@ -22,6 +24,10 @@ export default function AdminDashboard() {
 
   const handleFileUpload = async (file: File, bucket: string = 'site-assets') => {
     try {
+      if (!storage) {
+        throw new Error('Firebase Storage არ არის კონფიგურირებული. გთხოვთ დაამატოთ Firebase-ის პარამეტრები Settings-დან.');
+      }
+
       // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         alert('ფაილის ზომა არ უნდა აღემატებოდეს 5MB-ს');
@@ -31,27 +37,22 @@ export default function AdminDashboard() {
       setUploading(bucket);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = `uploads/${fileName}`;
 
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file);
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, filePath);
+      await uploadBytes(storageRef, file);
+      const publicUrl = await getDownloadURL(storageRef);
 
       return publicUrl;
     } catch (error: any) {
-      console.error('Error uploading image:', error);
-      let errorMsg = 'ფოტოს ატვირთვა ვერ მოხერხდა';
+      console.error('Error uploading image to Firebase:', error);
+      let errorMsg = 'ფოტოს ატვირთვა ვერ მოხერხდა Firebase-ზე';
       
-      if (error.message === 'Bucket not found') {
-        errorMsg = 'შეცდომა: საცავი "site-assets" ვერ მოიძებნა.\n\nგთხოვთ შეამოწმოთ Supabase-ში:\n1. ბუკეტის სახელი ზუსტად არის "site-assets".\n2. ბუკეტი არის "Public".\n3. Policies ტაბში დაამატეთ ახალი პოლიტიკა: "Allow access for authenticated users" და მონიშნეთ INSERT, SELECT, UPDATE.';
-      } else if (error.message?.includes('policy') || error.status === 403 || error.status === 401) {
-        errorMsg = 'შეცდომა: წვდომა უარყოფილია (Policy error).\n\nგთხოვთ Supabase Storage -> Policies-ში "site-assets" ბუკეტისთვის დაამატეთ უფლება (INSERT და SELECT) მომხმარებლებისთვის.';
+      if (error.code === 'storage/unauthorized') {
+        errorMsg = 'შეცდომა: წვდომა უარყოფილია (Firebase Storage Rules).\n\nგთხოვთ Firebase Console-ში Storage -> Rules-ში დაამატეთ უფლება (allow read, write).';
+      } else if (error.message.includes('Firebase Storage არ არის კონფიგურირებული')) {
+        errorMsg = error.message;
       } else {
         errorMsg += `: ${error.message || 'უცნობი შეცდომა'}`;
       }
