@@ -152,7 +152,7 @@ export default function BroadcasterRoom() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <p className="text-red-400 mb-4">{error}</p>
-        <button onClick={() => navigate('/admin')} className="text-brand-primary underline">Back to Admin</button>
+        <button onClick={() => navigate('/admin')} className="text-brand-primary underline">ადმინზე დაბრუნება</button>
       </div>
     );
   }
@@ -162,7 +162,7 @@ export default function BroadcasterRoom() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="animate-spin text-brand-primary mx-auto" size={40} />
-          <p className="text-xs font-black uppercase tracking-widest text-zinc-500">Preparing Studio...</p>
+          <p className="text-xs font-black uppercase tracking-widest text-zinc-500">სტუდია მზადდება...</p>
         </div>
       </div>
     );
@@ -192,9 +192,9 @@ export default function BroadcasterRoom() {
             </button>
             <div>
               <h1 className="text-2xl font-black italic uppercase tracking-tighter">
-                STUDIO: <span className="text-brand-primary">{roomId}</span>
+                სტუდია: <span className="text-brand-primary">{roomId}</span>
               </h1>
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Administrator Broadcast Mode</p>
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">ადმინისტრატორის ტრანსლაციის რეჟიმი</p>
             </div>
           </div>
           
@@ -204,11 +204,11 @@ export default function BroadcasterRoom() {
               className="bg-brand-surface border border-brand-border px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-brand-border transition-all"
              >
                <Terminal size={16} className="text-brand-primary" />
-               OBS Setup
+               OBS-ის გამართვა
              </button>
              <div className="bg-red-600 text-white px-3 py-1 rounded-md text-[10px] font-black flex items-center gap-2 uppercase">
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> 
-                ON AIR
+                ეთერშია
               </div>
               <button 
                 onClick={toggleGlobalPause}
@@ -220,7 +220,7 @@ export default function BroadcasterRoom() {
                 )}
               >
                 {isPausedGlobal ? <Share2 size={12} className="rotate-90" /> : <Pause size={12} fill="currentColor" />}
-                {isPausedGlobal ? 'Resume Stream' : 'Pause Global'}
+                {isPausedGlobal ? 'გაგრძელება' : 'გლობალური პაუზა'}
               </button>
           </div>
         </div>
@@ -229,7 +229,7 @@ export default function BroadcasterRoom() {
           <div className="mb-6 bento-card p-6 bg-brand-primary/10 border-brand-primary/30 animate-in fade-in slide-in-from-top-4">
              <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h2 className="text-lg font-black uppercase text-brand-primary mb-2 italic">Stream via OBS (Recommended for 60 FPS)</h2>
+                  <h2 className="text-lg font-black uppercase text-brand-primary mb-2 italic">სტრიმი OBS-დან (რეკომენდირებულია 60 FPS-ისთვის)</h2>
                   <p className="text-xs text-zinc-400 max-w-2xl">
                     საუკეთესო ხარისხის და 60 FPS-ის მისაღებად გამოიყენეთ OBS.
                   </p>
@@ -247,16 +247,16 @@ export default function BroadcasterRoom() {
                   activeTab === 'virtual' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
                 )}
                >
-                 Virtual Camera (Easiest)
+                 Virtual Camera
                </button>
                <button 
                 onClick={() => setActiveTab('whip')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-[10px) font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                   activeTab === 'whip' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
                 )}
                >
-                 WHIP (Direct)
+                 WHIP (პირდაპირი)
                </button>
                <button 
                 onClick={() => {
@@ -268,7 +268,7 @@ export default function BroadcasterRoom() {
                   activeTab === 'rtmp' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
                 )}
                >
-                 RTMP (Legacy)
+                 RTMP (ძველი)
                </button>
              </div>
 
@@ -339,7 +339,7 @@ export default function BroadcasterRoom() {
                  {isGeneratingIngress ? (
                    <div className="py-8 flex flex-col items-center justify-center gap-3">
                      <Loader2 className="animate-spin text-brand-primary" size={24} />
-                     <p className="text-[10px] font-black uppercase text-zinc-500">Generating RTMP Endpoint...</p>
+                     <p className="text-[10px] font-black uppercase text-zinc-500">RTMP მისამართი იქმნება...</p>
                    </div>
                  ) : ingressData ? (
                    <>
@@ -360,19 +360,19 @@ export default function BroadcasterRoom() {
                      <div className="mt-4 p-4 bg-black/40 rounded-lg border border-white/10 space-y-3">
                         <h3 className="text-[10px] font-black uppercase text-brand-primary tracking-widest">OBS Settings for RTMP:</h3>
                         <p className="text-[10px] text-zinc-400">
-                          Settings {'>'} Stream {'>'} Service: <b>Custom...</b> {'>'} Server: [RTMP URL] {'>'} Stream Key: [Stream Key]
+                          პარამეტრები {'>'} სტრიმი {'>'} სერვისი: <b>Custom...</b> {'>'} სერვერი: [RTMP URL] {'>'} სტრიმის გასაღები: [Stream Key]
                         </p>
                       </div>
                    </>
                  ) : (
                    <div className="py-8 text-center bg-red-500/5 rounded-xl border border-red-500/10">
-                     <p className="text-xs text-red-400 mb-2 font-bold uppercase tracking-wider italic">RTMP ERROR</p>
-                     <p className="text-[10px] text-zinc-500 mb-4 px-6">{ingressError || "RTMP Ingress not available."}</p>
+                     <p className="text-xs text-red-400 mb-2 font-bold uppercase tracking-wider italic">RTMP შეცდომა</p>
+                     <p className="text-[10px] text-zinc-500 mb-4 px-6">{ingressError || "RTMP Ingress მიუწვდომელია."}</p>
                      <button 
                       onClick={generateIngress}
                       className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all"
                      >
-                       Try Again
+                       თავიდან ცდა
                      </button>
                    </div>
                  )}
@@ -423,7 +423,7 @@ export default function BroadcasterRoom() {
               <Monitor size={24} />
             </div>
             <div>
-              <h3 className="font-black uppercase text-sm tracking-tight text-yellow-500">Broadcaster Tip</h3>
+              <h3 className="font-black uppercase text-sm tracking-tight text-yellow-500">რჩევა სტრიმერისთვის</h3>
               <p className="text-xs text-zinc-400">ეკრანის გასაზიარებლად გამოიყენეთ <b>"Share Screen"</b> ღილაკი ვიდეო პანელზე. საუკეთესო ხარისხისთვის დარწმუნდით, რომ გაქვთ სტაბილური ინტერნეტ კავშირი.</p>
             </div>
           </div>
