@@ -95,15 +95,18 @@ export default function Home() {
     async function fetchCMSData() {
       try {
         // Fetch Events
-        const { data: eData } = await supabase.from('site_events').select('*').order('created_at', { ascending: false });
+        const { data: eData, error: eErr } = await supabase.from('site_events').select('*').order('created_at', { ascending: false });
+        if (eErr) console.warn('Error fetching site_events:', eErr);
         if (eData && eData.length > 0) setEvents(eData);
 
         // Fetch Highlights
-        const { data: hData } = await supabase.from('site_highlights').select('*').order('created_at', { ascending: false });
+        const { data: hData, error: hErr } = await supabase.from('site_highlights').select('*').order('created_at', { ascending: false });
+        if (hErr) console.warn('Error fetching site_highlights:', hErr);
         if (hData && hData.length > 0) setHighlights(hData);
 
         // Fetch Schedule
-        const { data: scData } = await supabase.from('site_schedule').select('*').order('created_at', { ascending: false });
+        const { data: scData, error: scErr } = await supabase.from('site_schedule').select('*').order('created_at', { ascending: false });
+        if (scErr) console.warn('Error fetching site_schedule:', scErr);
         if (scData && scData.length > 0) setSchedule(scData);
 
       } catch (err) {
