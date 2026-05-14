@@ -154,8 +154,19 @@ export default function LiveRoom() {
 
     // Check initial pause state and subscribe
     const syncPauseState = async () => {
-      const { data } = await supabase.from('active_streams').select('is_paused').eq('id', 'global-stream').single();
-      if (data) setIsGlobalPaused(!!data.is_paused);
+      try {
+        const { data, error } = await supabase.from('active_streams').select('is_paused').eq('id', 'global-stream').single();
+        if (error) {
+          if (error.code === 'PGRST205') {
+            console.warn('active_streams table not found. Please create it in Supabase.');
+          } else {
+            throw error;
+          }
+        }
+        if (data) setIsGlobalPaused(!!data.is_paused);
+      } catch (err) {
+        console.error('Error syncing pause state:', err);
+      }
     };
 
     syncPauseState();
