@@ -58,6 +58,17 @@ export default function BroadcasterRoom() {
   const [ingressData, setIngressData] = useState<any>(null);
   const [isGeneratingIngress, setIsGeneratingIngress] = useState(false);
   const [ingressError, setIngressError] = useState<string>('');
+  const [isPausedGlobal, setIsPausedGlobal] = useState(false);
+
+  const toggleGlobalPause = async () => {
+    const nextState = !isPausedGlobal;
+    setIsPausedGlobal(nextState);
+    try {
+      await supabase.from('active_streams').update({ is_paused: nextState }).eq('id', 'global-stream');
+    } catch (e) {
+      console.error('Failed to sync pause state:', e);
+    }
+  };
 
   const generateIngress = async () => {
     if (ingressData || isGeneratingIngress) return;
@@ -199,6 +210,18 @@ export default function BroadcasterRoom() {
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> 
                 ON AIR
               </div>
+              <button 
+                onClick={toggleGlobalPause}
+                className={cn(
+                  "px-4 py-1.5 rounded-md text-[10px] font-black flex items-center gap-2 uppercase transition-all border",
+                  isPausedGlobal 
+                    ? "bg-yellow-500 text-black border-yellow-400" 
+                    : "bg-white/5 text-white border-white/10 hover:bg-white/10"
+                )}
+              >
+                {isPausedGlobal ? <Share2 size={12} className="rotate-90" /> : <Pause size={12} fill="currentColor" />}
+                {isPausedGlobal ? 'Resume Stream' : 'Pause Global'}
+              </button>
           </div>
         </div>
 
@@ -254,19 +277,27 @@ export default function BroadcasterRoom() {
                  <div className="bg-black/40 p-5 rounded-xl border border-white/5">
                    <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                      <Camera size={18} className="text-brand-primary" />
-                     როგორ გამოვიყენოთ Virtual Camera (რეკომენდებულია)
+                     როგორ გამოვიყენოთ Virtual Camera (ვიდეოსთვის)
                    </h3>
                    <ol className="text-xs text-zinc-400 space-y-3 list-decimal pl-4 leading-relaxed">
-                     <li>გახსენით <b>OBS</b> და გაამზადეთ სცენა.</li>
-                     <li>დააჭირეთ ღილაკს <b>"Start Virtual Camera"</b> (OBS-ის მარჯვენა ქვედა კუთხეში).</li>
-                     <li>ამ გვერდზე (ბრაუზერში), დააჭირეთ ქვემოთ <b>Camera</b> ღილაკს.</li>
-                     <li>აირჩიეთ <b>"OBS Virtual Camera"</b>.</li>
-                     <li><b>მზად არის!</b> ბრაუზერი პირდაპირ OBS-იდან აიღებს მაღალი ხარისხის გამოსახულებას.</li>
+                     <li>გახსენით <b>OBS</b> და დააჭირეთ <b>"Start Virtual Camera"</b>.</li>
+                     <li>ამ გვერდზე ქვემოთ, კამერის ღილაკით აირჩიეთ <b>"OBS Virtual Camera"</b>.</li>
                    </ol>
                  </div>
-                 <p className="text-[10px] text-zinc-500 italic">
-                   * ეს მეთოდი ყველაზე სტაბილურია და არ საჭიროებს სერვერის რთულ კონფიგურაციებს.
-                 </p>
+
+                 <div className="bg-brand-primary/5 p-5 rounded-xl border border-brand-primary/20">
+                   <h3 className="text-sm font-bold text-brand-primary mb-3 flex items-center gap-2">
+                     <Mic size={18} />
+                     როგორ გამოვუშვათ ხმა (Audio)
+                   </h3>
+                   <div className="text-xs text-zinc-300 space-y-3 leading-relaxed">
+                     <p>რადგან Virtual Camera ხმას არ გადასცემს, გამოიყენეთ ერთ-ერთი გზა:</p>
+                     <ul className="list-disc pl-4 space-y-2">
+                       <li><b>Screen Share:</b> ქვედა პანელზე დააჭირეთ <b>Share Screen</b>, აირჩიეთ OBS-ის ფანჯარა და მონიშნეთ <b>"Share system audio"</b>.</li>
+                       <li><b>Microphone:</b> თუ Mic-ს ჩართავთ, ბრაუზერი თქვენს ხმას აიღებს. თუ გინდათ კომპიუტერის ხმა ისმოდეს, Windows-ის პარამეტრებში Mic-ად აირჩიეთ <b>"Stereo Mix"</b>.</li>
+                     </ul>
+                   </div>
+                 </div>
                </div>
              )}
 
