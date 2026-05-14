@@ -93,6 +93,10 @@ export default function Home() {
       .subscribe();
 
     async function fetchCMSData() {
+      if (!supabase || !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('placeholder')) {
+        setLoading(false);
+        return;
+      }
       try {
         // Fetch Events
         const { data: eData, error: eErr } = await supabase.from('events').select('*').order('created_at', { ascending: false });
