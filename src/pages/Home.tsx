@@ -13,9 +13,9 @@ export default function Home() {
   const { user } = useAuth();
   const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
 
-  const [events, setEvents] = useState<Event[]>(MOCK_EVENTS);
+  const [events, setEvents] = useState<Event[]>([]);
   const [highlights, setHighlights] = useState<any[]>([]);
-  const [schedule, setSchedule] = useState<any[]>(SCHEDULE);
+  const [schedule, setSchedule] = useState<any[]>([]);
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [onlineCount, setOnlineCount] = useState(1);
@@ -153,7 +153,7 @@ export default function Home() {
               <div className="bg-brand-surface border border-brand-border px-3 py-1 rounded-full text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">ლაივ რეჟიმი</div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {events.map((event) => (
+              {events.length > 0 ? events.map((event) => (
                 <motion.div
                   key={event.id}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -179,7 +179,11 @@ export default function Home() {
                     </div>
                   )}
                 </motion.div>
-              ))}
+              )) : (
+                <div className="col-span-full py-20 text-center border-2 border-dashed border-zinc-800 rounded-[2rem]">
+                  <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">ლაივები არ არის</p>
+                </div>
+              )}
             </div>
           </section>
 
@@ -231,20 +235,20 @@ export default function Home() {
         </div>
 
         {/* Trending Highlights */}
-        {(highlights.length > 0 || !loading) && (
+        {highlights.length > 0 && (
           <section className="bento-card p-8 bg-brand-surface/40">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-black italic tracking-tighter uppercase">პოპულარული <span className="text-brand-primary">მომენტები</span></h2>
               <TrendingUp size={20} className="text-brand-primary" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {(highlights.length > 0 ? highlights : [1, 2, 3]).map((h, i) => (
+              {highlights.map((h, i) => (
                 <div key={h.id || i} className="space-y-4 group relative">
                   <div className="aspect-[16/10] bg-brand-surface-light rounded-[1.5rem] overflow-hidden relative border border-brand-border group-hover:border-brand-primary/30 transition-colors">
                     <img 
-                      src={h.thumbnail || `https://images.unsplash.com/photo-${1500000000000 + (i * 100)}?auto=format&fit=crop&q=80&w=800`}
+                      src={h.thumbnail}
                       className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
-                      alt={h.title || "Highlight"}
+                      alt={h.title}
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="w-12 h-12 bg-brand-primary rounded-full flex items-center justify-center shadow-lg">
@@ -269,7 +273,7 @@ export default function Home() {
                     </div>
                   )}
                   <h4 className="font-bold text-zinc-400 group-hover:text-zinc-100 transition-colors">
-                    {h.title || `მომენტები: GeoStream სერიებიდან #${i}`}
+                    {h.title}
                   </h4>
                 </div>
               ))}
@@ -278,45 +282,47 @@ export default function Home() {
         )}
 
         {/* Upcoming Schedule */}
-        <section className="pb-12">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-black italic tracking-tighter uppercase">ლაივების <span className="text-brand-primary">განრიგი</span></h2>
-            <div className="flex gap-2">
-              <div className="w-2 h-2 rounded-full bg-brand-primary" />
-              <div className="w-2 h-2 rounded-full bg-zinc-800" />
-              <div className="w-2 h-2 rounded-full bg-zinc-800" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {schedule.map((item, idx) => (
-              <div key={item.id || idx} className="p-6 bento-card bg-zinc-900/20 flex flex-col justify-between h-36 group relative hover:bg-brand-primary/5 transition-colors">
-                {isAdmin && item.id && (
-                  <div className="absolute top-2 right-2 z-30 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={() => navigate('/admin')}
-                      className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-brand-primary transition-colors"
-                    >
-                      <Edit3 size={10} />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete('site_schedule', item.id)}
-                      className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-red-600 transition-colors"
-                    >
-                      <Trash2 size={10} />
-                    </button>
-                  </div>
-                )}
-                <div className="flex justify-between items-start">
-                  <span className="text-[10px] font-black text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded uppercase tracking-widest">{item.sport}</span>
-                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{item.time} დღეს</span>
-                </div>
-                <div className="text-lg font-black tracking-tight leading-none group-hover:text-brand-primary transition-colors">
-                  {item.team1} <span className="text-zinc-600 block text-sm font-normal">წინააღმდეგ</span> {item.team2}
-                </div>
+        {schedule.length > 0 && (
+          <section className="pb-12">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-black italic tracking-tighter uppercase">ლაივების <span className="text-brand-primary">განრიგი</span></h2>
+              <div className="flex gap-2">
+                <div className="w-2 h-2 rounded-full bg-brand-primary" />
+                <div className="w-2 h-2 rounded-full bg-zinc-800" />
+                <div className="w-2 h-2 rounded-full bg-zinc-800" />
               </div>
-            ))}
-          </div>
-        </section>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {schedule.map((item, idx) => (
+                <div key={item.id || idx} className="p-6 bento-card bg-zinc-900/20 flex flex-col justify-between h-36 group relative hover:bg-brand-primary/5 transition-colors">
+                  {isAdmin && item.id && (
+                    <div className="absolute top-2 right-2 z-30 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => navigate('/admin')}
+                        className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-brand-primary transition-colors"
+                      >
+                        <Edit3 size={10} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete('site_schedule', item.id)}
+                        className="p-1.5 bg-brand-surface border border-brand-border rounded-lg text-white hover:bg-red-600 transition-colors"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] font-black text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded uppercase tracking-widest">{item.sport}</span>
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{item.time} დღეს</span>
+                  </div>
+                  <div className="text-lg font-black tracking-tight leading-none group-hover:text-brand-primary transition-colors">
+                    {item.team1} <span className="text-zinc-600 block text-sm font-normal">წინააღმდეგ</span> {item.team2}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );
