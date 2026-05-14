@@ -15,10 +15,10 @@ export function Navbar() {
   const { user, signOut } = useAuth();
   
   const navItems = [
-    { name: 'HOME', path: '/' },
-    { name: 'LIVE', path: '/live' },
-    { name: 'SCHEDULE', path: '/schedule' },
-    { name: 'TEAMS', path: '/teams' },
+    { name: 'მთავარი', path: '/' },
+    { name: 'ლაივი', path: '/live' },
+    { name: 'განრიგი', path: '/schedule' },
+    { name: 'გუნდები', path: '/teams' },
   ];
 
   return (
@@ -29,7 +29,7 @@ export function Navbar() {
             <Play fill="white" size={20} className="ml-1" />
           </div>
           <span className="text-2xl font-bold tracking-tight uppercase italic flex items-center">
-            APEX <span className="text-brand-primary ml-1">STREAM</span>
+            GEO <span className="text-brand-primary ml-1">STREAM</span>
           </span>
         </Link>
 
@@ -89,7 +89,7 @@ export function Navbar() {
               to="/login"
               className="px-6 py-2 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all"
             >
-              LOGIN
+              შესვლა
             </Link>
           )}
         </div>
@@ -114,20 +114,20 @@ export function Hero({ activeBroadcast }: { activeBroadcast?: any }) {
             : "bg-zinc-800/20 text-zinc-500 border-zinc-500/30"
         )}>
           <span className={cn("w-2 h-2 rounded-full", activeBroadcast ? "bg-red-500" : "bg-zinc-600")}></span> 
-          {activeBroadcast ? 'Live Network Active' : 'Network Standby'}
+          {activeBroadcast ? 'ქსელი აქტიურია' : 'ქსელი მოლოდინშია'}
         </div>
         <h1 className="text-6xl md:text-8xl font-black tracking-tight mb-8 text-white drop-shadow-2xl uppercase">
           {activeBroadcast ? (
-            <>STREAMING NOW: <span className="text-brand-primary">{activeBroadcast.room_id}</span></>
+            <>ახლა გადის: <span className="text-brand-primary">{activeBroadcast.room_id}</span></>
           ) : (
-            'ELEVATE YOUR GAME'
+            'აიყვანე თამაში ახალ დონეზე'
           )}
         </h1>
         <Link 
           to={activeBroadcast ? `/watch/${activeBroadcast.room_id}` : "/live"} 
           className="inline-flex items-center gap-3 px-10 py-5 bg-brand-primary text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_-10px_rgba(99,102,241,0.5)]"
         >
-          {activeBroadcast ? 'JOIN STREAM' : 'WATCH APEX LIVE'}
+          {activeBroadcast ? 'შემოუერთდით' : 'უყურეთ GEOSTREAM-ზე'}
           <Play fill="white" size={16} />
         </Link>
       </div>
@@ -150,17 +150,17 @@ export function EventCard({ event }: { event: any }) {
           {event.is_live && (
             <div className="bg-red-600 text-white px-2 py-1 rounded-md text-[9px] font-black flex items-center gap-1.5 uppercase transition-transform group-hover:scale-105">
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> 
-              LIVE
+              ლაივი
             </div>
           )}
           <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider">
-            4K STREAM
+            4K სტრიმი
           </div>
         </div>
 
         <div className="absolute bottom-6 left-6 right-6">
           <h3 className="text-xl font-black mb-1 group-hover:text-brand-primary transition-colors">{event.title}</h3>
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Hosted by Apex Network</p>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">მოწოდებულია GeoStream ქსელის მიერ</p>
         </div>
       </div>
     </Link>
