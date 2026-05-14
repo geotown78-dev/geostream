@@ -20,7 +20,7 @@ export default function AdminDashboard() {
     fetchCMSData();
   }, [activeTab]);
 
-  const handleFileUpload = async (file: File, folder: string = 'uploads') => {
+  const handleFileUpload = async (file: File, folder: string = 'private') => {
     const bucketName = 'SITE-ASSETS';
     try {
       // Check file size (5MB limit)
@@ -53,8 +53,8 @@ export default function AdminDashboard() {
       console.error('Error uploading image to Supabase:', error);
       let errorMsg = 'ფოტოს ატვირთვა ვერ მოხერხდა';
       
-      if (error.message === 'Bucket not found') {
-        errorMsg = `შეცდომა: საცავი "${bucketName}" ვერ მოიძებნა.\n\nგთხოვთ Supabase Dashboard-ზე:\n1. გადადით Storage განყოფილებაში\n2. შექმენით ახალი ბუკეტი სახელით "${bucketName}"\n3. გახადეთ ის "Public"`;
+      if (error.message === 'Bucket not found' || error.error === 'Bucket not found') {
+        errorMsg = `შეცდომა: საცავი "${bucketName}" ვერ მოიძებნა.\n\nგთხოვთ Supabase Dashboard-ზე:\n1. გადადით Storage განყოფილებაში\n2. დარწმუნდით რომ გაქვთ ბუკეტი სახელით "${bucketName}"\n3. გახადეთ ის "Public"`;
       } else if (error.error === 'Payload too large') {
         errorMsg = 'შეცდომა: ფაილი ზედმეტად დიდია.';
       } else if (error.message?.includes('policy')) {
@@ -73,10 +73,15 @@ export default function AdminDashboard() {
   const fetchCMSData = async () => {
     setLoading(true);
     try {
-      const { data: sData } = await supabase.from('site_events').select('*').order('created_at', { ascending: false });
-      const { data: hData } = await supabase.from('site_highlights').select('*').order('created_at', { ascending: false });
-      const { data: scData } = await supabase.from('site_schedule').select('*').order('created_at', { ascending: false });
+      // Use underscores as per standard Supabase naming
+      const { data: sData, error: sErr } = await supabase.from('site_events').select('*').order('created_at', { ascending: false });
+      const { data: hData, error: hErr } = await supabase.from('site_highlights').select('*').order('created_at', { ascending: false });
+      const { data: scData, error: scErr } = await supabase.from('site_schedule').select('*').order('created_at', { ascending: false });
       
+      if (sErr) console.error('Error fetching site_events:', sErr);
+      if (hErr) console.error('Error fetching site_highlights:', hErr);
+      if (scErr) console.error('Error fetching site_schedule:', scErr);
+
       if (sData) setStreams(sData);
       if (hData) setHighlights(hData);
       if (scData) setSchedule(scData);
