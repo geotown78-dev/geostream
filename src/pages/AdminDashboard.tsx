@@ -22,6 +22,12 @@ export default function AdminDashboard() {
 
   const handleFileUpload = async (file: File, bucket: string = 'site-assets') => {
     try {
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('ფაილის ზომა არ უნდა აღემატებოდეს 5MB-ს');
+        return null;
+      }
+
       setUploading(bucket);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -38,9 +44,9 @@ export default function AdminDashboard() {
         .getPublicUrl(filePath);
 
       return publicUrl;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      alert('ფოტოს ატვირთვა ვერ მოხერხდა');
+      alert(`ფოტოს ატვირთვა ვერ მოხერხდა: ${error.message || 'გთხოვთ დარწმუნდეთ, რომ Supabase Storage-ში შექმნილი გაქვთ საჯარო bucket სახელად "site-assets".'}`);
       return null;
     } finally {
       setUploading(null);
@@ -238,7 +244,7 @@ export default function AdminDashboard() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const url = await handleFileUpload(file, 'stream-thumbs');
+                            const url = await handleFileUpload(file, 'site-assets');
                             if (url) setNewStream({ ...newStream, thumbnail: url });
                           }
                         }}
@@ -297,7 +303,7 @@ export default function AdminDashboard() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const url = await handleFileUpload(file, 'highlight-thumbs');
+                            const url = await handleFileUpload(file, 'site-assets');
                             if (url) setNewHighlight({ ...newHighlight, thumbnail: url });
                           }
                         }}
@@ -385,7 +391,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const url = await handleFileUpload(file, 'schedule-thumbs');
+                              const url = await handleFileUpload(file, 'site-assets');
                               if (url) setNewSchedule({ ...newSchedule, thumbnail: url });
                             }
                           }}
