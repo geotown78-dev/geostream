@@ -10,16 +10,19 @@ export default function AuthPage({ mode = 'login' }: { mode?: 'login' | 'registe
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [success, setSuccess] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(false);
 
     try {
       if (mode === 'register') {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        alert('რეგისტრაცია წარმატებულია! გთხოვთ შეამოწმოთ იმეილი აქტივაციისთვის.');
+        setSuccess(true);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -40,13 +43,19 @@ export default function AuthPage({ mode = 'login' }: { mode?: 'login' | 'registe
             {mode === 'login' ? 'ავტორიზაცია' : 'რეგისტრაცია'}
           </h1>
           <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest leading-none">
-            Welcome to Apex Stream Network
+            კეთილი იყოს თქვენი მობრძანება GeoStream ქსელში
           </p>
         </div>
 
         {error && (
           <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold rounded-xl animate-in shake duration-300">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="p-4 bg-brand-secondary/10 border border-brand-secondary/20 text-brand-secondary text-xs font-bold rounded-xl animate-in slide-in-from-top-4 duration-300">
+            რეგისტრაცია წარმატებულია! გთხოვთ შეამოწმოთ იმეილი აქტივაციისთვის.
           </div>
         )}
 
