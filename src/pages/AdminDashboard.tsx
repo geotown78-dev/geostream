@@ -124,21 +124,41 @@ export default function AdminDashboard() {
 
   const addStream = async () => {
     if (!newStream.title || !newStream.room_name) return;
-    await supabase.from('events').insert([{ ...newStream, is_live: true, start_time: new Date().toISOString() }]);
+    const { error } = await supabase.from('events').insert([{ ...newStream, is_live: true, start_time: new Date().toISOString() }]);
+    if (error) {
+      if (error.message.includes('column')) {
+        alert('შეცდომა: მონაცემთა ბაზაში აკლია "is_exclusive" სვეტი. გთხოვთ დაამატოთ ის SQL Editor-ში.');
+      } else {
+        alert('დამატება ვერ მოხერხდა: ' + error.message);
+      }
+      return;
+    }
     setNewStream({ title: '', sport: '', thumbnail: '', room_name: '', is_exclusive: false });
     fetchCMSData();
   };
 
   const addHighlight = async () => {
     if (!newHighlight.title) return;
-    await supabase.from('highlights').insert([newHighlight]);
+    const { error } = await supabase.from('highlights').insert([newHighlight]);
+    if (error) {
+      alert('დამატება ვერ მოხერხდა: ' + error.message);
+      return;
+    }
     setNewHighlight({ title: '', thumbnail: '' });
     fetchCMSData();
   };
 
   const addSchedule = async () => {
     if (!newSchedule.team1 || !newSchedule.team2 || !newSchedule.time) return;
-    await supabase.from('schedule').insert([newSchedule]);
+    const { error } = await supabase.from('schedule').insert([newSchedule]);
+    if (error) {
+      if (error.message.includes('column')) {
+        alert('შეცდომა: მონაცემთა ბაზაში აკლია "is_exclusive" სვეტი. გთხოვთ დაამატოთ ის SQL Editor-ში.');
+      } else {
+        alert('დამატება ვერ მოხერხდა: ' + error.message);
+      }
+      return;
+    }
     setNewSchedule({ team1: '', team2: '', time: '', sport: '', thumbnail: '', is_exclusive: false });
     fetchCMSData();
   };
