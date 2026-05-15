@@ -160,7 +160,7 @@ export default function Home() {
               <div className="bg-brand-surface border border-brand-border px-3 py-1 rounded-full text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">ლაივ რეჟიმი</div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {events.length > 0 ? events.map((event) => (
+              {events.filter(e => e.title !== 'ლაივ მატჩი').length > 0 ? events.filter(e => e.title !== 'ლაივ მატჩი').map((event) => (
                 <motion.div
                   key={event.id}
                   initial={{ opacity: 0, scale: 0.95 }}
