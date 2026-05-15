@@ -1,0 +1,12 @@
+{
+  "name": "GeoStream",
+  "description": "ქართული სტრიმინგ პლატფორმა სპორტული და ლაივ ივენთებისთვის.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "live_streaming",
+    "realtime_database"
+  ]
+}
