@@ -18,12 +18,17 @@ export default function Home() {
     async function fetchData() {
       try {
         // Fetch Exclusive Event (priority: live event first, then schedule)
-        const { data: exLive } = await supabase.from('events').select('*').eq('is_exclusive', true).order('created_at', { ascending: false }).limit(1).single();
+        const { data: exLive, error: liveExErr } = await supabase.from('events').select('*').eq('is_exclusive', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
+        
         if (exLive) {
           setExclusiveEvent(exLive);
         } else {
-          const { data: exSched } = await supabase.from('schedule').select('*').eq('is_exclusive', true).order('time', { ascending: true }).limit(1).single();
+          const { data: exSched, error: schedExErr } = await supabase.from('schedule').select('*').eq('is_exclusive', true).order('time', { ascending: true }).limit(1).maybeSingle();
           if (exSched) setExclusiveEvent(exSched);
+          
+          if (liveExErr?.code === 'PGRST204' || schedExErr?.code === 'PGRST204' || liveExErr?.message?.includes('column')) {
+            console.warn('is_exclusive column missing in database. Please add it via SQL Editor.');
+          }
         }
 
         // Fetch Live Streams from 'events' table
@@ -49,7 +54,7 @@ export default function Home() {
           .from('active_streams')
           .select('*')
           .eq('id', 'global-stream')
-          .single();
+          .maybeSingle();
         
         if (streamData?.is_active) setActiveBroadcast(streamData);
 
