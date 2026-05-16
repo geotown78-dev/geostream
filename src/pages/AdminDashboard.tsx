@@ -100,27 +100,61 @@ export default function AdminDashboard() {
   const startStream = async (id: string) => {
     navigate(`/broadcast/${id}`);
     try {
-      // Update global stream
-      await supabase.from('active_streams').upsert({ 
+      // 1. Update global stream status
+      const { error: activeErr } = await supabase.from('active_streams').upsert({ 
         id: 'global-stream', 
         room_id: id, 
         is_active: true,
         updated_at: new Date().toISOString()
       });
+      
+      if (activeErr) console.warn('Active stream update failed:', activeErr);
 
-      // Also ensure it's in the events table as live and potentially exclusive
+      // 2. Sync with events table
       const title = id.replace(/-/g, ' ').toUpperCase();
-      await supabase.from('events').upsert({
+      
+      // We check if it exists first to avoid complex RLS issues with UPSERT
+      const { data: existingEvent } = await supabase
+        .from('events')
+        .select('id')
+        .eq('room_name', id)
+        .maybeSingle();
+
+      const eventData = {
         room_name: id,
         title: title,
         sport: sessionSport,
         is_live: true,
         is_exclusive: sessionIsExclusive,
         start_time: new Date().toISOString()
-      }, { onConflict: 'room_name' });
+      };
+
+      if (existingEvent) {
+        const { error: updateErr } = await supabase
+          .from('events')
+          .update(eventData)
+          .eq('id', existingEvent.id);
+        
+        if (updateErr) handleSupabaseError(updateErr, 'Events Update');
+      } else {
+        const { error: insertErr } = await supabase
+          .from('events')
+          .insert([eventData]);
+        
+        if (insertErr) handleSupabaseError(insertErr, 'Events Insert');
+      }
 
     } catch (e) {
-      console.warn('Supabase sync skipped or failed:', e);
+      console.warn('Supabase sync process encountered an error:', e);
+    }
+  };
+
+  const handleSupabaseError = (error: any, context: string) => {
+    console.error(`Supabase Error (${context}):`, error);
+    if (error.code === '42P10' || error.message?.includes('column')) {
+      alert(`მონაცემთა ბაზის შეცდომა: გთხოვთ SQL Editor-ში დაამატოთ "is_exclusive" და "room_name" სვეტები "events" ცხრილში.`);
+    } else if (error.status === 403 || error.message?.includes('policy')) {
+      alert(`წვდომა უარყოფილია (403): გთხოვთ Supabase-ში "events" ცხრილისთვის დაამატოთ INSERT და UPDATE პოლიტიკა ადმინისტრატორებისთვის.`);
     }
   };
 
