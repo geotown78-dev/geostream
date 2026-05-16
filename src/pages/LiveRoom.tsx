@@ -153,7 +153,12 @@ export default function LiveRoom() {
         
         if (error) throw error;
         if (data?.stream_url) {
-          setStreamUrl(data.stream_url);
+          let url = data.stream_url;
+          // Fix: Ensure URL ends with .m3u8 if it's our HLS path
+          if (url && url.includes('/hls/') && !url.endsWith('.m3u8')) {
+            url += '.m3u8';
+          }
+          setStreamUrl(url);
         }
       } catch (e: any) {
         console.error('Failed to fetch stream url:', e.message || e);
