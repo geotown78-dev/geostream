@@ -1,21 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  LiveKitRoom, 
-  VideoConference,
-  RoomAudioRenderer,
-  ControlBar,
-  useTracks,
-  VideoTrack,
-} from '@livekit/components-react';
-import { Track } from 'livekit-client';
 import { cn } from '../lib/utils';
-import '@livekit/components-styles';
 import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import HLSPlayer from '../components/HLSPlayer';
 
-function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
-  const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
+function ViewerStream({ 
+  streamUrl, 
+  isGlobalPaused 
+}: { 
+  streamUrl: string;
+  isGlobalPaused: boolean;
+}) {
   const [isPaused, setIsPaused] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
@@ -30,38 +26,24 @@ function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
     }
   };
 
-  const activeTrack = tracks.find(t => t.source === Track.Source.ScreenShare) || tracks.find(t => t.source === Track.Source.Camera);
-  const audioTrack = useTracks([Track.Source.Microphone, Track.Source.ScreenShareAudio])[0];
-
-  useEffect(() => {
-    if (audioTrack?.publication?.track) {
-      const vol = isMuted || isGlobalPaused ? 0 : volume;
-      // @ts-ignore
-      audioTrack.publication.track.setVolume(vol);
-    }
-  }, [audioTrack, volume, isMuted, isGlobalPaused]);
-
   const effectivePaused = isPaused || isGlobalPaused;
 
   return (
     <div ref={containerRef} className="relative h-full w-full group overflow-hidden bg-black">
-      {activeTrack ? (
-        <VideoTrack 
-          trackRef={activeTrack} 
+      {streamUrl ? (
+        <HLSPlayer 
+          url={streamUrl}
+          autoPlay={!effectivePaused}
           className={cn(
             "h-full w-full object-contain transition-all duration-300",
             effectivePaused ? 'opacity-40 grayscale blur-sm' : ''
-          )} 
+          )}
         />
       ) : (
-        <div className="h-full w-full flex items-center justify-center text-zinc-500 font-black uppercase tracking-widest bg-zinc-950">
-          სტრიმის მოლოდინი...
+        <div className="h-full w-full flex items-center justify-center text-zinc-500 font-black uppercase tracking-widest bg-zinc-950 px-8 text-center leading-relaxed">
+          საკუთარი VDS სტრიმის URL არ არის მითითებული ან სტრიმი არ არის აქტიური...
         </div>
       )}
-
-      {/* Audio is rendered globally, we can't easily mute individual tracks here without more complex logic, 
-          but as a viewer with only one stream, it works well enough to just use RoomAudioRenderer.
-          Actually, for a real pause, we'd want to stop track subscription or mute the element. */}
       
       {effectivePaused && (
         <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
@@ -78,7 +60,6 @@ function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
         </div>
       )}
 
-      {/* Control Overlay */}
       <div className={cn(
         "absolute inset-x-0 bottom-0 p-4 sm:p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity z-30",
         effectivePaused ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -102,11 +83,10 @@ function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
               {effectivePaused ? (isGlobalPaused ? 'დაპაუზებულია ადმინის მიერ' : 'დაპაუზებულია') : 'ლაივი'}
             </span>
             <span className="text-[10px] sm:text-xs font-bold text-white uppercase tracking-tighter">
-              {activeTrack?.source === Track.Source.ScreenShare ? 'ეკრანის გაზიარება' : 'კამერა'}
+              პირდაპირი სტრიმი VDS-იდან
             </span>
           </div>
           
-          {/* Volume Control */}
           <div className="hidden xs:flex items-center gap-3 ml-2 sm:ml-6 bg-black/40 p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/5 backdrop-blur-md">
              <button 
               onClick={() => setIsMuted(!isMuted)}
@@ -145,31 +125,47 @@ function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
 export default function LiveRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const [token, setToken] = useState<string>('');
+  const [streamUrl, setStreamUrl] = useState<string>('');
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [isGlobalPaused, setIsGlobalPaused] = useState(false);
 
   useEffect(() => {
     if (!roomId) return;
 
-    // Check initial pause state and subscribe
     const syncPauseState = async () => {
       try {
         const { data, error } = await supabase.from('active_streams').select('is_paused').eq('id', 'global-stream').single();
-        if (error) {
-          if (error.code === 'PGRST205') {
-            console.warn('active_streams table not found. Please create it in Supabase.');
-          } else {
-            throw error;
-          }
-        }
         if (data) setIsGlobalPaused(!!data.is_paused);
       } catch (err) {
         console.error('Error syncing pause state:', err);
       }
     };
 
+    const fetchStreamInfo = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('events')
+          .select('stream_url')
+          .eq('room_name', roomId)
+          .single();
+        
+        if (error) throw error;
+        if (data?.stream_url) {
+          setStreamUrl(data.stream_url);
+        }
+      } catch (e) {
+        console.error('Failed to fetch stream url:', e);
+        // Default to a placeholder if needed, or error out
+         setError('სტრიმის ინფორმაცია ვერ მოიძებნა ბაზაში.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     syncPauseState();
+    fetchStreamInfo();
 
     const channel = supabase
       .channel('pause-sync')
@@ -183,22 +179,6 @@ export default function LiveRoom() {
       })
       .subscribe();
 
-    const fetchToken = async () => {
-      try {
-        const participantName = `viewer-${Math.floor(Math.random() * 10000)}`;
-        const resp = await fetch(`/api/get-token?roomName=${roomId}&participantName=${participantName}`);
-        const data = await resp.json();
-        
-        if (data.error) throw new Error(data.error);
-        setToken(data.token);
-      } catch (e) {
-        console.error(e);
-        setError('Failed to load stream. Please make sure the backend is running and LiveKit is configured.');
-      }
-    };
-
-    fetchToken();
-
     return () => {
       supabase.removeChannel(channel);
     };
@@ -208,15 +188,18 @@ export default function LiveRoom() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <p className="text-red-400 mb-4">{error}</p>
-        <button onClick={() => navigate('/')} className="text-brand-cyan underline">Back Home</button>
+        <button onClick={() => navigate('/')} className="text-brand-cyan underline">მთავარზე დაბრუნება</button>
       </div>
     );
   }
 
-  if (!token) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-brand-cyan" size={40} />
+        <div className="text-center space-y-4">
+          <Loader2 className="animate-spin text-brand-primary mx-auto" size={40} />
+          <p className="text-xs font-black uppercase tracking-widest text-zinc-500">მზადდება...</p>
+        </div>
       </div>
     );
   }
@@ -271,19 +254,7 @@ export default function LiveRoom() {
         {/* Main Stream Area */}
         <div className="col-span-12 lg:col-span-9 flex flex-col gap-4 sm:gap-6 h-full overflow-hidden">
           <div className="aspect-video sm:flex-1 bg-brand-surface rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-brand-border relative group shadow-2xl">
-            <LiveKitRoom
-              video={false}
-              audio={false}
-              token={token}
-              serverUrl={import.meta.env.VITE_LIVEKIT_URL}
-              onDisconnected={() => navigate('/')}
-              adaptiveStream={true}
-              data-lk-theme="default"
-              className="h-full w-full viewer-mode"
-            >
-              <ViewerStream isGlobalPaused={isGlobalPaused} />
-              <RoomAudioRenderer />
-            </LiveKitRoom>
+            <ViewerStream streamUrl={streamUrl} isGlobalPaused={isGlobalPaused} />
             
             {/* Custom Overlay */}
             <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex gap-2 sm:gap-3 pointer-events-none">
