@@ -130,20 +130,53 @@ export function Navbar() {
 }
 
 export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: any, exclusiveEvent?: any }) {
+  const [timeLeft, setTimeLeft] = React.useState({ days: '00', hours: '00', minutes: '00', seconds: '00' });
+
   // Only render match info if exclusiveEvent or activeBroadcast is present
   const displayMatch = exclusiveEvent ? {
     title: exclusiveEvent.team1 ? `${exclusiveEvent.team1} VS ${exclusiveEvent.team2}` : exclusiveEvent.title,
     event: exclusiveEvent.sport || exclusiveEvent.league || "FEATURED EVENT",
     date: exclusiveEvent.time ? new Date(exclusiveEvent.time).toLocaleString('ka-GE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : "ახლა პირდაპირ ეთერში",
     image: exclusiveEvent.thumbnail || "https://images.unsplash.com/photo-1504450758481-7338ef7535af?auto=format&fit=crop&q=80&w=2000",
-    room_id: exclusiveEvent.room_name || exclusiveEvent.id
+    room_id: exclusiveEvent.room_name || exclusiveEvent.id,
+    targetDate: exclusiveEvent.time ? new Date(exclusiveEvent.time) : null
   } : activeBroadcast ? {
     title: activeBroadcast.room_id.replace(/-/g, ' ').toUpperCase(),
     event: "LIVE BROADCAST",
     date: "მიმდინარეობს პირდაპირი ეთერი",
     image: "https://images.unsplash.com/photo-1541252260730-0412e3e2108e?auto=format&fit=crop&q=80&w=2000",
-    room_id: activeBroadcast.room_id
+    room_id: activeBroadcast.room_id,
+    targetDate: null
   } : null;
+
+  React.useEffect(() => {
+    if (!displayMatch?.targetDate) return;
+
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = displayMatch.targetDate!.getTime() - now;
+
+      if (distance < 0) {
+        clearInterval(timer);
+        setTimeLeft({ days: '00', hours: '00', minutes: '00', seconds: '00' });
+        return;
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setTimeLeft({
+        days: days.toString().padStart(2, '0'),
+        hours: hours.toString().padStart(2, '0'),
+        minutes: minutes.toString().padStart(2, '0'),
+        seconds: seconds.toString().padStart(2, '0')
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [displayMatch?.targetDate]);
 
   return (
     <section className="relative h-[500px] rounded-2xl overflow-hidden mb-12 group bg-brand-surface border border-brand-border">
@@ -192,7 +225,7 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
                   className="flex items-center gap-3 px-8 py-4 bg-brand-primary text-white font-black uppercase tracking-widest text-xs rounded-lg hover:bg-brand-primary-dark transition-all transform hover:scale-105 shadow-2xl shadow-brand-primary/40"
                 >
                   <Play fill="currentColor" size={18} />
-                  ლაივ სტრიმი
+                  {displayMatch.targetDate && new Date() < displayMatch.targetDate ? 'დაგეგმილია' : 'ლაივ სტრიმი'}
                 </Link>
                 <button className="flex items-center gap-3 px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-black uppercase tracking-widest text-xs rounded-lg transition-all backdrop-blur-md border border-white/10">
                   დეტალები
@@ -200,19 +233,21 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
               </div>
             </div>
 
-            <div className="absolute right-12 top-12 flex gap-4">
-              {[
-                { label: 'დღე', value: '00' },
-                { label: 'სთ', value: '00' },
-                { label: 'წთ', value: '00' },
-                { label: 'წმ', value: '00' }
-              ].map((item, i) => (
-                <div key={i} className="glass-card p-4 min-w-[70px] text-center">
-                  <div className="text-xl font-black text-white leading-none">{item.value}</div>
-                  <div className="text-[9px] font-black text-brand-primary uppercase mt-1">{item.label}</div>
-                </div>
-              ))}
-            </div>
+            {displayMatch.targetDate && (
+              <div className="absolute right-12 top-12 flex gap-4">
+                {[
+                  { label: 'დღე', value: timeLeft.days },
+                  { label: 'სთ', value: timeLeft.hours },
+                  { label: 'წთ', value: timeLeft.minutes },
+                  { label: 'წმ', value: timeLeft.seconds }
+                ].map((item, i) => (
+                  <div key={i} className="glass-card p-4 min-w-[70px] text-center">
+                    <div className="text-xl font-black text-white leading-none whitespace-nowrap">{item.value}</div>
+                    <div className="text-[9px] font-black text-brand-primary uppercase mt-1">{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       ) : (
@@ -289,42 +324,50 @@ export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: 
   const time = date.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   return (
-    <div className="group relative block bg-brand-surface border border-brand-border rounded-xl p-5 hover:border-brand-primary/30 transition-all">
-      <div className="flex justify-between items-start mb-6">
-        <div className="flex flex-col items-center">
-          <div className="bg-brand-primary text-[8px] font-black px-2 py-0.5 rounded-t w-full text-center">{month}</div>
-          <div className="bg-white/5 w-full text-center py-1 text-sm font-black rounded-b border-x border-b border-brand-border">{day}</div>
+    <div className="group relative block bg-brand-surface border border-brand-border rounded-xl p-5 hover:border-brand-primary/30 transition-all overflow-hidden">
+      {event.thumbnail && (
+        <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity">
+          <img src={event.thumbnail} className="w-full h-full object-cover" alt="" />
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-[10px] font-black text-zinc-400">{time}</div>
-          {isAdmin && onDelete && (
-            <button 
-              onClick={() => onDelete(event.id)}
-              className="p-1.5 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
-            >
-              <Trash2 size={12} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center gap-6 mb-6">
-        <div className="text-center flex-1">
-          <div className="w-10 h-10 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
-            <Trophy size={16} className="text-zinc-400 group-hover:text-brand-primary transition-colors" />
+      )}
+      
+      <div className="relative z-10">
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex flex-col items-center">
+            <div className="bg-brand-primary text-[8px] font-black px-2 py-0.5 rounded-t w-full text-center">{month}</div>
+            <div className="bg-white/5 w-full text-center py-1 text-sm font-black rounded-b border-x border-b border-brand-border backdrop-blur-sm">{day}</div>
           </div>
-          <div className="text-[10px] font-black text-zinc-300 uppercase truncate">{event.team1 || 'TEAM A'}</div>
-        </div>
-        <div className="text-[10px] font-black italic text-zinc-700">VS</div>
-        <div className="text-center flex-1">
-          <div className="w-10 h-10 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
-            <Trophy size={16} className="text-zinc-400 group-hover:text-brand-primary transition-colors" />
+          <div className="flex items-center gap-3">
+            <div className="text-[10px] font-black text-zinc-400">{time}</div>
+            {isAdmin && onDelete && (
+              <button 
+                onClick={() => onDelete(event.id)}
+                className="p-1.5 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
           </div>
-          <div className="text-[10px] font-black text-zinc-300 uppercase truncate">{event.team2 || 'TEAM B'}</div>
         </div>
-      </div>
 
-      <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{event.sport || event.league || 'Event'}</div>
+        <div className="flex items-center justify-center gap-6 mb-6">
+          <div className="text-center flex-1">
+            <div className="w-10 h-10 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm group-hover:border-brand-primary/50 transition-all">
+              <Trophy size={16} className="text-zinc-400 group-hover:text-brand-primary transition-colors" />
+            </div>
+            <div className="text-[10px] font-black text-zinc-300 uppercase truncate">{event.team1 || 'TEAM A'}</div>
+          </div>
+          <div className="text-[10px] font-black italic text-brand-primary text-shadow-glow">VS</div>
+          <div className="text-center flex-1">
+            <div className="w-10 h-10 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm group-hover:border-brand-primary/50 transition-all">
+              <Trophy size={16} className="text-zinc-400 group-hover:text-brand-primary transition-colors" />
+            </div>
+            <div className="text-[10px] font-black text-zinc-300 uppercase truncate">{event.team2 || 'TEAM B'}</div>
+          </div>
+        </div>
+
+        <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{event.sport || event.league || 'Event'}</div>
+      </div>
     </div>
   );
 }
