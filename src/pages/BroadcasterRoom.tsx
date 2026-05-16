@@ -13,6 +13,7 @@ export default function BroadcasterRoom() {
   const [error, setError] = useState<string>('');
   const [isPausedGlobal, setIsPausedGlobal] = useState(false);
   const [activeTab, setActiveTab ] = useState<'preview' | 'setup'>('preview');
+  const vdsIp = localStorage.getItem('vds_ip') || '';
 
   const toggleGlobalPause = async () => {
     const nextState = !isPausedGlobal;
@@ -205,11 +206,26 @@ export default function BroadcasterRoom() {
               <div className="flex-1 p-8 space-y-8 overflow-y-auto custom-scrollbar">
                 {activeTab === 'preview' ? (
                   <div className="space-y-6">
-                    <div className="space-y-3">
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-brand-primary uppercase tracking-[0.2em]">OBS Server URL</label>
+                        <div className="p-3 bg-black rounded-lg border border-white/5 font-mono text-[10px] text-zinc-300 break-all select-all">
+                          rtmp://{vdsIp || 'YOUR_VDS_IP'}/live
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-brand-primary uppercase tracking-[0.2em]">OBS Stream Key</label>
+                        <div className="p-3 bg-black rounded-lg border border-white/5 font-mono text-[10px] text-brand-primary break-all select-all">
+                          {roomId}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t border-white/5">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                        <Terminal size={12} className="text-brand-primary" /> ACTIVE STREAM URL
+                        <Terminal size={12} className="text-zinc-500" /> PUBLIC HLS URL
                       </label>
-                      <div className="p-4 bg-black rounded-xl border border-white/5 font-mono text-[11px] text-brand-primary break-all leading-relaxed select-all">
+                      <div className="p-4 bg-black/40 rounded-xl border border-white/5 font-mono text-[10px] text-zinc-500 break-all leading-relaxed select-all">
                         {streamUrl || 'N/A'}
                       </div>
                     </div>
@@ -253,15 +269,15 @@ export default function BroadcasterRoom() {
                         </div>
                         <div className="flex gap-4">
                           <div className="w-6 h-6 rounded-lg bg-brand-primary text-black flex items-center justify-center shrink-0 font-black">2</div>
-                          <p>OBS Settings {'>'} Stream {'>'} სერვისი: <b>Custom</b>. სერვერი: <code>rtmp://VDS_IP/live</code></p>
+                          <p>OBS Settings {'>'} Stream {'>'} სერვისი: <b>Custom</b>. სერვერი: <code>rtmp://{vdsIp || 'VDS_IP'}/live</code></p>
                         </div>
                         <div className="flex gap-4">
                           <div className="w-6 h-6 rounded-lg bg-brand-primary text-black flex items-center justify-center shrink-0 font-black">3</div>
-                          <p>სტრიმის გასაღები (Key) დააყენეთ თქვენი სურვილისამებრ (მაგ: <code>mystream</code>).</p>
+                          <p>სტრიმის გასაღები (Key) დააყენეთ: <code>{roomId}</code></p>
                         </div>
                         <div className="flex gap-4">
                           <div className="w-6 h-6 rounded-lg bg-brand-primary text-black flex items-center justify-center shrink-0 font-black">4</div>
-                          <p>VDS სტრიმის მისამართი (HLS) იქნება: <code>http://VDS_IP:8888/live/mystream/index.m3u8</code></p>
+                          <p>VDS სტრიმის მისამართი (HLS) იქნება: <code>http://{vdsIp || 'VDS_IP'}:8888/live/{roomId}/index.m3u8</code></p>
                         </div>
                       </div>
                     </div>
