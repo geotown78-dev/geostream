@@ -141,8 +141,13 @@ export default function AdminDashboard() {
         .maybeSingle();
 
       // Auto-generate stream URL if not provided manually
-      // Defaulting to Nginx HLS path based on your screenshots (port 80)
-      const finalStreamUrl = streamUrl || (vdsIp ? `http://${vdsIp}/hls/${id}.m3u8` : '');
+      let finalStreamUrl = streamUrl;
+      if (!finalStreamUrl && vdsIp) {
+        finalStreamUrl = `http://${vdsIp}/hls/${id}.m3u8`;
+      } else if (finalStreamUrl && finalStreamUrl.includes('/hls/') && !finalStreamUrl.endsWith('.m3u8')) {
+        // Even if provided manually, if it's our HLS path, ensure extension
+        finalStreamUrl += '.m3u8';
+      }
 
       const eventData = {
         room_name: id,
