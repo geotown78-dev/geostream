@@ -1,254 +1,143 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, RefreshCw, TrendingUp, TrendingDown, Minus, Search, Radio, Calendar } from 'lucide-react';
+import React from 'react';
+import { motion } from 'motion/react';
+import { Trophy, ChevronUp, ChevronDown, Minus } from 'lucide-react';
 
-interface Standing {
-  rank: number;
-  team: string;
-  logo?: string;
-  played: number;
-  won: number;
-  drawn: number;
-  lost: number;
-  points: number;
-  gd?: number;
-}
+const LALIGA_LOGOS: Record<string, string> = {
+  'Barcelona': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_logo.svg/1200px-FC_Barcelona_logo.svg.png',
+  'Real Madrid': 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/1200px-Real_Madrid_CF.svg.png',
+  'Atletico Madrid': 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Atletico_madrid_2017_logo.svg/1200px-Atletico_madrid_2017_logo.svg.png',
+  'Villarreal': 'https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Villarreal_CF_logo.svg/1200px-Villarreal_CF_logo.svg.png',
+  'Athletic Club': 'https://upload.wikimedia.org/wikipedia/en/thumb/9/98/Club_Athletic_Bilbao_logo.svg/1200px-Club_Athletic_Bilbao_logo.svg.png',
+  'Real Sociedad': 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f1/Real_Sociedad_logo.svg/1200px-Real_Sociedad_logo.svg.png',
+  'Girona': 'https://upload.wikimedia.org/wikipedia/en/thumb/9/90/Girona_FC_logo.svg/1200px-Girona_FC_logo.svg.png',
+  'Real Betis': 'https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Real_Betis_logo.svg/1200px-Real_Betis_logo.svg.png',
+  'Osasuna': 'https://upload.wikimedia.org/wikipedia/en/thumb/d/db/CA_Osasuna_logo.svg/1200px-CA_Osasuna_logo.svg.png',
+  'Sevilla': 'https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Sevilla_FC_logo.svg/1200px-Sevilla_FC_logo.svg.png',
+};
+
+const leaderboardData = [
+  { rank: 1, name: 'Barcelona', played: 36, won: 28, drawn: 4, lost: 4, gf: 82, ga: 28, gd: 54, points: 88, status: 'up' },
+  { rank: 2, name: 'Real Madrid', played: 36, won: 26, drawn: 6, lost: 4, gf: 75, ga: 24, gd: 51, points: 84, status: 'down' },
+  { rank: 3, name: 'Atletico Madrid', played: 36, won: 22, drawn: 7, lost: 7, gf: 64, ga: 36, gd: 28, points: 73, status: 'same' },
+  { rank: 4, name: 'Villarreal', played: 36, won: 19, drawn: 8, lost: 9, gf: 58, ga: 42, gd: 16, points: 65, status: 'up' },
+  { rank: 5, name: 'Athletic Club', played: 36, won: 18, drawn: 9, lost: 9, gf: 55, ga: 34, gd: 21, points: 63, status: 'down' },
+  { rank: 6, name: 'Real Sociedad', played: 36, won: 17, drawn: 10, lost: 9, gf: 48, ga: 38, gd: 10, points: 61, status: 'same' },
+  { rank: 7, name: 'Girona', played: 36, won: 16, drawn: 8, lost: 12, gf: 52, ga: 45, gd: 7, points: 56, status: 'up' },
+  { rank: 8, name: 'Real Betis', played: 36, won: 14, drawn: 11, lost: 11, gf: 44, ga: 41, gd: 3, points: 53, status: 'same' },
+  { rank: 9, name: 'Osasuna', played: 36, won: 13, drawn: 9, lost: 14, gf: 39, ga: 46, gd: -7, points: 48, status: 'down' },
+  { rank: 10, name: 'Sevilla', played: 36, won: 12, drawn: 10, lost: 14, gf: 42, ga: 50, gd: -8, points: 46, status: 'up' },
+];
 
 export default function Leaderboard() {
-  const [standings, setStandings] = useState<Standing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const fetchStandings = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/leaderboard');
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.details || data.error || 'Failed to fetch');
-      }
-      setStandings(data);
-      setLastUpdated(new Date());
-    } catch (err: any) {
-      console.error('Leaderboard error:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStandings();
-    
-    // Auto update every 5 minutes
-    const interval = setInterval(fetchStandings, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const filteredStandings = standings.filter(s => 
-    s.team.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
-    <div className="min-h-screen bg-brand-black">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center border border-brand-primary/20">
-                <Trophy size={20} className="text-brand-primary" />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-primary">LALIGA EA SPORTS 2025/26</span>
+    <div className="min-h-screen pt-8 pb-20">
+      <div className="max-w-5xl mx-auto space-y-8">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-brand-primary">განახლებულია 2 წუთის წინ</span>
             </div>
-            <h1 className="text-4xl sm:text-6xl font-black italic tracking-tighter uppercase leading-none">
-              ლიდერბორდი
-            </h1>
+            <h1 className="text-4xl sm:text-5xl font-black tracking-tighter italic uppercase">La Liga <span className="text-brand-primary">ლიდერბორდი</span></h1>
+            <p className="text-zinc-500 font-bold uppercase text-xs tracking-widest">ესპანეთის ჩემპიონატი • 2025/26 სეზონი</p>
           </div>
-
-          <div className="flex items-center gap-4">
-            <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-brand-primary transition-colors" size={16} />
-              <input 
-                type="text"
-                placeholder="მოძებნე გუნდი..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-brand-surface border border-brand-border rounded-xl pl-12 pr-6 py-3 text-xs font-bold focus:outline-none focus:border-brand-primary/50 transition-all w-[240px]"
-              />
-            </div>
-            <button 
-              onClick={fetchStandings}
-              disabled={loading}
-              className="p-3 bg-brand-surface border border-brand-border rounded-xl hover:border-brand-primary/30 transition-all disabled:opacity-50 group"
-            >
-              <RefreshCw size={18} className={loading ? 'animate-spin text-brand-primary' : 'text-zinc-400 group-hover:text-brand-primary transition-colors'} />
-            </button>
-          </div>
-        </div>
-
-        {/* Info Bars */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="glass-card p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center border border-green-500/20">
-              <TrendingUp className="text-green-500" size={20} />
+          
+          <div className="flex items-center gap-4 bg-brand-surface border border-brand-border p-4 rounded-2xl">
+            <div className="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center">
+              <Trophy className="text-yellow-500" size={24} />
             </div>
             <div>
-              <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500">ბოლოს განახლდა</div>
-              <div className="text-sm font-black text-white">{lastUpdated.toLocaleTimeString('ka-GE')}</div>
+              <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">მიმდინარე ლიდერი</div>
+              <div className="text-lg font-black uppercase italic">Barcelona</div>
             </div>
           </div>
-          <div className="glass-card p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-brand-primary/10 rounded-full flex items-center justify-center border border-brand-primary/20">
-              <Radio className="text-brand-primary animate-pulse" size={20} />
-            </div>
-            <div>
-              <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500">სტატუსი</div>
-              <div className="text-sm font-black text-white">პირდაპირი განახლება</div>
-            </div>
-          </div>
-          <div className="glass-card p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center border border-blue-500/20">
-              <Calendar className="text-blue-500" size={20} />
-            </div>
-            <div>
-              <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500">სეზონი</div>
-              <div className="text-sm font-black text-white">2025/2026 Season</div>
-            </div>
-          </div>
-        </div>
+        </header>
 
-        {/* Table Section */}
-        <div className="glass-card overflow-hidden border border-brand-border rounded-[2rem] shadow-2xl">
-          <div className="overflow-x-auto no-scrollbar">
-            <table className="w-full text-left border-collapse min-w-[800px]">
+        {/* Table */}
+        <div className="bg-brand-surface border border-brand-border rounded-3xl overflow-hidden shadow-2xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-brand-surface/50 border-bottom border-brand-border">
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">POS</th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">TEAM</th>
-                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">P</th>
-                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">W</th>
-                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">D</th>
-                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">L</th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-brand-primary text-center">PTS</th>
-                  <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">FORM</th>
+                <tr className="bg-black/40 border-b border-brand-border">
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 w-16">#</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500">გუნდი</th>
+                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">თ</th>
+                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">მ</th>
+                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">ფ</th>
+                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">წ</th>
+                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">გატ</th>
+                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">გაშ</th>
+                  <th className="px-4 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">+/-</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-brand-primary text-center">ქულა</th>
                 </tr>
               </thead>
-              <tbody>
-                <AnimatePresence mode="popLayout">
-                  {error ? (
-                    <tr>
-                      <td colSpan={8} className="py-20 text-center">
-                        <div className="text-red-500 font-bold uppercase text-xs mb-2">შეცდომა განახლებისას</div>
-                        <div className="text-zinc-500 text-[10px] max-w-md mx-auto">{error}</div>
-                        <button 
-                          onClick={fetchStandings}
-                          className="mt-6 px-4 py-2 bg-brand-primary/10 border border-brand-primary/20 text-brand-primary text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-brand-primary/20 transition-all"
-                        >
-                          სცადეთ ხელახლა
-                        </button>
-                      </td>
-                    </tr>
-                  ) : loading && standings.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="py-20 text-center">
-                        <div className="inline-block w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-                        <div className="mt-4 text-zinc-500 font-bold uppercase text-[10px] tracking-widest">იტვირთება მონაცემები...</div>
-                      </td>
-                    </tr>
-                  ) : filteredStandings.map((team, idx) => (
-                    <motion.tr 
-                      key={team.team}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className="group hover:bg-white/5 transition-colors border-b border-brand-border/50 last:border-0"
-                    >
-                      <td className="px-8 py-5">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black italic text-sm ${
-                          team.rank <= 4 ? 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30' :
-                          team.rank >= 18 ? 'bg-red-500/20 text-red-500 border border-red-500/30' :
-                          'bg-white/5 text-zinc-400 border border-white/10'
-                        }`}>
-                          {team.rank}
+              <tbody className="divide-y divide-brand-border/50">
+                {leaderboardData.map((team, i) => (
+                  <motion.tr 
+                    key={team.name}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="hover:bg-white/5 transition-colors group cursor-default"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <span className={`text-sm font-black italic ${team.rank <= 4 ? 'text-brand-primary' : 'text-zinc-600'}`}>
+                          {team.rank.toString().padStart(2, '0')}
+                        </span>
+                        {team.status === 'up' && <ChevronUp size={12} className="text-green-500" />}
+                        {team.status === 'down' && <ChevronDown size={12} className="text-red-500" />}
+                        {team.status === 'same' && <Minus size={12} className="text-zinc-700" />}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-brand-border p-1.5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <img 
+                            src={LALIGA_LOGOS[team.name] || 'https://via.placeholder.com/40'} 
+                            alt={team.name}
+                            className="w-full h-full object-contain"
+                          />
                         </div>
-                      </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center border border-white/10 overflow-hidden group-hover:border-brand-primary/50 transition-all p-1">
-                            <img 
-                              src={`https://api.dicebear.com/7.x/initials/svg?seed=${team.team}&backgroundColor=transparent&fontFamily=Arial&fontWeight=900&fontSize=40`} 
-                              className="w-full h-full"
-                              alt=""
-                            />
-                          </div>
-                          <div>
-                            <div className="text-sm font-black uppercase tracking-tight group-hover:text-brand-primary transition-colors">{team.team}</div>
-                            <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">LALIGA Santander</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-5 text-center font-mono font-bold text-sm text-zinc-400">{team.played}</td>
-                      <td className="px-4 py-5 text-center font-mono font-bold text-sm text-zinc-300">{team.won}</td>
-                      <td className="px-4 py-5 text-center font-mono font-bold text-sm text-zinc-400">{team.drawn}</td>
-                      <td className="px-4 py-5 text-center font-mono font-bold text-sm text-zinc-500">{team.lost}</td>
-                      <td className="px-8 py-5 text-center font-mono font-black text-xl text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">
+                        <span className="font-black uppercase italic tracking-tight group-hover:text-brand-primary transition-colors">{team.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-center text-xs font-bold text-zinc-400">{team.played}</td>
+                    <td className="px-4 py-4 text-center text-xs font-bold text-zinc-300">{team.won}</td>
+                    <td className="px-4 py-4 text-center text-xs font-bold text-zinc-300">{team.drawn}</td>
+                    <td className="px-4 py-4 text-center text-xs font-bold text-zinc-300">{team.lost}</td>
+                    <td className="px-4 py-4 text-center text-xs font-bold text-zinc-500">{team.gf}</td>
+                    <td className="px-4 py-4 text-center text-xs font-bold text-zinc-500">{team.ga}</td>
+                    <td className="px-4 py-4 text-center text-xs font-bold text-zinc-400">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="px-3 py-1 bg-brand-primary text-white font-black italic rounded text-sm shadow-lg shadow-brand-primary/20">
                         {team.points}
-                      </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {team.rank <= 3 ? (
-                            <>
-                              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
-                              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
-                              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
-                              <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
-                              <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-8 py-6 border-t border-brand-border/30">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded bg-brand-primary/30 border border-brand-primary"></div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Champions League Qualification</span>
+        <div className="flex flex-wrap gap-6 text-[9px] font-black uppercase tracking-widest text-zinc-500 px-6">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded bg-brand-primary" />
+            <span>ჩემპიონთა ლიგა</span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded bg-white/5 border border-white/10"></div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Mid Table</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded bg-yellow-500" />
+            <span>ევროპა ლიგა</span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded bg-red-500/30 border border-red-500"></div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Relegation Zone</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded bg-blue-500" />
+            <span>კონფერენს ლიგა</span>
           </div>
         </div>
       </div>
-
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 }
