@@ -9,7 +9,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '../contexts/AuthContext';
 import { ADMIN_EMAILS } from '../constants';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -23,7 +23,7 @@ export function Sidebar() {
     { icon: HomeIcon, path: '/', label: 'მთავარი' },
     { icon: Trophy, path: '/sports', label: 'სპორტი' },
     { icon: Radio, path: '/live', label: 'ლაივი' },
-    { icon: BarChart3, path: '/leaderboard', label: 'ლიდერბორდი' },
+    { icon: BarChart3, path: '/stats', label: 'რეიტინგები' },
     { icon: Users, path: '/fighters', label: 'მებრძოლები' },
   ];
 
