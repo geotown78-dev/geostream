@@ -17,19 +17,24 @@ interface Standing {
 export default function Leaderboard() {
   const [standings, setStandings] = useState<Standing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchStandings = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/leaderboard');
-      if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.details || data.error || 'Failed to fetch');
+      }
       setStandings(data);
       setLastUpdated(new Date());
-    } catch (err) {
+    } catch (err: any) {
       console.error('Leaderboard error:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -134,7 +139,20 @@ export default function Leaderboard() {
               </thead>
               <tbody>
                 <AnimatePresence mode="popLayout">
-                  {loading && standings.length === 0 ? (
+                  {error ? (
+                    <tr>
+                      <td colSpan={8} className="py-20 text-center">
+                        <div className="text-red-500 font-bold uppercase text-xs mb-2">შეცდომა განახლებისას</div>
+                        <div className="text-zinc-500 text-[10px] max-w-md mx-auto">{error}</div>
+                        <button 
+                          onClick={fetchStandings}
+                          className="mt-6 px-4 py-2 bg-brand-primary/10 border border-brand-primary/20 text-brand-primary text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-brand-primary/20 transition-all"
+                        >
+                          სცადეთ ხელახლა
+                        </button>
+                      </td>
+                    </tr>
+                  ) : loading && standings.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-20 text-center">
                         <div className="inline-block w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
