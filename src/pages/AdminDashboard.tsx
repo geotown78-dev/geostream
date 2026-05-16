@@ -106,7 +106,7 @@ export default function AdminDashboard() {
         room_id: id, 
         is_active: true,
         updated_at: new Date().toISOString()
-      });
+      }, { onConflict: 'id' });
       
       if (activeErr) console.warn('Active stream update failed:', activeErr);
 
@@ -158,10 +158,38 @@ export default function AdminDashboard() {
     }
   };
 
-  const deleteItem = async (table: string, id: string) => {
+  const stopBroadcast = async () => {
     try {
-      await supabase.from(table).delete().eq('id', id);
+      // Stop the global stream
+      const { error: activeErr } = await supabase.from('active_streams').update({ 
+        is_active: false,
+        updated_at: new Date().toISOString()
+      }).eq('id', 'global-stream');
+      
+      if (activeErr) {
+        handleSupabaseError(activeErr, 'Stop Broadcast');
+      } else {
+        alert('ლაივი წარმატებით შეჩერდა');
+      }
+
+      // Optionally set all events to is_live = false
+      await supabase.from('events').update({ is_live: false }).eq('is_live', true);
+      
       fetchCMSData();
+    } catch (e) {
+      console.error('Stop broadcast error:', e);
+    }
+  };
+
+  const deleteItem = async (table: string, id: string) => {
+    if (!window.confirm('ნამდვილად გსურთ წაშლა?')) return;
+    try {
+      const { error } = await supabase.from(table).delete().eq('id', id);
+      if (error) {
+        handleSupabaseError(error, `Delete from ${table}`);
+      } else {
+        fetchCMSData();
+      }
     } catch (e) {
       alert('წაშლა ვერ მოხერხდა');
     }
@@ -248,6 +276,15 @@ export default function AdminDashboard() {
                   <Radio size={14} className="text-brand-primary" /> სესიის ინიციალიზაცია
                 </h2>
                 <div className="bento-card p-10 bg-brand-primary/5 border-brand-primary/20 space-y-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-black uppercase text-zinc-400">სტრიმის კონტროლი</h3>
+                    <button 
+                      onClick={stopBroadcast}
+                      className="px-4 py-2 bg-zinc-800 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2"
+                    >
+                      <StopCircle size={14} /> ყველა ლაივის შეჩერება
+                    </button>
+                  </div>
                   <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 items-end">
                     <div className="space-y-3 lg:col-span-2">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტრიმის ოთახის იდენტიფიკატორი</label>
@@ -301,23 +338,39 @@ export default function AdminDashboard() {
               <section className="space-y-6">
                 <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500">სწრაფი წვდომა სტრიმებზე</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {streams.filter(e => e.title !== 'ლაივ მატჩი').map((event) => (
+                  {streams.map((event) => (
                     <div key={event.id} className="p-6 bento-card bg-zinc-900/40 flex items-center justify-between group hover:border-brand-primary/30 transition-colors">
                       <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 rounded-2xl border border-brand-border overflow-hidden rotate-[-2deg] group-hover:rotate-0 transition-transform duration-500">
-                          <img src={event.thumbnail} className="w-full h-full object-cover" alt="" />
+                        <div className="w-16 h-16 rounded-2xl border border-brand-border overflow-hidden rotate-[-2deg] group-hover:rotate-0 transition-transform duration-500 bg-brand-surface">
+                          {event.thumbnail ? (
+                            <img src={event.thumbnail} className="w-full h-full object-cover" alt="" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Play className="text-brand-primary/20" size={24} />
+                            </div>
+                          )}
                         </div>
                         <div>
                           <h4 className="font-black text-xl tracking-tight leading-tight mb-1">{event.title}</h4>
-                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{event.sport} • {new Date(event.start_time).toLocaleTimeString()}</p>
+                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                            {event.sport} • {event.is_live ? <span className="text-brand-primary animate-pulse">LIVE NOW</span> : new Date(event.start_time).toLocaleTimeString()}
+                          </p>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => startStream(event.room_name)}
-                        className="px-6 py-3 bg-brand-surface border border-brand-border hover:bg-brand-primary hover:border-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
-                      >
-                        ჩართვა
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => startStream(event.room_name)}
+                          className="px-6 py-3 bg-brand-surface border border-brand-border hover:bg-brand-primary hover:border-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                        >
+                          ჩართვა (CONTROL)
+                        </button>
+                        <button 
+                          onClick={() => deleteItem('events', event.id)}
+                          className="p-3 bg-red-500/10 border border-red-500/20 hover:bg-red-500 hover:text-white text-red-500 rounded-xl transition-all"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -387,10 +440,16 @@ export default function AdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {streams.filter(e => e.title !== 'ლაივ მატჩი').map((s) => (
+                {streams.map((s) => (
                   <div key={s.id} className="p-4 bento-card bg-zinc-900/40 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <img src={s.thumbnail} className="w-12 h-12 object-cover rounded-lg" alt="" />
+                      {s.thumbnail ? (
+                        <img src={s.thumbnail} className="w-12 h-12 object-cover rounded-lg" alt="" />
+                      ) : (
+                        <div className="w-12 h-12 bg-black border border-brand-border rounded-lg flex items-center justify-center">
+                          <Play size={16} className="text-zinc-700" />
+                        </div>
+                      )}
                       <div>
                         <h4 className="font-bold">{s.title}</h4>
                         <p className="text-[10px] text-zinc-500 uppercase">{s.sport}</p>
