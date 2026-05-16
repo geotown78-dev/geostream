@@ -9,7 +9,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '../contexts/AuthContext';
 import { ADMIN_EMAILS } from '../constants';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
