@@ -9,6 +9,7 @@ export default function AdminDashboard() {
   const [team1, setTeam1] = useState('');
   const [team2, setTeam2] = useState('');
   const [roomId, setRoomId] = useState('');
+  const [streamUrl, setStreamUrl] = useState('');
   const [sessionSport, setSessionSport] = useState('Football');
   const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
   const [sessionThumbnail, setSessionThumbnail] = useState('');
@@ -142,6 +143,7 @@ export default function AdminDashboard() {
         is_live: true,
         is_exclusive: sessionIsExclusive,
         thumbnail: sessionThumbnail,
+        stream_url: streamUrl,
         start_time: new Date().toISOString()
       };
 
@@ -211,7 +213,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const [newStream, setNewStream] = useState({ title: '', sport: '', thumbnail: '', room_name: '', is_exclusive: false });
+  const [newStream, setNewStream] = useState({ title: '', sport: '', thumbnail: '', room_name: '', stream_url: '', is_exclusive: false });
   const [newHighlight, setNewHighlight] = useState({ title: '', thumbnail: '' });
   const [newSchedule, setNewSchedule] = useState({ team1: '', team2: '', time: '', sport: '', thumbnail: '', is_exclusive: false });
 
@@ -374,6 +376,16 @@ export default function AdminDashboard() {
                             />
                           </label>
                         </div>
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">VDS სტრიმის URL (HLS .m3u8)</label>
+                        <input 
+                          type="text" 
+                          value={streamUrl}
+                          onChange={(e) => setStreamUrl(e.target.value)}
+                          placeholder="მაგ: https://vds-ip:8888/stream/index.m3u8"
+                          className="w-full bg-black border border-brand-border rounded-xl px-5 py-3 focus:border-brand-primary outline-none transition-all font-mono text-xs text-brand-primary"
+                        />
                       </div>
                     </div>
 
