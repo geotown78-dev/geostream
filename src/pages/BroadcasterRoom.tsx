@@ -1,64 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  LiveKitRoom, 
-  VideoConference,
-  ControlBar,
-  useLocalParticipant,
-} from '@livekit/components-react';
-import '@livekit/components-styles';
-import { Loader2, ArrowLeft, Monitor, Mic, Camera, StopCircle, Share2, Terminal, Pause } from 'lucide-react';
-
+import { Loader2, ArrowLeft, Monitor, StopCircle, Share2, Terminal, Pause, Info, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
-
-function TrackEnhancer() {
-  const { localParticipant } = useLocalParticipant();
-
-  useEffect(() => {
-    const handleTrackPublished = (publication: any) => {
-      if ((publication.source === 'screen_share' || publication.source === 'camera') && publication.track) {
-        if (publication.track.mediaStreamTrack) {
-          // @ts-ignore
-          publication.track.mediaStreamTrack.contentHint = 'motion';
-          console.log(`Set contentHint to motion for ${publication.source}`);
-        }
-      }
-    };
-
-    localParticipant.on('trackPublished', handleTrackPublished);
-    
-    // Check existing tracks
-    localParticipant.trackPublications.forEach((p) => {
-      if ((p.source === 'screen_share' || p.source === 'camera') && p.track) {
-        if (p.track.mediaStreamTrack) {
-          // @ts-ignore
-          p.track.mediaStreamTrack.contentHint = 'motion';
-        }
-      }
-    });
-
-    return () => {
-      localParticipant.off('trackPublished', handleTrackPublished);
-    };
-  }, [localParticipant]);
-
-  return null;
-}
+import HLSPlayer from '../components/HLSPlayer';
 
 export default function BroadcasterRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const [token, setToken] = useState<string>('');
-  const [obsToken, setObsToken] = useState<string>('');
-  const [obsIdentity, setObsIdentity] = useState<string>('');
+  const [streamUrl, setStreamUrl] = useState<string>('');
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
-  const [isObsMenuOpen, setIsObsMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'whip' | 'rtmp' | 'virtual'>('virtual');
-  const [ingressData, setIngressData] = useState<any>(null);
-  const [isGeneratingIngress, setIsGeneratingIngress] = useState(false);
-  const [ingressError, setIngressError] = useState<string>('');
   const [isPausedGlobal, setIsPausedGlobal] = useState(false);
+  const [activeTab, setActiveTab ] = useState<'preview' | 'setup'>('preview');
 
   const toggleGlobalPause = async () => {
     const nextState = !isPausedGlobal;
@@ -74,37 +28,12 @@ export default function BroadcasterRoom() {
     }
   };
 
-  const generateIngress = async () => {
-    if (ingressData || isGeneratingIngress) return;
-    setIsGeneratingIngress(true);
-    setIngressError('');
-    try {
-      const resp = await fetch('/api/create-ingress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomName: roomId }),
-      });
-      const data = await resp.json();
-      if (data.error) {
-        setIngressError(data.details || data.error);
-        throw new Error(data.error);
-      }
-      setIngressData(data);
-    } catch (e: any) {
-      console.error(e);
-      setIngressError(e.message || 'Failed to initialize RTMP');
-    } finally {
-      setIsGeneratingIngress(false);
-    }
-  };
-
   const endStream = async () => {
     if (!supabase || !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('placeholder')) return;
     try {
       const { error } = await supabase.from('active_streams').update({ is_active: false }).eq('id', 'global-stream');
-      if (error && error.code === 'PGRST205') {
-        console.warn('active_streams table not found.');
-      }
+      // Also mark the specific event as not live
+      await supabase.from('events').update({ is_live: false }).eq('room_name', roomId);
     } catch (e) {
       console.error('Failed to end stream:', e);
     }
@@ -113,59 +42,44 @@ export default function BroadcasterRoom() {
   useEffect(() => {
     if (!roomId) return;
 
-    const fetchTokens = async () => {
+    const fetchStreamInfo = async () => {
       try {
-        // Browser token
-        const participantName = `admin-${Math.floor(Math.random() * 1000)}`;
-        const resp = await fetch(`/api/get-token?roomName=${roomId}&participantName=${participantName}`);
-        const data = await resp.json();
-        if (data.error) throw new Error(data.error);
-        setToken(data.token);
-
-        // OBS token (separate identity)
-        const newObsIdentity = `obs-${Math.floor(Math.random() * 100000)}`;
-        setObsIdentity(newObsIdentity);
-        const obsResp = await fetch(`/api/get-token?roomName=${roomId}&participantName=${newObsIdentity}`);
-        const obsData = await obsResp.json();
-        if (obsData.error) throw new Error(obsData.error);
-        setObsToken(obsData.token);
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('events')
+          .select('stream_url')
+          .eq('room_name', roomId)
+          .single();
+        
+        if (error) throw error;
+        if (data?.stream_url) {
+          setStreamUrl(data.stream_url);
+        }
       } catch (e) {
-        console.error(e);
-        setError('Failed to load broadcast session.');
+        console.error('Failed to fetch stream url:', e);
+         // setError('სტრიმის ინფორმაცია ვერ მოიძებნა ბაზაში.');
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchTokens();
+    fetchStreamInfo();
 
     return () => {
       endStream();
     };
   }, [roomId]);
 
-  const getWhipUrl = () => {
-    const base = import.meta.env.VITE_LIVEKIT_URL || '';
-    let protocol = base.startsWith('ws') 
-      ? base.replace('wss://', 'https://').replace('ws://', 'http://') 
-      : (base.includes('://') ? base : `https://${base}`);
-    
-    // Most LiveKit versions expect just the /whip endpoint
-    // The token itself contains the room and identity info
-    const cleanBase = protocol.split('?')[0].replace(/\/$/, '');
-    return `${cleanBase}/whip`;
-  };
-
-  const whipUrl = getWhipUrl();
-
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <p className="text-red-400 mb-4">{error}</p>
-        <button onClick={() => navigate('/admin')} className="text-brand-primary underline">ადმინზე დაბრუნება</button>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+        <p className="text-red-400 mb-6 font-bold text-lg">{error}</p>
+        <button onClick={() => navigate('/admin')} className="bg-brand-primary text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-transform">ადმინზე დაბრუნება</button>
       </div>
     );
   }
 
-  if (!token) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -178,19 +92,8 @@ export default function BroadcasterRoom() {
 
   return (
     <div className="min-h-screen bg-brand-black pt-32 pb-12 px-6">
-      <style>{`
-        /* Hide participant list/tiles in Broadcaster Studio */
-        .broadcaster-mode .lk-participant-list,
-        .broadcaster-mode .lk-sidebar {
-          display: none !important;
-        }
-        
-        .broadcaster-mode .lk-video-conference-inner {
-          flex-direction: column !important;
-        }
-      `}</style>
       <div className="max-w-[1600px] mx-auto flex flex-col h-[calc(100vh-10rem)]">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => navigate('/admin')}
@@ -200,241 +103,173 @@ export default function BroadcasterRoom() {
             </button>
             <div>
               <h1 className="text-2xl font-black italic uppercase tracking-tighter">
-                სტუდია: <span className="text-brand-primary">{roomId}</span>
+                VDS სტუდია: <span className="text-brand-primary">{roomId}</span>
               </h1>
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">ადმინისტრატორის ტრანსლაციის რეჟიმი</p>
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">ადმინისტრატორის მართვის პანელი</p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-             <button 
-              onClick={() => setIsObsMenuOpen(!isObsMenuOpen)}
-              className="bg-brand-surface border border-brand-border px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-brand-border transition-all"
-             >
-               <Terminal size={16} className="text-brand-primary" />
-               OBS-ის გამართვა
-             </button>
-             <div className="bg-red-600 text-white px-3 py-1 rounded-md text-[10px] font-black flex items-center gap-2 uppercase">
+             <div className="bg-red-600 text-white px-3 py-1.5 rounded-md text-[10px] font-black flex items-center gap-2 uppercase">
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> 
-                ეთერშია
+                VDS სტრიმი
               </div>
               <button 
                 onClick={toggleGlobalPause}
                 className={cn(
                   "px-4 py-1.5 rounded-md text-[10px] font-black flex items-center gap-2 uppercase transition-all border",
                   isPausedGlobal 
-                    ? "bg-yellow-500 text-black border-yellow-400" 
+                    ? "bg-yellow-500 text-black border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.2)]" 
                     : "bg-white/5 text-white border-white/10 hover:bg-white/10"
                 )}
               >
-                {isPausedGlobal ? <Share2 size={12} className="rotate-90" /> : <Pause size={12} fill="currentColor" />}
+                {isPausedGlobal ? <Play size={12} fill="black" /> : <Pause size={12} fill="currentColor" />}
                 {isPausedGlobal ? 'გაგრძელება' : 'გლობალური პაუზა'}
+              </button>
+              <button 
+                onClick={endStream}
+                className="px-4 py-1.5 bg-red-600/10 border border-red-600/20 text-red-500 rounded-md text-[10px] font-black flex items-center gap-2 uppercase hover:bg-red-600 hover:text-white transition-all"
+              >
+                <StopCircle size={12} />
+                დასრულება
               </button>
           </div>
         </div>
 
-        {isObsMenuOpen && (
-          <div className="mb-6 bento-card p-6 bg-brand-primary/10 border-brand-primary/30 animate-in fade-in slide-in-from-top-4">
-             <div className="flex items-start justify-between mb-6">
+        <div className="grid grid-cols-12 gap-8 flex-1 overflow-hidden">
+          <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+            <div className="flex-1 bento-card relative bg-black shadow-2xl overflow-hidden group">
+              <div className="absolute top-4 left-4 z-20 flex gap-2 pointer-events-none">
+                 <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest text-brand-primary border border-brand-primary/20">
+                   Preview
+                 </div>
+              </div>
+              
+              {streamUrl ? (
+                <HLSPlayer 
+                  url={streamUrl}
+                  autoPlay={true}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-zinc-950 p-12 text-center">
+                  <Terminal size={48} className="text-zinc-800" />
+                  <div className="space-y-2">
+                    <p className="text-zinc-600 font-black uppercase tracking-widest text-sm">სტრიმის URL არ არის მითითებული</p>
+                    <p className="text-xs text-zinc-700 max-w-md">გთხოვთ Admin Dashboard-ზე მიუთითოთ თქვენი VDS სტრიმის HLS (.m3u8) მისამართი.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="bento-card p-6 bg-brand-primary/5 border-brand-primary/10">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-brand-primary rounded-xl text-white">
+                  <Monitor size={24} />
+                </div>
                 <div>
-                  <h2 className="text-lg font-black uppercase text-brand-primary mb-2 italic">სტრიმი OBS-დან (რეკომენდირებულია 60 FPS-ისთვის)</h2>
-                  <p className="text-xs text-zinc-400 max-w-2xl">
-                    საუკეთესო ხარისხის და 60 FPS-ის მისაღებად გამოიყენეთ OBS.
+                  <h3 className="font-black uppercase text-sm tracking-tight text-white mb-1">თქვენი VDS სტატუსი</h3>
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-relaxed">
+                    თუ preview-ში გამოსახულება არ ჩანს, დარწმუნდით რომ <b>OBS</b>-დან სტრიმი გაშვებულია თქვენს სერვერზე და URL სწორია.
                   </p>
                 </div>
-                <button onClick={() => setIsObsMenuOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
-                  <StopCircle size={24} className="rotate-45" />
-                </button>
-             </div>
+              </div>
+            </div>
+          </div>
 
-             <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none">
-               <button 
-                onClick={() => setActiveTab('virtual')}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                  activeTab === 'virtual' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
-                )}
-               >
-                 Virtual Camera
-               </button>
-               <button 
-                onClick={() => setActiveTab('whip')}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                  activeTab === 'whip' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
-                )}
-               >
-                 WHIP (პირდაპირი)
-               </button>
-               <button 
-                onClick={() => {
-                  setActiveTab('rtmp');
-                  generateIngress();
-                }}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                  activeTab === 'rtmp' ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:bg-white/10"
-                )}
-               >
-                 RTMP (ძველი)
-               </button>
-             </div>
+          <aside className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+            <div className="flex-1 bento-card flex flex-col bg-zinc-900/40">
+              <div className="p-6 border-b border-brand-border flex items-center justify-between">
+                <div className="flex bg-brand-surface p-1 rounded-xl border border-brand-border">
+                  <button 
+                    onClick={() => setActiveTab('preview')}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                      activeTab === 'preview' ? "bg-brand-primary text-black" : "text-zinc-500 hover:text-white"
+                    )}
+                  >
+                    ინფორმაცია
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('setup')}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                      activeTab === 'setup' ? "bg-brand-primary text-black" : "text-zinc-500 hover:text-white"
+                    )}
+                  >
+                    Setup Guide
+                  </button>
+                </div>
+              </div>
 
-             {activeTab === 'virtual' && (
-               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                 <div className="bg-black/40 p-5 rounded-xl border border-white/5">
-                   <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                     <Camera size={18} className="text-brand-primary" />
-                     როგორ გამოვიყენოთ Virtual Camera (ვიდეოსთვის)
-                   </h3>
-                   <ol className="text-xs text-zinc-400 space-y-3 list-decimal pl-4 leading-relaxed">
-                     <li>გახსენით <b>OBS</b> და დააჭირეთ <b>"Start Virtual Camera"</b>.</li>
-                     <li>ამ გვერდზე ქვემოთ, კამერის ღილაკით აირჩიეთ <b>"OBS Virtual Camera"</b>.</li>
-                   </ol>
-                 </div>
-
-                 <div className="bg-brand-primary/5 p-5 rounded-xl border border-brand-primary/20">
-                   <h3 className="text-sm font-bold text-brand-primary mb-3 flex items-center gap-2">
-                     <Mic size={18} />
-                     როგორ გამოვუშვათ ხმა (Audio)
-                   </h3>
-                   <div className="text-xs text-zinc-300 space-y-3 leading-relaxed">
-                     <p>რადგან Virtual Camera ხმას არ გადასცემს, გამოიყენეთ ერთ-ერთი გზა:</p>
-                     <ul className="list-disc pl-4 space-y-2">
-                       <li><b>Screen Share:</b> ქვედა პანელზე დააჭირეთ <b>Share Screen</b>, აირჩიეთ OBS-ის ფანჯარა და მონიშნეთ <b>"Share system audio"</b>.</li>
-                       <li><b>Microphone:</b> თუ Mic-ს ჩართავთ, ბრაუზერი თქვენს ხმას აიღებს. თუ გინდათ კომპიუტერის ხმა ისმოდეს, Windows-ის პარამეტრებში Mic-ად აირჩიეთ <b>"Stereo Mix"</b>.</li>
-                     </ul>
-                   </div>
-                 </div>
-               </div>
-             )}
-
-             {activeTab === 'whip' && (
-               <div className="animate-in fade-in zoom-in-95 duration-200">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-bold text-zinc-500 uppercase">Server URL (WHIP)</label>
-                     <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
-                       {whipUrl}
-                     </div>
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-bold text-zinc-500 uppercase">Stream Key (Bearer Token)</label>
-                     <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
-                       {obsToken}
-                     </div>
-                   </div>
-                 </div>
-
-                 <div className="mt-4 p-4 bg-black/40 rounded-lg border border-white/10 space-y-3">
-                   <h3 className="text-[10px] font-black uppercase text-brand-primary tracking-widest">OBS Settings for WHIP:</h3>
-                   <ul className="text-[10px] text-zinc-400 space-y-1.5 list-disc pl-4">
-                     <li><b>Service:</b> WHIP</li>
-                     <li><b>Output Mode:</b> Advanced</li>
-                     <li><b>Rate Control:</b> CBR (Bitrate: 4000-6000 Kbps)</li>
-                     <li><b>Keyframe Interval:</b> 1s or 2s (Mandatory)</li>
-                     <li><b>Tune:</b> zerolatency</li>
-                   </ul>
-                   <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded text-[9px] text-red-200/80 leading-relaxed">
-                     <b>შენიშვნა:</b> თუ WHIP კავშირი მაინც ვერ ხერხდება, გამოიყენეთ <b>Virtual Camera</b> მეთოდი (პირველი ტაბი).
-                   </div>
-                 </div>
-               </div>
-             )}
-
-             {activeTab === 'rtmp' && (
-               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                 {isGeneratingIngress ? (
-                   <div className="py-8 flex flex-col items-center justify-center gap-3">
-                     <Loader2 className="animate-spin text-brand-primary" size={24} />
-                     <p className="text-[10px] font-black uppercase text-zinc-500">RTMP მისამართი იქმნება...</p>
-                   </div>
-                 ) : ingressData ? (
-                   <>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       <div className="space-y-2">
-                         <label className="text-[10px] font-bold text-zinc-500 uppercase">RTMP URL</label>
-                         <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
-                           {ingressData.url}
-                         </div>
-                       </div>
-                       <div className="space-y-2">
-                         <label className="text-[10px] font-bold text-zinc-500 uppercase">Stream Key</label>
-                         <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] truncate select-all">
-                           {ingressData.streamKey}
-                         </div>
-                       </div>
-                     </div>
-                     <div className="mt-4 p-4 bg-black/40 rounded-lg border border-white/10 space-y-3">
-                        <h3 className="text-[10px] font-black uppercase text-brand-primary tracking-widest">OBS Settings for RTMP:</h3>
-                        <p className="text-[10px] text-zinc-400">
-                          პარამეტრები {'>'} სტრიმი {'>'} სერვისი: <b>Custom...</b> {'>'} სერვერი: [RTMP URL] {'>'} სტრიმის გასაღები: [Stream Key]
-                        </p>
+              <div className="flex-1 p-8 space-y-8 overflow-y-auto custom-scrollbar">
+                {activeTab === 'preview' ? (
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                        <Terminal size={12} className="text-brand-primary" /> ACTIVE STREAM URL
+                      </label>
+                      <div className="p-4 bg-black rounded-xl border border-white/5 font-mono text-[11px] text-brand-primary break-all leading-relaxed select-all">
+                        {streamUrl || 'N/A'}
                       </div>
-                   </>
-                 ) : (
-                   <div className="py-8 text-center bg-red-500/5 rounded-xl border border-red-500/10">
-                     <p className="text-xs text-red-400 mb-2 font-bold uppercase tracking-wider italic">RTMP შეცდომა</p>
-                     <p className="text-[10px] text-zinc-500 mb-4 px-6">{ingressError || "RTMP Ingress მიუწვდომელია."}</p>
-                     <button 
-                      onClick={generateIngress}
-                      className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all"
-                     >
-                       თავიდან ცდა
-                     </button>
-                   </div>
-                 )}
-               </div>
-             )}
-          </div>
-        )}
+                    </div>
 
-        <div className="flex-1 bento-card relative bg-black shadow-2xl">
-          <LiveKitRoom
-            video={false}
-            audio={false}
-            token={token}
-            serverUrl={import.meta.env.VITE_LIVEKIT_URL}
-            videoCaptureDefaults={{
-              resolution: { width: 1920, height: 1080 },
-              frameRate: 60,
-            }}
-            screenShareCaptureDefaults={{
-              resolution: { width: 1920, height: 1080 },
-              frameRate: 60,
-            }}
-            publishDefaults={{
-              videoSimulcast: true,
-              screenShareSimulcast: false, // Disable simulcast for screen sharing to prioritize pure quality
-              videoCodec: 'h264',
-              dtlsRetransmissions: true,
-              stopMicTrackOnMute: true,
-              red: true,
-              screenShareEncoding: {
-                maxBitrate: 3_000_000, // 3 Mbps for screen sharing
-                maxFramerate: 60,
-              }
-            }}
-            onDisconnected={() => navigate('/admin')}
-            data-lk-theme="default"
-            className="h-full broadcaster-mode"
-          >
-            <TrackEnhancer />
-            <VideoConference />
-            {/* The default VideoConference UI includes a Screen Share button in its ControlBar */}
-          </LiveKitRoom>
-        </div>
-        
-        <div className="mt-6 bento-card p-6 bg-yellow-500/10 border-yellow-500/20">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-yellow-500 rounded-xl text-black">
-              <Monitor size={24} />
+                    <div className="p-6 rounded-2xl bg-white/5 border border-white/5 space-y-4">
+                      <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                        <Info size={14} className="text-brand-primary" /> Quick Stats
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-[8px] text-zinc-500 uppercase font-black">Room ID</p>
+                          <p className="text-xs font-bold text-zinc-300">{roomId}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[8px] text-zinc-500 uppercase font-black">Status</p>
+                          <p className="text-xs font-bold text-green-500 uppercase tracking-widest">Active</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4">
+                       <a 
+                        href={`/live/${roomId}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="w-full py-4 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:bg-white/10 hover:text-white transition-all group"
+                       >
+                         View as audience
+                         <ExternalLink size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                       </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-black text-white italic uppercase">How to stream to VDS?</h4>
+                      <div className="space-y-4 text-[11px] text-zinc-400 leading-relaxed font-medium">
+                        <div className="flex gap-4">
+                          <div className="w-6 h-6 rounded-lg bg-brand-primary text-black flex items-center justify-center shrink-0 font-black">1</div>
+                          <p>დააინსტალირეთ <b>MediaMTX</b> ან <b>Nginx RTMP</b> თქვენს სერვერზე.</p>
+                        </div>
+                        <div className="flex gap-4">
+                          <div className="w-6 h-6 rounded-lg bg-brand-primary text-black flex items-center justify-center shrink-0 font-black">2</div>
+                          <p>OBS Settings {'>'} Stream {'>'} სერვისი: <b>Custom</b>. სერვერი: <code>rtmp://VDS_IP/live</code></p>
+                        </div>
+                        <div className="flex gap-4">
+                          <div className="w-6 h-6 rounded-lg bg-brand-primary text-black flex items-center justify-center shrink-0 font-black">3</div>
+                          <p>სტრიმის გასაღები (Key) დააყენეთ თქვენი სურვილისამებრ (მაგ: <code>mystream</code>).</p>
+                        </div>
+                        <div className="flex gap-4">
+                          <div className="w-6 h-6 rounded-lg bg-brand-primary text-black flex items-center justify-center shrink-0 font-black">4</div>
+                          <p>VDS სტრიმის მისამართი (HLS) იქნება: <code>http://VDS_IP:8888/live/mystream/index.m3u8</code></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div>
-              <h3 className="font-black uppercase text-sm tracking-tight text-yellow-500">რჩევა სტრიმერისთვის</h3>
-              <p className="text-xs text-zinc-400">ეკრანის გასაზიარებლად გამოიყენეთ <b>"Share Screen"</b> ღილაკი ვიდეო პანელზე. საუკეთესო ხარისხისთვის დარწმუნდით, რომ გაქვთ სტაბილური ინტერნეტ კავშირი.</p>
-            </div>
-          </div>
+          </aside>
         </div>
       </div>
     </div>
