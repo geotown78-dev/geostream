@@ -6,7 +6,6 @@ import LiveRoom from './pages/LiveRoom';
 import AdminDashboard from './pages/AdminDashboard';
 import AuthPage from './pages/Auth';
 import BroadcasterRoom from './pages/BroadcasterRoom';
-import Leaderboard from './pages/Leaderboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AnimatePresence } from 'motion/react';
 
@@ -55,7 +54,6 @@ function AppContent() {
               <Route path="/" element={<Home />} />
               <Route path="/watch/:roomId" element={<LiveRoom />} />
               <Route path="/live" element={<Home />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/login" element={<AuthPage mode="login" />} />
               <Route path="/register" element={<AuthPage mode="register" />} />
               <Route 
