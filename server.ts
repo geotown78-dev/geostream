@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { AccessToken, IngressClient, IngressInput, RoomServiceClient } from "livekit-server-sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -135,7 +135,7 @@ app.post("/api/create-ingress", async (req, res) => {
   }
 });
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 app.get("/api/leaderboard", async (req, res) => {
