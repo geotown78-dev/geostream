@@ -10,6 +10,7 @@ export default function AdminDashboard() {
   const [team2, setTeam2] = useState('');
   const [roomId, setRoomId] = useState('');
   const [streamUrl, setStreamUrl] = useState('');
+  const [vdsIp, setVdsIp] = useState(localStorage.getItem('vds_ip') || '');
   const [sessionSport, setSessionSport] = useState('Football');
   const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
   const [sessionThumbnail, setSessionThumbnail] = useState('');
@@ -113,6 +114,10 @@ export default function AdminDashboard() {
 
   const startStream = async (id: string) => {
     navigate(`/broadcast/${id}`);
+    
+    // Save VDS IP for next time
+    if (vdsIp) localStorage.setItem('vds_ip', vdsIp);
+
     try {
       // 1. Update global stream status
       const { error: activeErr } = await supabase.from('active_streams').upsert({ 
@@ -129,12 +134,14 @@ export default function AdminDashboard() {
         ? `${team1.toUpperCase()} VS ${team2.toUpperCase()}`
         : id.replace(/-/g, ' ').toUpperCase();
       
-      // We check if it exists first to avoid complex RLS issues with UPSERT
       const { data: existingEvent } = await supabase
         .from('events')
         .select('id')
         .eq('room_name', id)
         .maybeSingle();
+
+      // Auto-generate stream URL if not provided manually
+      const finalStreamUrl = streamUrl || (vdsIp ? `http://${vdsIp}:8888/live/${id}/index.m3u8` : '');
 
       const eventData = {
         room_name: id,
@@ -143,7 +150,7 @@ export default function AdminDashboard() {
         is_live: true,
         is_exclusive: sessionIsExclusive,
         thumbnail: sessionThumbnail,
-        stream_url: streamUrl,
+        stream_url: finalStreamUrl,
         start_time: new Date().toISOString()
       };
 
@@ -377,15 +384,29 @@ export default function AdminDashboard() {
                           </label>
                         </div>
                       </div>
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">VDS სტრიმის URL (HLS .m3u8)</label>
-                        <input 
-                          type="text" 
-                          value={streamUrl}
-                          onChange={(e) => setStreamUrl(e.target.value)}
-                          placeholder="მაგ: https://vds-ip:8888/stream/index.m3u8"
-                          className="w-full bg-black border border-brand-border rounded-xl px-5 py-3 focus:border-brand-primary outline-none transition-all font-mono text-xs text-brand-primary"
-                        />
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-brand-primary uppercase tracking-widest ml-1 flex items-center gap-2">
+                             თქვენი VDS IP (ავტომატიზაციისთვის) <Settings size={12} />
+                          </label>
+                          <input 
+                            type="text" 
+                            value={vdsIp}
+                            onChange={(e) => setVdsIp(e.target.value)}
+                            placeholder="მაგ: 1.2.3.4"
+                            className="w-full bg-brand-primary/10 border border-brand-primary/30 rounded-xl px-5 py-3 focus:border-brand-primary outline-none transition-all font-mono text-xs text-brand-primary"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">VDS სტრიმის URL (სურვილისამებრ ხელით)</label>
+                          <input 
+                            type="text" 
+                            value={streamUrl}
+                            onChange={(e) => setStreamUrl(e.target.value)}
+                            placeholder="ცარიელი დატოვეთ IP-ს გამოსაყენებლად"
+                            className="w-full bg-black border border-brand-border rounded-xl px-5 py-3 focus:border-brand-primary outline-none transition-all font-mono text-xs text-zinc-400"
+                          />
+                        </div>
                       </div>
                     </div>
 
