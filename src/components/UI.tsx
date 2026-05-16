@@ -23,7 +23,7 @@ export function Sidebar() {
     { icon: HomeIcon, path: '/', label: 'მთავარი' },
     { icon: Trophy, path: '/sports', label: 'სპორტი' },
     { icon: Radio, path: '/live', label: 'ლაივი' },
-    { icon: BarChart3, path: '/stats', label: 'რეიტინგები' },
+    { icon: BarChart3, path: '/leaderboard', label: 'ლიდერბორდი' },
     { icon: Users, path: '/fighters', label: 'მებრძოლები' },
   ];
 
