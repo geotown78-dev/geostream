@@ -53,6 +53,8 @@ function AppContent() {
           <AnimatePresence mode="wait">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/football" element={<Home />} />
+              <Route path="/ufc" element={<Home />} />
               <Route path="/watch/:roomId" element={<LiveRoom />} />
               <Route path="/live" element={<Home />} />
               <Route path="/stats" element={<Leaderboard />} />
