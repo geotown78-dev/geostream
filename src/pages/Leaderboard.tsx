@@ -32,6 +32,7 @@ const LALIGA_LOGOS: Record<string, string> = {
 interface TeamData {
   rank: number;
   name: string;
+  logo: string;
   played: number;
   won: number;
   drawn: number;
@@ -45,26 +46,26 @@ interface TeamData {
 }
 
 const INITIAL_BOARD_DATA: TeamData[] = [
-  { rank: 1, name: 'Barcelona', played: 36, won: 30, drawn: 1, lost: 5, gf: 91, ga: 32, gd: 59, points: 91, status: 'same', form: ['W', 'W', 'W', 'W', 'L'] },
-  { rank: 2, name: 'Real Madrid', played: 36, won: 25, drawn: 5, lost: 6, gf: 72, ga: 33, gd: 39, points: 80, status: 'same', form: ['W', 'D', 'W', 'L', 'W'] },
-  { rank: 3, name: 'Villarreal', played: 36, won: 21, drawn: 6, lost: 9, gf: 67, ga: 43, gd: 24, points: 69, status: 'up', form: ['D', 'W', 'W', 'W', 'L'] },
-  { rank: 4, name: 'Atlético Madrid', played: 36, won: 20, drawn: 6, lost: 10, gf: 60, ga: 39, gd: 21, points: 66, status: 'down', form: ['L', 'W', 'W', 'W', 'W'] },
-  { rank: 5, name: 'Real Betis', played: 36, won: 14, drawn: 15, lost: 7, gf: 56, ga: 44, gd: 12, points: 57, status: 'same', form: ['W', 'D', 'W', 'D', 'W'] },
-  { rank: 6, name: 'Celta', played: 36, won: 13, drawn: 11, lost: 12, gf: 51, ga: 47, gd: 4, points: 50, status: 'up', form: ['L', 'L', 'W', 'W', 'L'] },
-  { rank: 7, name: 'Getafe', played: 36, won: 14, drawn: 6, lost: 16, gf: 31, ga: 37, gd: -6, points: 48, status: 'same', form: ['W', 'L', 'L', 'D', 'W'] },
-  { rank: 8, name: 'Real Sociedad', played: 36, won: 11, drawn: 12, lost: 13, gf: 55, ga: 56, gd: -1, points: 45, status: 'same', form: ['L', 'D', 'L', 'W', 'D'] },
-  { rank: 9, name: 'Athletic Club', played: 36, won: 13, drawn: 5, lost: 18, gf: 40, ga: 53, gd: -13, points: 44, status: 'down', form: ['W', 'D', 'W', 'L', 'L'] },
-  { rank: 10, name: 'Rayo Vallecano', played: 36, won: 10, drawn: 14, lost: 12, gf: 37, ga: 43, gd: -6, points: 44, status: 'up', form: ['W', 'D', 'W', 'D', 'D'] },
-  { rank: 11, name: 'Valencia', played: 36, won: 11, drawn: 10, lost: 15, gf: 39, ga: 51, gd: -12, points: 43, status: 'same', form: ['D', 'W', 'L', 'W', 'D'] },
-  { rank: 12, name: 'Sevilla', played: 36, won: 12, drawn: 7, lost: 17, gf: 46, ga: 58, gd: -12, points: 43, status: 'down', form: ['L', 'L', 'W', 'W', 'W'] },
-  { rank: 13, name: 'Osasuna', played: 36, won: 11, drawn: 9, lost: 16, gf: 43, ga: 47, gd: -4, points: 42, status: 'same', form: ['L', 'W', 'L', 'L', 'L'] },
-  { rank: 14, name: 'Espanyol', played: 36, won: 11, drawn: 9, lost: 16, gf: 40, ga: 53, gd: -13, points: 42, status: 'up', form: ['L', 'D', 'L', 'L', 'W'] },
-  { rank: 15, name: 'Girona', played: 36, won: 9, drawn: 13, lost: 14, gf: 38, ga: 53, gd: -15, points: 40, status: 'same', form: ['L', 'L', 'L', 'D', 'D'] },
-  { rank: 16, name: 'Alavés', played: 36, won: 10, drawn: 10, lost: 16, gf: 42, ga: 54, gd: -12, points: 40, status: 'down', form: ['L', 'W', 'W', 'D', 'L'] },
-  { rank: 17, name: 'Elche', played: 36, won: 9, drawn: 12, lost: 15, gf: 47, ga: 56, gd: -9, points: 39, status: 'same', form: ['W', 'D', 'L', 'L', 'L'] },
-  { rank: 18, name: 'Mallorca', played: 36, won: 10, drawn: 9, lost: 17, gf: 44, ga: 55, gd: -11, points: 39, status: 'up', form: ['D', 'L', 'W', 'D', 'L'] },
-  { rank: 19, name: 'Levante', played: 36, won: 10, drawn: 9, lost: 17, gf: 44, ga: 59, gd: -15, points: 39, status: 'down', form: ['W', 'D', 'L', 'W', 'W'] },
-  { rank: 20, name: 'Real Oviedo', played: 36, won: 6, drawn: 11, lost: 19, gf: 26, ga: 56, gd: -30, points: 29, status: 'same', form: ['D', 'L', 'W', 'L', 'L'] },
+  { rank: 1, name: 'Barcelona', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_logo.svg/200px-FC_Barcelona_logo.svg.png', played: 36, won: 30, drawn: 1, lost: 5, gf: 91, ga: 32, gd: 59, points: 91, status: 'same', form: ['W', 'W', 'W', 'W', 'L'] },
+  { rank: 2, name: 'Real Madrid', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/200px-Real_Madrid_CF.svg.png', played: 36, won: 25, drawn: 5, lost: 6, gf: 72, ga: 33, gd: 39, points: 80, status: 'same', form: ['W', 'D', 'W', 'L', 'W'] },
+  { rank: 3, name: 'Villarreal', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Villarreal_CF_logo.svg/200px-Villarreal_CF_logo.svg.png', played: 36, won: 21, drawn: 6, lost: 9, gf: 67, ga: 43, gd: 24, points: 69, status: 'up', form: ['D', 'W', 'W', 'W', 'L'] },
+  { rank: 4, name: 'Atlético Madrid', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Atletico_madrid_2017_logo.svg/200px-Atletico_madrid_2017_logo.svg.png', played: 36, won: 20, drawn: 6, lost: 10, gf: 60, ga: 39, gd: 21, points: 66, status: 'down', form: ['L', 'W', 'W', 'W', 'W'] },
+  { rank: 5, name: 'Real Betis', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Real_Betis_logo.svg/200px-Real_Betis_logo.svg.png', played: 36, won: 14, drawn: 15, lost: 7, gf: 56, ga: 44, gd: 12, points: 57, status: 'same', form: ['W', 'D', 'W', 'D', 'W'] },
+  { rank: 6, name: 'Celta', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/12/RC_Celta_de_Vigo_logo.svg/200px-RC_Celta_de_Vigo_logo.svg.png', played: 36, won: 13, drawn: 11, lost: 12, gf: 51, ga: 47, gd: 4, points: 50, status: 'up', form: ['L', 'L', 'W', 'W', 'L'] },
+  { rank: 7, name: 'Getafe', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/7f/Getafe_logo.svg/200px-Getafe_logo.svg.png', played: 36, won: 14, drawn: 6, lost: 16, gf: 31, ga: 37, gd: -6, points: 48, status: 'same', form: ['W', 'L', 'L', 'D', 'W'] },
+  { rank: 8, name: 'Real Sociedad', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f1/Real_Sociedad_logo.svg/200px-Real_Sociedad_logo.svg.png', played: 36, won: 11, drawn: 12, lost: 13, gf: 55, ga: 56, gd: -1, points: 45, status: 'same', form: ['L', 'D', 'L', 'W', 'D'] },
+  { rank: 9, name: 'Athletic Club', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/9/98/Club_Athletic_Bilbao_logo.svg/200px-Club_Athletic_Bilbao_logo.svg.png', played: 36, won: 13, drawn: 5, lost: 18, gf: 40, ga: 53, gd: -13, points: 44, status: 'down', form: ['W', 'D', 'W', 'L', 'L'] },
+  { rank: 10, name: 'Rayo Vallecano', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/1b/Rayo_Vallecano_logo.svg/200px-Rayo_Vallecano_logo.svg.png', played: 36, won: 10, drawn: 14, lost: 12, gf: 37, ga: 43, gd: -6, points: 44, status: 'up', form: ['W', 'D', 'W', 'D', 'D'] },
+  { rank: 11, name: 'Valencia', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/c/ce/Valenciacf.svg/200px-Valenciacf.svg.png', played: 36, won: 11, drawn: 10, lost: 15, gf: 39, ga: 51, gd: -12, points: 43, status: 'same', form: ['D', 'W', 'L', 'W', 'D'] },
+  { rank: 12, name: 'Sevilla', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Sevilla_FC_logo.svg/200px-Sevilla_FC_logo.svg.png', played: 36, won: 12, drawn: 7, lost: 17, gf: 46, ga: 58, gd: -12, points: 43, status: 'down', form: ['L', 'L', 'W', 'W', 'W'] },
+  { rank: 13, name: 'Osasuna', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/d/db/CA_Osasuna_logo.svg/200px-CA_Osasuna_logo.svg.png', played: 36, won: 11, drawn: 9, lost: 16, gf: 43, ga: 47, gd: -4, points: 42, status: 'same', form: ['L', 'W', 'L', 'L', 'L'] },
+  { rank: 14, name: 'Espanyol', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/d/d6/RCD_Espanyol_logo.svg/200px-RCD_Espanyol_logo.svg.png', played: 36, won: 11, drawn: 9, lost: 16, gf: 40, ga: 53, gd: -13, points: 42, status: 'up', form: ['L', 'D', 'L', 'L', 'W'] },
+  { rank: 15, name: 'Girona', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/9/90/Girona_FC_logo.svg/200px-Girona_FC_logo.svg.png', played: 36, won: 9, drawn: 13, lost: 14, gf: 38, ga: 53, gd: -15, points: 40, status: 'same', form: ['L', 'L', 'L', 'D', 'D'] },
+  { rank: 16, name: 'Alavés', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f8/Deportivo_Alaves_logo.svg/200px-Deportivo_Alaves_logo.svg.png', played: 36, won: 10, drawn: 10, lost: 16, gf: 42, ga: 54, gd: -12, points: 40, status: 'down', form: ['L', 'W', 'W', 'D', 'L'] },
+  { rank: 17, name: 'Elche', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a7/Elche_CF_logo.svg/200px-Elche_CF_logo.svg.png', played: 36, won: 9, drawn: 12, lost: 15, gf: 47, ga: 56, gd: -9, points: 39, status: 'same', form: ['W', 'D', 'L', 'L', 'L'] },
+  { rank: 18, name: 'Mallorca', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/e/e0/Rcd_mallorca.svg/200px-Rcd_mallorca.svg.png', played: 36, won: 10, drawn: 9, lost: 17, gf: 44, ga: 55, gd: -11, points: 39, status: 'up', form: ['D', 'L', 'W', 'D', 'L'] },
+  { rank: 19, name: 'Levante', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/7b/Levante_Uni%C3%B3n_Deportiva%2C_S.A.D._logo.svg/200px-Levante_Uni%C3%B3n_Deportiva%2C_S.A.D._logo.svg.png', played: 36, won: 10, drawn: 9, lost: 17, gf: 44, ga: 59, gd: -15, points: 39, status: 'down', form: ['W', 'D', 'L', 'W', 'W'] },
+  { rank: 20, name: 'Real Oviedo', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/6/60/Real_Oviedo_logo.svg/200px-Real_Oviedo_logo.svg.png', played: 36, won: 6, drawn: 11, lost: 19, gf: 26, ga: 56, gd: -30, points: 29, status: 'same', form: ['D', 'L', 'W', 'L', 'L'] },
 ];
 
 export default function Leaderboard() {
@@ -211,9 +212,10 @@ export default function Leaderboard() {
                       <div className="flex items-center gap-4">
                         <div className="w-8 h-8 rounded-lg bg-white/5 border border-brand-border p-1 flex items-center justify-center group-hover:scale-110 transition-transform">
                           <img 
-                            src={LALIGA_LOGOS[team.name] || 'https://via.placeholder.com/40'} 
+                            src={team.logo || 'https://via.placeholder.com/40'} 
                             alt={team.name}
                             className="w-full h-full object-contain"
+                            referrerPolicy="no-referrer"
                           />
                         </div>
                         {isEditing ? (
