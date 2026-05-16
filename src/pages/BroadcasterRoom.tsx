@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, Monitor, StopCircle, Share2, Terminal, Pause, Info, ExternalLink } from 'lucide-react';
+import { Loader2, ArrowLeft, Monitor, StopCircle, Share2, Terminal, Pause, Info, ExternalLink, Play } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
 import HLSPlayer from '../components/HLSPlayer';
