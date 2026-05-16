@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   User, Play, LogOut, Settings, 
   Home as HomeIcon, Trophy, Radio, BarChart3, Users, Newspaper,
-  Facebook, Instagram, Youtube, Calendar, Clock
+  Facebook, Instagram, Youtube, Calendar, Clock, Trash2
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -168,10 +168,10 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
               
               <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.9]">
                 {displayMatch.title.includes('VS') ? displayMatch.title.split('VS').map((part: string, i: number) => (
-                  <span key={i}>
-                    {i > 0 && <span className="text-brand-primary mx-4 text-shadow-glow">VS</span>}
+                  <React.Fragment key={i}>
+                    {i > 0 && <span className="text-brand-primary mx-4 text-shadow-glow drop-shadow-[0_0_15px_rgba(255,0,51,0.8)]">VS</span>}
                     {part.trim()}
-                  </span>
+                  </React.Fragment>
                 )) : displayMatch.title}
               </h1>
 
@@ -226,13 +226,18 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
   );
 }
 
-export function LiveCard({ event }: { event: any }) {
+export function LiveCard({ event, onDelete }: { event: any, onDelete?: (id: string) => void }) {
+  const { user } = useAuth();
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
+
   return (
-    <Link to={`/watch/${event.room_name || event.id}`} className="group relative block aspect-video rounded-xl overflow-hidden bg-brand-surface border border-brand-border hover:border-brand-primary/50 transition-all">
-      <img src={event.thumbnail} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" alt="" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+    <div className="group relative block aspect-video rounded-xl overflow-hidden bg-brand-surface border border-brand-border hover:border-brand-primary/50 transition-all">
+      <Link to={`/watch/${event.room_name || event.id}`} className="absolute inset-0 z-10">
+        <img src={event.thumbnail} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" alt="" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+      </Link>
       
-      <div className="absolute top-3 left-3 flex items-center gap-2">
+      <div className="absolute top-3 left-3 flex items-center gap-2 z-20">
         <div className="bg-brand-primary text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1.5 uppercase">
           <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
           LIVE
@@ -243,14 +248,23 @@ export function LiveCard({ event }: { event: any }) {
         </div>
       </div>
 
-      <div className="absolute inset-0 flex items-center justify-center gap-4 px-4">
+      {isAdmin && onDelete && (
+        <button 
+          onClick={() => onDelete(event.id)}
+          className="absolute top-3 right-3 p-2 bg-black/60 backdrop-blur-md text-red-500 hover:bg-red-500 hover:text-white rounded-lg z-30 transition-all"
+        >
+          <Trash2 size={12} />
+        </button>
+      )}
+
+      <div className="absolute inset-0 flex items-center justify-center gap-4 px-4 pointer-events-none z-20">
         <div className="text-center flex-1">
           <div className="w-12 h-12 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10">
             <Trophy size={20} className="text-white" />
           </div>
           <div className="text-[11px] font-black text-white uppercase truncate">{event.team1 || event.title}</div>
         </div>
-        <div className="text-xs font-black italic text-brand-primary">VS</div>
+        <div className="text-xs font-black italic text-brand-primary text-shadow-glow">VS</div>
         <div className="text-center flex-1">
           <div className="w-12 h-12 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10">
             <Trophy size={20} className="text-white" />
@@ -259,14 +273,16 @@ export function LiveCard({ event }: { event: any }) {
         </div>
       </div>
 
-      <div className="absolute bottom-3 left-4">
+      <div className="absolute bottom-3 left-4 z-20">
         <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{event.league || 'GeoStream Network'}</div>
       </div>
-    </Link>
+    </div>
   );
 }
 
-export function UpcomingCard({ event }: { event: any }) {
+export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: string) => void }) {
+  const { user } = useAuth();
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
   const date = new Date(event.time || Date.now());
   const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
   const day = date.getDate();
@@ -279,7 +295,17 @@ export function UpcomingCard({ event }: { event: any }) {
           <div className="bg-brand-primary text-[8px] font-black px-2 py-0.5 rounded-t w-full text-center">{month}</div>
           <div className="bg-white/5 w-full text-center py-1 text-sm font-black rounded-b border-x border-b border-brand-border">{day}</div>
         </div>
-        <div className="text-[10px] font-black text-zinc-400">{time}</div>
+        <div className="flex items-center gap-3">
+          <div className="text-[10px] font-black text-zinc-400">{time}</div>
+          {isAdmin && onDelete && (
+            <button 
+              onClick={() => onDelete(event.id)}
+              className="p-1.5 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-center gap-6 mb-6">
