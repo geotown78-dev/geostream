@@ -47,9 +47,9 @@ function AppContent() {
       <Sidebar />
       <Navbar />
       
-      <main className="pl-20 pt-20">
-        <div className="max-w-[1700px] mx-auto p-8 overflow-x-hidden">
-          <AnimatePresence>
+      <main className="sm:pl-20 pt-20 pb-20 sm:pb-0">
+        <div className="max-w-[1700px] mx-auto p-4 sm:p-8 overflow-x-hidden">
+          <AnimatePresence mode="wait">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/watch/:roomId" element={<LiveRoom />} />
@@ -77,12 +77,12 @@ function AppContent() {
         </div>
       </main>
       
-      <footer className="pl-20 border-t border-brand-border py-12">
+      <footer className="sm:pl-20 border-t border-brand-border py-12 pb-32 sm:pb-12 text-center sm:text-left">
         <div className="max-w-[1700px] mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-xl font-bold tracking-tight uppercase italic text-brand-primary">
             GEO <span className="text-white">STREAM</span>
           </div>
-          <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-zinc-600">
+          <div className="flex flex-wrap justify-center gap-6 sm:gap-8 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-600">
             <a href="#" className="hover:text-brand-primary transition-colors">კონფიდენციალურობის პოლიტიკა</a>
             <a href="#" className="hover:text-brand-primary transition-colors">წესები და პირობები</a>
             <a href="#" className="hover:text-brand-primary transition-colors">კონტაქტი</a>
