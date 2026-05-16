@@ -130,89 +130,98 @@ export function Navbar() {
 }
 
 export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: any, exclusiveEvent?: any }) {
-  // Use exclusive event if provided, otherwise fallback to mock or provided broadcast
+  // Only render match info if exclusiveEvent or activeBroadcast is present
   const displayMatch = exclusiveEvent ? {
     title: exclusiveEvent.team1 ? `${exclusiveEvent.team1} VS ${exclusiveEvent.team2}` : exclusiveEvent.title,
     event: exclusiveEvent.sport || exclusiveEvent.league || "FEATURED EVENT",
     date: exclusiveEvent.time ? new Date(exclusiveEvent.time).toLocaleString('ka-GE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : "ახლა პირდაპირ ეთერში",
-    image: exclusiveEvent.thumbnail || "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=2000",
+    image: exclusiveEvent.thumbnail || "https://images.unsplash.com/photo-1504450758481-7338ef7535af?auto=format&fit=crop&q=80&w=2000",
     room_id: exclusiveEvent.room_name || exclusiveEvent.id
-  } : {
-    title: "M. DVALISHVILI VS P. YAN",
-    event: "UFC FIGHT NIGHT",
-    date: "7 დეკემბერი • 05:00",
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=2000",
-    room_id: "ufc"
-  };
+  } : activeBroadcast ? {
+    title: activeBroadcast.room_id.replace(/-/g, ' ').toUpperCase(),
+    event: "LIVE BROADCAST",
+    date: "მიმდინარეობს პირდაპირი ეთერი",
+    image: "https://images.unsplash.com/photo-1541252260730-0412e3e2108e?auto=format&fit=crop&q=80&w=2000",
+    room_id: activeBroadcast.room_id
+  } : null;
 
   return (
-    <section className="relative h-[600px] rounded-2xl overflow-hidden mb-12 group">
-      <div className="absolute inset-0">
-        <img 
-          src={displayMatch.image} 
-          className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-[2s]"
-          alt=""
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-black to-transparent" />
-      </div>
-
-      <div className="relative h-full flex items-center px-12 z-10">
-        <div className="max-w-2xl space-y-6">
-          <div className="flex items-center gap-3">
-            <span className="bg-brand-primary text-white text-[10px] font-black px-2 py-0.5 rounded italic">ექსკლუზივი</span>
-            <span className="text-brand-primary text-[10px] font-black tracking-[0.2em] uppercase">{displayMatch.event}</span>
+    <section className="relative h-[500px] rounded-2xl overflow-hidden mb-12 group bg-brand-surface border border-brand-border">
+      {displayMatch ? (
+        <>
+          <div className="absolute inset-0">
+            <img 
+              src={displayMatch.image} 
+              className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-[2s]"
+              alt=""
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-black to-transparent" />
           </div>
-          
-          <h1 className="text-7xl font-black italic tracking-tighter uppercase leading-[0.9]">
-            {displayMatch.title.includes('VS') ? displayMatch.title.split('VS').map((part: string, i: number) => (
-              <span key={i}>
-                {i > 0 && <span className="text-brand-primary mx-4">VS</span>}
-                {part.trim()}
-              </span>
-            )) : displayMatch.title}
-          </h1>
 
-          <div className="flex items-center gap-6 text-zinc-400 font-bold uppercase tracking-widest text-[11px]">
-            <div className="flex items-center gap-2">
-              <Calendar className="text-brand-primary" size={16} />
-              {displayMatch.date}
+          <div className="relative h-full flex items-center px-12 z-10">
+            <div className="max-w-2xl space-y-6">
+              <div className="flex items-center gap-3">
+                <span className="bg-brand-primary text-white text-[10px] font-black px-2 py-0.5 rounded italic">ექსკლუზივი</span>
+                <span className="text-brand-primary text-[10px] font-black tracking-[0.2em] uppercase text-shadow-sm">{displayMatch.event}</span>
+              </div>
+              
+              <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.9]">
+                {displayMatch.title.includes('VS') ? displayMatch.title.split('VS').map((part: string, i: number) => (
+                  <span key={i}>
+                    {i > 0 && <span className="text-brand-primary mx-4 text-shadow-glow">VS</span>}
+                    {part.trim()}
+                  </span>
+                )) : displayMatch.title}
+              </h1>
+
+              <div className="flex items-center gap-6 text-zinc-400 font-bold uppercase tracking-widest text-[11px]">
+                <div className="flex items-center gap-2">
+                  <Calendar className="text-brand-primary" size={16} />
+                  {displayMatch.date}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="text-brand-primary" size={16} />
+                  სრული ტრანსლაცია
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 pt-4">
+                <Link 
+                  to={`/watch/${displayMatch.room_id}`}
+                  className="flex items-center gap-3 px-8 py-4 bg-brand-primary text-white font-black uppercase tracking-widest text-xs rounded-lg hover:bg-brand-primary-dark transition-all transform hover:scale-105 shadow-2xl shadow-brand-primary/40"
+                >
+                  <Play fill="currentColor" size={18} />
+                  ლაივ სტრიმი
+                </Link>
+                <button className="flex items-center gap-3 px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-black uppercase tracking-widest text-xs rounded-lg transition-all backdrop-blur-md border border-white/10">
+                  დეტალები
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="text-brand-primary" size={16} />
-              სრული ტრანსლაცია
+
+            <div className="absolute right-12 top-12 flex gap-4">
+              {[
+                { label: 'დღე', value: '00' },
+                { label: 'სთ', value: '00' },
+                { label: 'წთ', value: '00' },
+                { label: 'წმ', value: '00' }
+              ].map((item, i) => (
+                <div key={i} className="glass-card p-4 min-w-[70px] text-center">
+                  <div className="text-xl font-black text-white leading-none">{item.value}</div>
+                  <div className="text-[9px] font-black text-brand-primary uppercase mt-1">{item.label}</div>
+                </div>
+              ))}
             </div>
           </div>
-
-          <div className="flex items-center gap-4 pt-4">
-            <Link 
-              to={displayMatch.room_id ? `/watch/${displayMatch.room_id}` : "/live"}
-              className="flex items-center gap-3 px-8 py-4 bg-brand-primary text-white font-black uppercase tracking-widest text-xs rounded-lg hover:bg-brand-primary-dark transition-all transform hover:scale-105 shadow-2xl shadow-brand-primary/40"
-            >
-              <Play fill="currentColor" size={18} />
-              ლაივ სტრიმი
-            </Link>
-            <button className="flex items-center gap-3 px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-black uppercase tracking-widest text-xs rounded-lg transition-all backdrop-blur-md border border-white/10">
-              დეტალები
-            </button>
-          </div>
+        </>
+      ) : (
+        <div className="h-full w-full flex flex-col items-center justify-center text-center p-12 bg-[radial-gradient(circle_at_center,_var(--color-brand-primary)_0%,_transparent_100%)] opacity-20">
+          <Play size={48} className="text-brand-primary mb-6 animate-pulse" />
+          <h2 className="text-4xl font-black italic uppercase tracking-widest opacity-50">GeoStream Network</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.3em] mt-4 opacity-30">მოლოდინის რეჟიმი</p>
         </div>
-
-        {/* Countdown Timer as seen in image */}
-        <div className="absolute right-12 top-12 flex gap-4">
-          {[
-            { label: 'დღე', value: '00' },
-            { label: 'სთ', value: '00' },
-            { label: 'წთ', value: '00' },
-            { label: 'წმ', value: '00' }
-          ].map((item, i) => (
-            <div key={i} className="glass-card p-4 min-w-[80px] text-center">
-              <div className="text-2xl font-black text-white leading-none">{item.value}</div>
-              <div className="text-[10px] font-black text-brand-primary uppercase mt-1">{item.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </section>
   );
 }
