@@ -6,7 +6,7 @@ import LiveRoom from './pages/LiveRoom';
 import AdminDashboard from './pages/AdminDashboard';
 import AuthPage from './pages/Auth';
 import BroadcasterRoom from './pages/BroadcasterRoom';
-import Leaderboard from './pages/leaderboard';
+import Leaderboard from './pages/Leaderboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AnimatePresence } from 'motion/react';
 
