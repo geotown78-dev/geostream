@@ -9,6 +9,7 @@ export default function AdminDashboard() {
   const [team1, setTeam1] = useState('');
   const [team2, setTeam2] = useState('');
   const [roomId, setRoomId] = useState('');
+  const [streamKey, setStreamKey] = useState('');
   const [streamUrl, setStreamUrl] = useState('');
   const [vdsIp, setVdsIp] = useState(localStorage.getItem('vds_ip') || '');
   const [sessionSport, setSessionSport] = useState('Football');
@@ -20,9 +21,18 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (team1 && team2) {
-      setRoomId(`${slugify(team1)}-vs-${slugify(team2)}`);
+      const slug = `${slugify(team1)}-vs-${slugify(team2)}`;
+      setRoomId(slug);
+      // Generate a shorter, random stream key based on the slug
+      if (!streamKey) {
+        setStreamKey(`${slug}-${Math.random().toString(36).substring(2, 7)}`);
+      }
     } else if (team1 || team2) {
-      setRoomId(slugify(team1 || team2));
+      const slug = slugify(team1 || team2);
+      setRoomId(slug);
+      if (!streamKey) {
+        setStreamKey(`${slug}-${Math.random().toString(36).substring(2, 7)}`);
+      }
     }
   }, [team1, team2]);
 
@@ -142,8 +152,10 @@ export default function AdminDashboard() {
 
       // Auto-generate stream URL if not provided manually
       let finalStreamUrl = streamUrl;
+      const keyToUse = streamKey || id; // Fallback to id if key not set
+      
       if (!finalStreamUrl && vdsIp) {
-        finalStreamUrl = `http://${vdsIp}/hls/${id}.m3u8`;
+        finalStreamUrl = `http://${vdsIp}/hls/${keyToUse}.m3u8`;
       } else if (finalStreamUrl && finalStreamUrl.includes('/hls/') && !finalStreamUrl.endsWith('.m3u8')) {
         // Even if provided manually, if it's our HLS path, ensure extension
         finalStreamUrl += '.m3u8';
@@ -157,6 +169,7 @@ export default function AdminDashboard() {
         is_exclusive: sessionIsExclusive,
         thumbnail: sessionThumbnail,
         stream_url: finalStreamUrl,
+        stream_key: keyToUse,
         start_time: new Date().toISOString()
       };
 
@@ -350,6 +363,24 @@ export default function AdminDashboard() {
                           readOnly
                           className="w-full bg-zinc-900/40 border border-brand-border/30 rounded-xl px-5 py-3 text-zinc-500 font-mono text-xs outline-none"
                         />
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-brand-primary uppercase tracking-widest ml-1">OBS STREAM KEY (ეს ჩაწერეთ OBS-ში)</label>
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            value={streamKey}
+                            onChange={(e) => setStreamKey(e.target.value)}
+                            className="flex-1 bg-black border border-brand-primary/30 rounded-xl px-5 py-3 focus:border-brand-primary outline-none transition-all font-mono text-sm text-white"
+                          />
+                          <button 
+                            onClick={() => setStreamKey(`${roomId}-${Math.random().toString(36).substring(2, 7)}`)}
+                            className="px-4 bg-zinc-800 rounded-xl text-[9px] font-black uppercase hover:bg-zinc-700 transition-colors"
+                          >
+                            რეგენერაცია
+                          </button>
+                        </div>
                       </div>
 
                       <div className="space-y-3">
