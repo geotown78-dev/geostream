@@ -6,11 +6,23 @@ import { MOCK_EVENTS } from '../constants';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const [team1, setTeam1] = useState('');
+  const [team2, setTeam2] = useState('');
   const [roomId, setRoomId] = useState('');
   const [sessionSport, setSessionSport] = useState('Football');
   const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
   const [sessionThumbnail, setSessionThumbnail] = useState('');
   const [activeTab, setActiveTab ] = useState<'sessions' | 'streams' | 'highlights' | 'schedule'>('sessions');
+
+  const slugify = (text: string) => text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\u10D0-\u10FA\w-]+/g, '');
+
+  useEffect(() => {
+    if (team1 && team2) {
+      setRoomId(`${slugify(team1)}-vs-${slugify(team2)}`);
+    } else if (team1 || team2) {
+      setRoomId(slugify(team1 || team2));
+    }
+  }, [team1, team2]);
 
   // CMS States
   const [streams, setStreams] = useState<any[]>([]);
@@ -112,7 +124,9 @@ export default function AdminDashboard() {
       if (activeErr) console.warn('Active stream update failed:', activeErr);
 
       // 2. Sync with events table
-      const title = id.replace(/-/g, ' ').toUpperCase();
+      const formattedTitle = (team1 && team2) 
+        ? `${team1.toUpperCase()} VS ${team2.toUpperCase()}`
+        : id.replace(/-/g, ' ').toUpperCase();
       
       // We check if it exists first to avoid complex RLS issues with UPSERT
       const { data: existingEvent } = await supabase
@@ -123,7 +137,7 @@ export default function AdminDashboard() {
 
       const eventData = {
         room_name: id,
-        title: title,
+        title: formattedTitle,
         sport: sessionSport,
         is_live: true,
         is_exclusive: sessionIsExclusive,
@@ -287,80 +301,125 @@ export default function AdminDashboard() {
                       <StopCircle size={14} /> ყველა ლაივის შეჩერება
                     </button>
                   </div>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
-                    <div className="space-y-3 lg:col-span-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტრიმის ოთახის იდენტიფიკატორი</label>
-                      <input 
-                        type="text" 
-                        value={roomId}
-                        onChange={(e) => setRoomId(e.target.value)}
-                        placeholder="ჩემპიონთა-ლიგის-ფინალი"
-                        className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-xl uppercase tracking-tighter placeholder:text-zinc-800 text-white"
-                      />
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სპორტი</label>
-                      <select 
-                        value={sessionSport}
-                        onChange={(e) => setSessionSport(e.target.value)}
-                        className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-xs uppercase tracking-widest text-white appearance-none cursor-pointer"
-                      >
-                        <option value="Football">ფეხბურთი</option>
-                        <option value="UFC">UFC</option>
-                        <option value="Boxing">კრივი</option>
-                        <option value="NBA">NBA</option>
-                      </select>
-                    </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* Team Inputs Area */}
+                    <div className="lg:col-span-8 space-y-6">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">პირველი გუნდი</label>
+                          <input 
+                            type="text" 
+                            value={team1}
+                            onChange={(e) => setTeam1(e.target.value)}
+                            placeholder="მაგ: რეალ მადრიდი"
+                            className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-xl uppercase tracking-tighter placeholder:text-zinc-800 text-white"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">მეორე გუნდი</label>
+                          <input 
+                            type="text" 
+                            value={team2}
+                            onChange={(e) => setTeam2(e.target.value)}
+                            placeholder="მაგ: ბარსელონა"
+                            className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-xl uppercase tracking-tighter placeholder:text-zinc-800 text-white"
+                          />
+                        </div>
+                      </div>
 
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">თამბნეილი</label>
-                      <div className="flex gap-2">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტრიმის იდენტიფიკატორი (ავტომატური)</label>
                         <input 
                           type="text" 
-                          value={sessionThumbnail}
-                          onChange={(e) => setSessionThumbnail(e.target.value)}
-                          placeholder="URL..."
-                          className="flex-1 bg-black border border-brand-border rounded-xl px-4 py-4 focus:border-brand-primary outline-none transition-all font-bold text-xs text-white"
+                          value={roomId}
+                          readOnly
+                          className="w-full bg-zinc-900/40 border border-brand-border/30 rounded-xl px-5 py-3 text-zinc-500 font-mono text-xs outline-none"
                         />
-                        <label className="cursor-pointer bg-black/40 border border-brand-border p-4 rounded-xl hover:bg-brand-primary/20 transition-all flex items-center justify-center min-w-[50px]">
-                          {uploading === 'session-thumb' ? <Loader2 className="animate-spin text-brand-primary" size={18} /> : <Upload className="text-zinc-400" size={18} />}
-                          <input 
-                            type="file" 
-                            className="hidden" 
-                            accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const url = await handleFileUpload(file, 'private');
-                                if (url) setSessionThumbnail(url);
-                              }
-                            }}
-                          />
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                          თამბნეილის ატვირთვა <ImageIcon size={12} className="text-brand-primary" />
                         </label>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div className="md:col-span-3">
+                            <input 
+                              type="text" 
+                              value={sessionThumbnail}
+                              onChange={(e) => setSessionThumbnail(e.target.value)}
+                              placeholder="სურათის URL..."
+                              className="w-full bg-black border border-brand-border rounded-xl px-5 py-5 focus:border-brand-primary outline-none transition-all font-bold text-sm text-white"
+                            />
+                          </div>
+                          <label className="cursor-pointer bg-brand-primary/10 border-2 border-dashed border-brand-primary/30 rounded-xl px-5 py-5 hover:bg-brand-primary/20 hover:border-brand-primary transition-all flex items-center justify-center gap-3">
+                            {uploading === 'session-thumb' ? (
+                              <Loader2 className="animate-spin text-brand-primary" size={20} />
+                            ) : (
+                              <>
+                                <Upload className="text-brand-primary" size={20} />
+                                <span className="text-[10px] font-black uppercase text-brand-primary">ატვირთვა</span>
+                              </>
+                            )}
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const url = await handleFileUpload(file, 'private');
+                                  if (url) setSessionThumbnail(url);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტატუსი</label>
-                      <label className="flex items-center gap-3 px-5 py-[18px] bg-black border border-brand-border rounded-2xl cursor-pointer hover:border-brand-primary/50 transition-all group">
-                        <input 
-                          type="checkbox" 
-                          className="w-5 h-5 rounded accent-brand-primary" 
-                          checked={sessionIsExclusive}
-                          onChange={(e) => setSessionIsExclusive(e.target.checked)}
-                        />
-                        <span className="text-[10px] font-black uppercase text-zinc-400 group-hover:text-white transition-colors">ექსკლუზივი</span>
-                      </label>
-                    </div>
+                    {/* Controls Area */}
+                    <div className="lg:col-span-4 space-y-6">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სპორტის სახეობა</label>
+                        <select 
+                          value={sessionSport}
+                          onChange={(e) => setSessionSport(e.target.value)}
+                          className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-sm uppercase tracking-widest text-white appearance-none cursor-pointer"
+                        >
+                          <option value="Football">ფეხბურთი</option>
+                          <option value="UFC">UFC</option>
+                          <option value="Boxing">კრივი</option>
+                          <option value="NBA">NBA</option>
+                        </select>
+                      </div>
 
-                    <button 
-                      onClick={() => roomId && startStream(roomId)}
-                      disabled={!roomId}
-                      className="w-full py-5 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_-15px_rgba(255,0,51,0.5)] disabled:opacity-50 lg:col-span-5 mt-4"
-                    >
-                      <Monitor size={20} /> სესიის დაწყება
-                    </button>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტატუსი</label>
+                        <label className="flex items-center gap-4 px-6 py-[22px] bg-black border border-brand-border rounded-2xl cursor-pointer hover:border-brand-primary/50 transition-all group">
+                          <input 
+                            type="checkbox" 
+                            className="w-6 h-6 rounded accent-brand-primary" 
+                            checked={sessionIsExclusive}
+                            onChange={(e) => setSessionIsExclusive(e.target.checked)}
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-black uppercase text-white tracking-widest">ექსკლუზივი</span>
+                            <span className="text-[9px] font-bold text-zinc-500 uppercase">გამოჩნდება მთავარ ბანერზე</span>
+                          </div>
+                        </label>
+                      </div>
+
+                      <div className="pt-2">
+                        <button 
+                          onClick={() => roomId && startStream(roomId)}
+                          disabled={!roomId}
+                          className="w-full py-6 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4 shadow-[0_20px_40px_-15px_rgba(255,0,51,0.5)] disabled:opacity-50"
+                        >
+                          <Monitor size={22} /> 
+                          <span className="text-sm uppercase tracking-widest">სესიის დაწყება</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </section>
