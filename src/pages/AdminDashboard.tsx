@@ -7,6 +7,8 @@ import { MOCK_EVENTS } from '../constants';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [roomId, setRoomId] = useState('');
+  const [sessionSport, setSessionSport] = useState('Football');
+  const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
   const [activeTab, setActiveTab ] = useState<'sessions' | 'streams' | 'highlights' | 'schedule'>('sessions');
 
   // CMS States
@@ -98,12 +100,25 @@ export default function AdminDashboard() {
   const startStream = async (id: string) => {
     navigate(`/broadcast/${id}`);
     try {
+      // Update global stream
       await supabase.from('active_streams').upsert({ 
         id: 'global-stream', 
         room_id: id, 
         is_active: true,
         updated_at: new Date().toISOString()
       });
+
+      // Also ensure it's in the events table as live and potentially exclusive
+      const title = id.replace(/-/g, ' ').toUpperCase();
+      await supabase.from('events').upsert({
+        room_name: id,
+        title: title,
+        sport: sessionSport,
+        is_live: true,
+        is_exclusive: sessionIsExclusive,
+        start_time: new Date().toISOString()
+      }, { onConflict: 'room_name' });
+
     } catch (e) {
       console.warn('Supabase sync skipped or failed:', e);
     }
@@ -199,8 +214,8 @@ export default function AdminDashboard() {
                   <Radio size={14} className="text-brand-primary" /> სესიის ინიციალიზაცია
                 </h2>
                 <div className="bento-card p-10 bg-brand-primary/5 border-brand-primary/20 space-y-8">
-                  <div className="grid md:grid-cols-2 gap-8 items-end">
-                    <div className="space-y-3">
+                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 items-end">
+                    <div className="space-y-3 lg:col-span-2">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტრიმის ოთახის იდენტიფიკატორი</label>
                       <input 
                         type="text" 
@@ -210,10 +225,38 @@ export default function AdminDashboard() {
                         className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-xl uppercase tracking-tighter placeholder:text-zinc-800 text-white"
                       />
                     </div>
+                    
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სპორტი</label>
+                      <select 
+                        value={sessionSport}
+                        onChange={(e) => setSessionSport(e.target.value)}
+                        className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-xs uppercase tracking-widest text-white appearance-none cursor-pointer"
+                      >
+                        <option value="Football">ფეხბურთი</option>
+                        <option value="UFC">UFC</option>
+                        <option value="Boxing">კრივი</option>
+                        <option value="NBA">NBA</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტატუსი</label>
+                      <label className="flex items-center gap-3 px-5 py-[18px] bg-black border border-brand-border rounded-2xl cursor-pointer hover:border-brand-primary/50 transition-all group">
+                        <input 
+                          type="checkbox" 
+                          className="w-5 h-5 rounded accent-brand-primary" 
+                          checked={sessionIsExclusive}
+                          onChange={(e) => setSessionIsExclusive(e.target.checked)}
+                        />
+                        <span className="text-[10px] font-black uppercase text-zinc-400 group-hover:text-white transition-colors">ექსკლუზივი</span>
+                      </label>
+                    </div>
+
                     <button 
                       onClick={() => roomId && startStream(roomId)}
                       disabled={!roomId}
-                      className="w-full py-5 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_-15px_rgba(99,102,241,0.5)] disabled:opacity-50"
+                      className="w-full py-5 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_-15px_rgba(255,0,51,0.5)] disabled:opacity-50 lg:col-span-4 mt-4"
                     >
                       <Monitor size={20} /> სესიის დაწყება
                     </button>
