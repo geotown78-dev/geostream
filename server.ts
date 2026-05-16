@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { AccessToken, IngressClient, IngressInput, RoomServiceClient } from "livekit-server-sdk";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -19,6 +19,21 @@ const livekitUrl = rawUrl?.replace('wss://', 'https://').replace('ws://', 'http:
 
 const ingressClient = new IngressClient(livekitUrl || "", apiKey || "", apiSecret || "");
 const roomService = new RoomServiceClient(livekitUrl || "", apiKey || "", apiSecret || "");
+
+// --- Gemini Setup ---
+let genAI: GoogleGenerativeAI | null = null;
+
+function getGeminiModel() {
+  if (!genAI) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key || key === "MY_GEMINI_API_KEY" || key === "") {
+      throw new Error("GEMINI_API_KEY არის ცარიელი ან არასწორი. გთხოვთ დააყენოთ ის Settings > Secrets მენიუდან.");
+    }
+    genAI = new GoogleGenerativeAI(key);
+  }
+  return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+}
+// --------------------
 
 // API: Get Live Stats
 app.get("/api/stats", async (req, res) => {
@@ -135,11 +150,9 @@ app.post("/api/create-ingress", async (req, res) => {
   }
 });
 
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
 app.get("/api/leaderboard", async (req, res) => {
   try {
+    const model = getGeminiModel();
     const prompt = `Return a JSON array of current La Liga 2025-2026 standings (top 20 teams). 
     Fields: rank (number), team (string), logo (string placeholder url if possible or just name), played (number), won (number), drawn (number), lost (number), points (number).
     Return ONLY valid JSON. Note: today is ${new Date().toISOString()}.
@@ -154,9 +167,12 @@ app.get("/api/leaderboard", async (req, res) => {
     } else {
        throw new Error("Invalid JSON from Gemini: " + text);
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error("Leaderboard error:", err);
-    res.status(500).json({ error: "Failed to fetch standings from AI source" });
+    res.status(500).json({ 
+      error: "Failed to fetch standings from AI source",
+      details: err.message
+    });
   }
 });
 
