@@ -18,17 +18,14 @@ export default function Home() {
     async function fetchData() {
       try {
         // Fetch Exclusive Event (priority: live event first, then schedule)
-        const { data: exLive, error: liveExErr } = await supabase.from('events').select('*').eq('is_exclusive', true).order('id', { ascending: false }).limit(1).maybeSingle();
+        const { data: exLive } = await supabase.from('events').select('*').eq('is_exclusive', true).eq('is_live', true).order('id', { ascending: false }).limit(1).maybeSingle();
         
         if (exLive) {
           setExclusiveEvent(exLive);
         } else {
-          const { data: exSched, error: schedExErr } = await supabase.from('schedule').select('*').eq('is_exclusive', true).order('id', { ascending: false }).limit(1).maybeSingle();
+          const { data: exSched } = await supabase.from('schedule').select('*').eq('is_exclusive', true).order('time', { ascending: true }).limit(1).maybeSingle();
           if (exSched) setExclusiveEvent(exSched);
-          
-          if (liveExErr?.code === 'PGRST202' || schedExErr?.code === 'PGRST202' || liveExErr?.message?.includes('column')) {
-            console.warn('is_exclusive column missing in database.');
-          }
+          else setExclusiveEvent(null);
         }
 
         // Fetch Live Streams from 'events' table
@@ -57,6 +54,7 @@ export default function Home() {
           .maybeSingle();
         
         if (streamData?.is_active) setActiveBroadcast(streamData);
+        else setActiveBroadcast(null);
 
       } catch (e) {
         console.warn('Data fetch error:', e);
@@ -67,10 +65,11 @@ export default function Home() {
 
     fetchData();
 
-    // Set up real-time listener for live events
+    // Set up real-time listener for live events, schedule, and global status
     const channel = supabase
       .channel('home-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'active_streams' }, fetchData)
       .subscribe();
 
