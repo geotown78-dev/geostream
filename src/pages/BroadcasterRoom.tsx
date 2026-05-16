@@ -9,6 +9,7 @@ export default function BroadcasterRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [streamUrl, setStreamUrl] = useState<string>('');
+  const [streamKey, setStreamKey] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [isPausedGlobal, setIsPausedGlobal] = useState(false);
@@ -48,18 +49,22 @@ export default function BroadcasterRoom() {
         setLoading(true);
         const { data, error } = await supabase
           .from('events')
-          .select('stream_url')
+          .select('stream_url, stream_key')
           .eq('room_name', roomId)
           .maybeSingle();
         
         if (error) throw error;
-        if (data?.stream_url) {
-          let url = data.stream_url;
-          // Fix: Ensure URL ends with .m3u8 if it's our HLS path
-          if (url && url.includes('/hls/') && !url.endsWith('.m3u8')) {
-            url += '.m3u8';
+        if (data) {
+          if (data.stream_key) setStreamKey(data.stream_key);
+          
+          if (data.stream_url) {
+            let url = data.stream_url;
+            // Fix: Ensure URL ends with .m3u8 if it's our HLS path
+            if (url && url.includes('/hls/') && !url.endsWith('.m3u8')) {
+              url += '.m3u8';
+            }
+            setStreamUrl(url);
           }
-          setStreamUrl(url);
         }
       } catch (e: any) {
         console.error('Failed to fetch stream url:', e.message || e);
@@ -221,7 +226,7 @@ export default function BroadcasterRoom() {
                       <div className="space-y-2">
                         <label className="text-[9px] font-black text-brand-primary uppercase tracking-[0.2em]">OBS Stream Key</label>
                         <div className="p-3 bg-black rounded-lg border border-white/5 font-mono text-[10px] text-brand-primary break-all select-all">
-                          {roomId}
+                          {streamKey || roomId}
                         </div>
                       </div>
                     </div>
@@ -278,11 +283,11 @@ export default function BroadcasterRoom() {
                         </div>
                         <div className="flex gap-4">
                           <div className="w-6 h-6 rounded-lg bg-brand-primary text-black flex items-center justify-center shrink-0 font-black">3</div>
-                          <p>სტრიმის გასაღები (Key) დააყენეთ: <code>{roomId}</code></p>
+                          <p>სტრიმის გასაღები (Key) დააყენეთ: <code>{streamKey || roomId}</code></p>
                         </div>
                         <div className="flex gap-4">
                           <div className="w-6 h-6 rounded-lg bg-brand-primary text-black flex items-center justify-center shrink-0 font-black">4</div>
-                          <p>VDS სტრიმის მისამართი (HLS) იქნება: <code>http://{vdsIp || 'VDS_IP'}:8888/live/{roomId}/index.m3u8</code></p>
+                          <p>VDS სტრიმის მისამართი (HLS) იქნება: <code>http://{vdsIp || 'VDS_IP'}/hls/{streamKey || roomId}.m3u8</code></p>
                         </div>
                       </div>
                     </div>
