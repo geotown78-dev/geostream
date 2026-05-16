@@ -80,39 +80,39 @@ function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
 
       {/* Control Overlay */}
       <div className={cn(
-        "absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity z-30",
+        "absolute inset-x-0 bottom-0 p-4 sm:p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity z-30",
         effectivePaused ? "opacity-100" : "opacity-0 group-hover:opacity-100"
       )}>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button 
             onClick={() => setIsPaused(!isPaused)}
             disabled={isGlobalPaused}
             className={cn(
-              "w-12 h-12 rounded-2xl border backdrop-blur-md flex items-center justify-center transition-all shadow-lg",
+              "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border backdrop-blur-md flex items-center justify-center transition-all shadow-lg",
               isGlobalPaused 
                 ? "bg-zinc-800/50 border-white/5 cursor-not-allowed opacity-50" 
                 : "bg-brand-primary/20 border-brand-primary/30 hover:bg-brand-primary/40"
             )}
           >
-            {effectivePaused ? <Play size={24} fill="white" className="ml-1" /> : <Pause size={24} fill="white" />}
+            {effectivePaused ? <Play size={20} fill="white" className="ml-0.5 sm:ml-1" /> : <Pause size={20} fill="white" />}
           </button>
           
           <div className="flex flex-col">
-            <span className="text-[10px] font-black text-brand-primary uppercase tracking-widest">
+            <span className="text-[8px] sm:text-[10px] font-black text-brand-primary uppercase tracking-widest">
               {effectivePaused ? (isGlobalPaused ? 'დაპაუზებულია ადმინის მიერ' : 'დაპაუზებულია') : 'ლაივი'}
             </span>
-            <span className="text-xs font-bold text-white uppercase tracking-tighter">
+            <span className="text-[10px] sm:text-xs font-bold text-white uppercase tracking-tighter">
               {activeTrack?.source === Track.Source.ScreenShare ? 'ეკრანის გაზიარება' : 'კამერა'}
             </span>
           </div>
           
           {/* Volume Control */}
-          <div className="flex items-center gap-3 ml-6 bg-black/40 p-2 px-4 rounded-xl border border-white/5 backdrop-blur-md">
+          <div className="hidden xs:flex items-center gap-3 ml-2 sm:ml-6 bg-black/40 p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/5 backdrop-blur-md">
              <button 
               onClick={() => setIsMuted(!isMuted)}
               className="text-white hover:text-brand-primary transition-colors"
              >
-               {isMuted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+               {isMuted || volume === 0 ? <VolumeX size={16} sm:size={18} /> : <Volume2 size={16} sm:size={18} />}
              </button>
              <input 
               type="range"
@@ -124,17 +124,17 @@ function ViewerStream({ isGlobalPaused }: { isGlobalPaused: boolean }) {
                 setVolume(parseFloat(e.target.value));
                 if (isMuted) setIsMuted(false);
               }}
-              className="w-24 h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+              className="w-16 sm:w-24 h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-primary"
              />
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button 
             onClick={toggleFullscreen}
-            className="w-12 h-12 rounded-2xl bg-zinc-800/40 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-zinc-800 transition-all"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-zinc-800/40 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-zinc-800 transition-all"
           >
-            <Maximize size={20} className="text-white" />
+            <Maximize size={18} className="text-white" />
           </button>
         </div>
       </div>
@@ -222,7 +222,7 @@ export default function LiveRoom() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-black pt-32 pb-12 px-6">
+    <div className="min-h-screen bg-brand-black pt-20 sm:pt-32 pb-12 px-4 sm:px-6">
       <style>{`
         /* Hide participant list, control bar and sidebar for viewers */
         .viewer-mode .lk-control-bar,
@@ -257,12 +257,20 @@ export default function LiveRoom() {
           background: transparent !important;
           border: none !important;
         }
+        
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
       `}</style>
 
-      <div className="max-w-[1600px] mx-auto gap-6 grid grid-cols-12 overflow-hidden h-[calc(100vh-10rem)]">
+      <div className="max-w-[1600px] mx-auto gap-6 sm:grid sm:grid-cols-12 overflow-hidden h-auto sm:h-[calc(100vh-10rem)]">
         {/* Main Stream Area */}
-        <div className="col-span-12 lg:col-span-9 flex flex-col gap-6 h-full overflow-hidden">
-          <div className="flex-1 bg-brand-surface rounded-[2.5rem] overflow-hidden border border-brand-border relative group shadow-2xl">
+        <div className="col-span-12 lg:col-span-9 flex flex-col gap-4 sm:gap-6 h-full overflow-hidden">
+          <div className="aspect-video sm:flex-1 bg-brand-surface rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-brand-border relative group shadow-2xl">
             <LiveKitRoom
               video={false}
               audio={false}
@@ -278,37 +286,37 @@ export default function LiveRoom() {
             </LiveKitRoom>
             
             {/* Custom Overlay */}
-            <div className="absolute top-6 left-6 z-20 flex gap-3 pointer-events-none">
-              <div className="bg-red-600 text-white px-3 py-1 rounded-md text-[10px] font-black flex items-center gap-2 uppercase">
-                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> 
-                პირდაპირი ეთერი
+            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex gap-2 sm:gap-3 pointer-events-none">
+              <div className="bg-red-600 text-white px-2 sm:px-3 py-1 rounded-md text-[8px] sm:text-[10px] font-black flex items-center gap-1.5 sm:gap-2 uppercase">
+                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-white rounded-full animate-pulse"></span> 
+                პირდაპირი
               </div>
-              <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">
+              <div className="bg-black/60 backdrop-blur-md px-2 sm:px-3 py-1 rounded-md text-[8px] sm:text-[10px] font-black uppercase tracking-widest hidden xs:block text-zinc-300">
                 4K • 60 FPS
               </div>
             </div>
             
-            <div className="absolute bottom-8 right-8 z-20 flex items-center gap-4 text-xs font-black bg-black/40 backdrop-blur-md p-2 px-4 rounded-xl border border-white/10 pointer-events-none">
+            <div className="absolute bottom-16 sm:bottom-8 right-4 sm:right-8 z-20 flex items-center gap-3 sm:gap-4 text-[9px] sm:text-xs font-black bg-black/40 backdrop-blur-md p-1.5 sm:p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/10 pointer-events-none">
               <div className="text-zinc-100 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-brand-primary" />
-                124.5K მაყურებელი
+                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-brand-primary" />
+                124.5K
               </div>
-              <div className="h-4 w-[1px] bg-white/20" />
-              <div className="text-brand-primary uppercase tracking-widest">დაბალი დაყოვნება</div>
+              <div className="h-3 sm:h-4 w-[1px] bg-white/20" />
+              <div className="text-brand-primary uppercase tracking-widest">LIVE</div>
             </div>
           </div>
           
-          <div className="bento-card p-8 bg-zinc-900/40">
-            <div className="flex justify-between items-end">
+          <div className="bento-card p-6 sm:p-8 bg-zinc-900/40">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-6 sm:gap-0">
               <div>
-                <h1 className="text-4xl font-black mb-2 uppercase tracking-tighter italic">
+                <h1 className="text-xl sm:text-4xl font-black mb-2 uppercase tracking-tighter italic">
                   უყურებთ: <span className="text-brand-primary">{roomId?.replace(/-/g, ' ')}</span>
                 </h1>
-                <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.2em]">სესიის ID: {roomId}-prod-01</p>
+                <p className="text-zinc-500 font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.2em]">სესიის ID: {roomId}-prod-01</p>
               </div>
               <button 
                 onClick={() => navigate('/')}
-                className="px-6 py-3 bg-brand-surface border border-brand-border rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-surface-light transition-all flex items-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 bg-brand-surface border border-brand-border rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-brand-surface-light transition-all flex items-center justify-center gap-2"
               >
                 <ArrowLeft size={14} /> სტრიმიდან გამოსვლა
               </button>
