@@ -142,12 +142,12 @@ export default function Home() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <h2 className="text-xl font-black uppercase tracking-tighter italic">UPCOMING <span className="text-brand-primary">EVENTS</span></h2>
             
-            <div className="flex items-center p-1 bg-brand-surface border border-brand-border rounded-xl overflow-hidden shrink-0">
+            <div className="flex items-center p-1 bg-brand-surface border border-brand-border rounded-xl overflow-x-auto no-scrollbar shrink-0 max-w-full">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveTab(cat)}
-                  className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                  className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${
                     activeTab === cat ? 'bg-brand-primary text-white' : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
@@ -189,24 +189,24 @@ export default function Home() {
         </section>
 
         {/* Info Banner Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 glass-card p-10 relative overflow-hidden group">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12 sm:pb-0">
+          <div className="lg:col-span-8 glass-card p-6 sm:p-10 relative overflow-hidden group">
             <div className="absolute -right-8 -bottom-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
               <TrendingUp size={300} />
             </div>
             <div className="relative z-10 max-w-lg">
-              <h3 className="text-3xl font-black italic uppercase italic mb-4">გახდი <span className="text-brand-primary">გეოსტრიმერი</span></h3>
-              <p className="text-zinc-400 font-bold leading-relaxed mb-8">
+              <h3 className="text-2xl sm:text-3xl font-black italic uppercase italic mb-4">გახდი <span className="text-brand-primary">გეოსტრიმერი</span></h3>
+              <p className="text-zinc-400 font-bold leading-relaxed mb-8 text-xs sm:text-sm">
                 შემოუერთდი პირველ ქართულ სტრიმინგ პლატფორმას. გაუზიარე შენი თამაში ათასობით მაყურებელს და გახდი სპორტული სამყაროს ნაწილი.
               </p>
-              <button className="px-8 py-4 bg-brand-primary text-white text-xs font-black uppercase tracking-widest rounded-lg hover:shadow-[0_0_30px_-5px_rgba(255,0,51,0.5)] transition-all">დაიწყე ახლა</button>
+              <button className="w-full sm:w-auto px-8 py-4 bg-brand-primary text-white text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-lg hover:shadow-[0_0_30px_-5px_rgba(255,0,51,0.5)] transition-all">დაიწყე ახლა</button>
             </div>
           </div>
           
           <div className="lg:col-span-4 bg-brand-surface border border-brand-border rounded-xl p-8 flex flex-col justify-center text-center">
             <Trophy size={48} className="text-brand-primary mx-auto mb-6" />
-            <h4 className="text-base font-black uppercase mb-2">GeoStream Network</h4>
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">სპექტაკლი მუდამ გრძელდება</p>
+            <h4 className="text-sm sm:text-base font-black uppercase mb-2">GeoStream Network</h4>
+            <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">სპექტაკლი მუდამ გრძელდება</p>
           </div>
         </div>
       </div>
