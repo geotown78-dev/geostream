@@ -1,12 +1,11 @@
 {
-  "name": "GeoStream",
-  "description": "ქართული სტრიმინგ პლატფორმა სპორტული და ლაივ ივენთებისთვის.",
+  "name": "GeoStream VDS",
+  "description": "ქართული სტრიმინგ პლატფორმა საკუთარი VDS სერვერის მხარდაჭერით (Self-hosted streaming).",
   "requestFramePermissions": [
     "camera",
     "microphone"
   ],
   "majorCapabilities": [
-    "live_streaming",
-    "realtime_database"
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }
