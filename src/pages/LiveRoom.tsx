@@ -135,10 +135,10 @@ export default function LiveRoom() {
 
     const syncPauseState = async () => {
       try {
-        const { data, error } = await supabase.from('active_streams').select('is_paused').eq('id', 'global-stream').single();
+        const { data, error } = await supabase.from('active_streams').select('is_paused').eq('id', 'global-stream').maybeSingle();
         if (data) setIsGlobalPaused(!!data.is_paused);
-      } catch (err) {
-        console.error('Error syncing pause state:', err);
+      } catch (err: any) {
+        console.error('Error syncing pause state:', err.message || err);
       }
     };
 
@@ -149,14 +149,14 @@ export default function LiveRoom() {
           .from('events')
           .select('stream_url')
           .eq('room_name', roomId)
-          .single();
+          .maybeSingle();
         
         if (error) throw error;
         if (data?.stream_url) {
           setStreamUrl(data.stream_url);
         }
-      } catch (e) {
-        console.error('Failed to fetch stream url:', e);
+      } catch (e: any) {
+        console.error('Failed to fetch stream url:', e.message || e);
         // Default to a placeholder if needed, or error out
          setError('სტრიმის ინფორმაცია ვერ მოიძებნა ბაზაში.');
       } finally {
