@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Hero, LiveCard, UpcomingCard } from '../components/UI';
 import { Calendar, Trophy, ChevronRight, TrendingUp } from 'lucide-react';
@@ -203,10 +203,36 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="lg:col-span-4 bg-brand-surface border border-brand-border rounded-xl p-8 flex flex-col justify-center text-center">
-            <Trophy size={48} className="text-brand-primary mx-auto mb-6" />
-            <h4 className="text-sm sm:text-base font-black uppercase mb-2">GeoStream Network</h4>
-            <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">სპექტაკლი მუდამ გრძელდება</p>
+          <div className="lg:col-span-4 bg-brand-surface border border-brand-border rounded-xl p-6 flex flex-col justify-start">
+            <div className="flex items-center justify-between mb-6">
+              <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <Trophy size={14} className="text-brand-primary" /> LA LIGA TOP 5
+              </h4>
+              <Link to="/stats" className="text-[9px] font-black uppercase text-zinc-500 hover:text-brand-primary transition-colors">სრული</Link>
+            </div>
+            
+            <div className="space-y-3">
+              {[
+                { name: 'Barcelona', pts: 88, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_logo.svg/1200px-FC_Barcelona_logo.svg.png' },
+                { name: 'Real Madrid', pts: 84, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/1200px-Real_Madrid_CF.svg.png' },
+                { name: 'Atlético', pts: 73, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Atletico_madrid_2017_logo.svg/1200px-Atletico_madrid_2017_logo.svg.png' },
+                { name: 'Villarreal', pts: 65, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Villarreal_CF_logo.svg/1200px-Villarreal_CF_logo.svg.png' },
+                { name: 'Athletic', pts: 63, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/9/98/Club_Athletic_Bilbao_logo.svg/1200px-Club_Athletic_Bilbao_logo.svg.png' }
+              ].map((team, i) => (
+                <div key={team.name} className="flex items-center justify-between p-2 rounded-lg bg-black/20 border border-white/5 hover:border-brand-primary/30 transition-all group">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black italic text-zinc-600 w-4">{i + 1}</span>
+                    <img src={team.logo} className="w-5 h-5 object-contain" alt="" />
+                    <span className="text-[10px] font-black uppercase italic group-hover:text-brand-primary transition-colors">{team.name}</span>
+                  </div>
+                  <span className="text-[10px] font-black text-brand-primary">{team.pts}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-brand-border text-center">
+              <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-[0.2em]">სპექტაკლი მუდამ გრძელდება</p>
+            </div>
           </div>
         </div>
       </div>
