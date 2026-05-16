@@ -81,6 +81,22 @@ export default function Home() {
 
   const categories = ['All', 'Football', 'UFC', 'Boxing', 'NBA'];
 
+  const handleDelete = async (table: string, id: string) => {
+    if (!window.confirm('ნამდვილად გსურთ წაშლა?')) return;
+    try {
+      const { error } = await supabase.from(table).delete().eq('id', id);
+      if (error) {
+        alert('წაშლა ვერ მოხერხდა: ' + error.message);
+      } else {
+        // Local refresh
+        if (table === 'events') setLiveEvents(prev => prev.filter(e => e.id !== id));
+        if (table === 'schedule') setUpcomingEvents(prev => prev.filter(e => e.id !== id));
+      }
+    } catch (e) {
+      console.error('Delete error:', e);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <Hero activeBroadcast={activeBroadcast} exclusiveEvent={exclusiveEvent} />
@@ -111,7 +127,7 @@ export default function Home() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                 >
-                  <LiveCard event={event} />
+                  <LiveCard event={event} onDelete={(id) => handleDelete('events', id)} />
                 </motion.div>
               ))
             ) : (
@@ -162,7 +178,7 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
                 >
-                  <UpcomingCard event={event} />
+                  <UpcomingCard event={event} onDelete={(id) => handleDelete('schedule', id)} />
                 </motion.div>
               ))
             ) : (
