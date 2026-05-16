@@ -50,14 +50,14 @@ export default function BroadcasterRoom() {
           .from('events')
           .select('stream_url')
           .eq('room_name', roomId)
-          .single();
+          .maybeSingle();
         
         if (error) throw error;
         if (data?.stream_url) {
           setStreamUrl(data.stream_url);
         }
-      } catch (e) {
-        console.error('Failed to fetch stream url:', e);
+      } catch (e: any) {
+        console.error('Failed to fetch stream url:', e.message || e);
          // setError('სტრიმის ინფორმაცია ვერ მოიძებნა ბაზაში.');
       } finally {
         setLoading(false);
