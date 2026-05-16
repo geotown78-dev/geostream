@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { AccessToken, IngressClient, IngressInput, RoomServiceClient } from "livekit-server-sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -131,6 +132,31 @@ app.post("/api/create-ingress", async (req, res) => {
       error: e?.message || "Failed to create ingress",
       details: "თქვენი LiveKit პროექტი არ უჭერს მხარს RTMP-ს ან სერვერი დროებით მიუწვდომელია."
     });
+  }
+});
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    const prompt = `Return a JSON array of current La Liga 2025-2026 standings (top 20 teams). 
+    Fields: rank (number), team (string), logo (string placeholder url if possible or just name), played (number), won (number), drawn (number), lost (number), points (number).
+    Return ONLY valid JSON. Note: today is ${new Date().toISOString()}.
+    Note: if the season is over or in progress, provide the most up-to-date realistic standings based on your knowledge current as of May 16, 2026. 
+    Ensure it is a valid JSON array of objects.`;
+    
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+       res.json(JSON.parse(jsonMatch[0]));
+    } else {
+       throw new Error("Invalid JSON from Gemini: " + text);
+    }
+  } catch (err) {
+    console.error("Leaderboard error:", err);
+    res.status(500).json({ error: "Failed to fetch standings from AI source" });
   }
 });
 
