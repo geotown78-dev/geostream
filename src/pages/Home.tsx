@@ -212,22 +212,27 @@ export default function Home() {
             </div>
             
             <div className="space-y-3">
-              {[
-                { name: 'Barcelona', pts: 88, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_logo.svg/1200px-FC_Barcelona_logo.svg.png' },
-                { name: 'Real Madrid', pts: 84, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/1200px-Real_Madrid_CF.svg.png' },
-                { name: 'Atlético', pts: 73, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Atletico_madrid_2017_logo.svg/1200px-Atletico_madrid_2017_logo.svg.png' },
-                { name: 'Villarreal', pts: 65, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Villarreal_CF_logo.svg/1200px-Villarreal_CF_logo.svg.png' },
-                { name: 'Athletic', pts: 63, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/9/98/Club_Athletic_Bilbao_logo.svg/1200px-Club_Athletic_Bilbao_logo.svg.png' }
-              ].map((team, i) => (
-                <div key={team.name} className="flex items-center justify-between p-2 rounded-lg bg-black/20 border border-white/5 hover:border-brand-primary/30 transition-all group">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black italic text-zinc-600 w-4">{i + 1}</span>
-                    <img src={team.logo} className="w-5 h-5 object-contain" alt="" />
-                    <span className="text-[10px] font-black uppercase italic group-hover:text-brand-primary transition-colors">{team.name}</span>
+              {(function() {
+                const saved = localStorage.getItem('laliga_leaderboard');
+                const data = saved ? JSON.parse(saved).slice(0, 5) : [
+                  { name: 'Barcelona', points: 91, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_logo.svg/1200px-FC_Barcelona_logo.svg.png' },
+                  { name: 'Real Madrid', points: 80, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/1200px-Real_Madrid_CF.svg.png' },
+                  { name: 'Villarreal', points: 69, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Villarreal_CF_logo.svg/1200px-Villarreal_CF_logo.svg.png' },
+                  { name: 'Atlético Madrid', points: 66, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Atletico_madrid_2017_logo.svg/1200px-Atletico_madrid_2017_logo.svg.png' },
+                  { name: 'Real Betis', points: 57, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Real_Betis_logo.svg/1200px-Real_Betis_logo.svg.png' }
+                ];
+                
+                return data.map((team: any, i: number) => (
+                  <div key={team.name} className="flex items-center justify-between p-2 rounded-lg bg-black/20 border border-white/5 hover:border-brand-primary/30 transition-all group">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black italic text-zinc-600 w-4">{i + 1}</span>
+                      <img src={team.logo || team.thumbnail || (team.name === 'Atlético Madrid' ? 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Atletico_madrid_2017_logo.svg/1200px-Atletico_madrid_2017_logo.svg.png' : '')} className="w-5 h-5 object-contain" alt="" />
+                      <span className="text-[10px] font-black uppercase italic group-hover:text-brand-primary transition-colors truncate max-w-[80px]">{team.name}</span>
+                    </div>
+                    <span className="text-[10px] font-black text-brand-primary">{team.points || team.pts}</span>
                   </div>
-                  <span className="text-[10px] font-black text-brand-primary">{team.pts}</span>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
 
             <div className="mt-6 pt-4 border-t border-brand-border text-center">
