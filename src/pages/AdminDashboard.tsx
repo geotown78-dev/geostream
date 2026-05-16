@@ -9,6 +9,7 @@ export default function AdminDashboard() {
   const [roomId, setRoomId] = useState('');
   const [sessionSport, setSessionSport] = useState('Football');
   const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
+  const [sessionThumbnail, setSessionThumbnail] = useState('');
   const [activeTab, setActiveTab ] = useState<'sessions' | 'streams' | 'highlights' | 'schedule'>('sessions');
 
   // CMS States
@@ -126,6 +127,7 @@ export default function AdminDashboard() {
         sport: sessionSport,
         is_live: true,
         is_exclusive: sessionIsExclusive,
+        thumbnail: sessionThumbnail,
         start_time: new Date().toISOString()
       };
 
@@ -285,7 +287,7 @@ export default function AdminDashboard() {
                       <StopCircle size={14} /> ყველა ლაივის შეჩერება
                     </button>
                   </div>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 items-end">
+                  <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
                     <div className="space-y-3 lg:col-span-2">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტრიმის ოთახის იდენტიფიკატორი</label>
                       <input 
@@ -312,6 +314,34 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="space-y-3">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">თამბნეილი</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={sessionThumbnail}
+                          onChange={(e) => setSessionThumbnail(e.target.value)}
+                          placeholder="URL..."
+                          className="flex-1 bg-black border border-brand-border rounded-xl px-4 py-4 focus:border-brand-primary outline-none transition-all font-bold text-xs text-white"
+                        />
+                        <label className="cursor-pointer bg-black/40 border border-brand-border p-4 rounded-xl hover:bg-brand-primary/20 transition-all flex items-center justify-center min-w-[50px]">
+                          {uploading === 'session-thumb' ? <Loader2 className="animate-spin text-brand-primary" size={18} /> : <Upload className="text-zinc-400" size={18} />}
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const url = await handleFileUpload(file, 'private');
+                                if (url) setSessionThumbnail(url);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტატუსი</label>
                       <label className="flex items-center gap-3 px-5 py-[18px] bg-black border border-brand-border rounded-2xl cursor-pointer hover:border-brand-primary/50 transition-all group">
                         <input 
@@ -327,7 +357,7 @@ export default function AdminDashboard() {
                     <button 
                       onClick={() => roomId && startStream(roomId)}
                       disabled={!roomId}
-                      className="w-full py-5 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_-15px_rgba(255,0,51,0.5)] disabled:opacity-50 lg:col-span-4 mt-4"
+                      className="w-full py-5 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_-15px_rgba(255,0,51,0.5)] disabled:opacity-50 lg:col-span-5 mt-4"
                     >
                       <Monitor size={20} /> სესიის დაწყება
                     </button>
