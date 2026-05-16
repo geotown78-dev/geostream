@@ -18,16 +18,16 @@ export default function Home() {
     async function fetchData() {
       try {
         // Fetch Exclusive Event (priority: live event first, then schedule)
-        const { data: exLive, error: liveExErr } = await supabase.from('events').select('*').eq('is_exclusive', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
+        const { data: exLive, error: liveExErr } = await supabase.from('events').select('*').eq('is_exclusive', true).order('id', { ascending: false }).limit(1).maybeSingle();
         
         if (exLive) {
           setExclusiveEvent(exLive);
         } else {
-          const { data: exSched, error: schedExErr } = await supabase.from('schedule').select('*').eq('is_exclusive', true).order('time', { ascending: true }).limit(1).maybeSingle();
+          const { data: exSched, error: schedExErr } = await supabase.from('schedule').select('*').eq('is_exclusive', true).order('id', { ascending: false }).limit(1).maybeSingle();
           if (exSched) setExclusiveEvent(exSched);
           
-          if (liveExErr?.code === 'PGRST204' || schedExErr?.code === 'PGRST204' || liveExErr?.message?.includes('column')) {
-            console.warn('is_exclusive column missing in database. Please add it via SQL Editor.');
+          if (liveExErr?.code === 'PGRST202' || schedExErr?.code === 'PGRST202' || liveExErr?.message?.includes('column')) {
+            console.warn('is_exclusive column missing in database.');
           }
         }
 
@@ -36,7 +36,7 @@ export default function Home() {
           .from('events')
           .select('*')
           .eq('is_live', true)
-          .order('created_at', { ascending: false });
+          .order('id', { ascending: false });
         
         setLiveEvents(liveData || []);
 
@@ -81,8 +81,6 @@ export default function Home() {
 
   const categories = ['All', 'Football', 'UFC', 'Boxing', 'NBA'];
 
-  if (loading) return null;
-
   return (
     <div className="min-h-screen">
       <Hero activeBroadcast={activeBroadcast} exclusiveEvent={exclusiveEvent} />
@@ -99,7 +97,13 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {liveEvents.length > 0 ? (
+            {loading ? (
+              [1, 2, 3, 4].map((i) => (
+                <div key={i} className="aspect-video bg-brand-surface border border-brand-border rounded-xl animate-pulse flex items-center justify-center opacity-20">
+                  <div className="text-[10px] font-black tracking-widest uppercase">იტვირთება...</div>
+                </div>
+              ))
+            ) : liveEvents.length > 0 ? (
               liveEvents.map((event, i) => (
                 <motion.div
                   key={event.id || i}
@@ -111,11 +115,9 @@ export default function Home() {
                 </motion.div>
               ))
             ) : (
-              [1, 2, 3, 4].map((i) => (
-                <div key={i} className="aspect-video bg-brand-surface border border-brand-border rounded-xl animate-pulse flex items-center justify-center opacity-20">
-                  <div className="text-[10px] font-black tracking-widest uppercase">No Live Streams</div>
-                </div>
-              ))
+              <div className="col-span-full py-12 text-center border border-dashed border-zinc-800 rounded-xl opacity-30">
+                <p className="text-[10px] font-black uppercase tracking-widest">აქტიური ლაივები არ არის</p>
+              </div>
             )}
           </div>
         </section>
@@ -141,7 +143,17 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {upcomingEvents.length > 0 ? (
+            {loading ? (
+              [1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-40 bg-brand-surface border border-brand-border rounded-xl animate-pulse overflow-hidden">
+                  <div className="p-5 opacity-10">
+                    <div className="w-8 h-8 bg-white/20 rounded mb-4" />
+                    <div className="h-4 bg-white/20 rounded w-2/3 mb-2" />
+                    <div className="h-2 bg-white/20 rounded w-1/2" />
+                  </div>
+                </div>
+              ))
+            ) : upcomingEvents.length > 0 ? (
               upcomingEvents.map((event, i) => (
                 <motion.div
                   key={event.id || i}
@@ -154,15 +166,9 @@ export default function Home() {
                 </motion.div>
               ))
             ) : (
-              [1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-40 bg-brand-surface border border-brand-border rounded-xl animate-pulse overflow-hidden">
-                  <div className="p-5 opacity-10">
-                    <div className="w-8 h-8 bg-white/20 rounded mb-4" />
-                    <div className="h-4 bg-white/20 rounded w-2/3 mb-2" />
-                    <div className="h-2 bg-white/20 rounded w-1/2" />
-                  </div>
-                </div>
-              ))
+              <div className="col-span-full py-12 text-center border border-dashed border-zinc-800 rounded-xl opacity-30">
+                <p className="text-[10px] font-black uppercase tracking-widest">დაგეგმილი ღონისძიებები არ არის</p>
+              </div>
             )}
           </div>
         </section>
