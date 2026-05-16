@@ -49,7 +49,7 @@ function AppContent() {
       
       <main className="pl-20 pt-20">
         <div className="max-w-[1700px] mx-auto p-8 overflow-x-hidden">
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/watch/:roomId" element={<LiveRoom />} />
