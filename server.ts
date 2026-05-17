@@ -13,9 +13,19 @@ app.use(express.urlencoded({ extended: true }));
 
 // Supabase Init for Webhook
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
+
 const supabaseAdmin = createClient(
   process.env.VITE_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '',
+  {
+    auth: {
+      persistSession: false
+    },
+    realtime: {
+      transport: ws
+    }
+  }
 );
 
 // Nginx RTMP Webhook
