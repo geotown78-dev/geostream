@@ -13,8 +13,12 @@ export default function AdminDashboard() {
   const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
   const [sessionThumbnail, setSessionThumbnail] = useState('');
   const [vdsIp, setVdsIp] = useState(localStorage.getItem('vds_ip') || '5.83.153.142');
-  const [streamType, setStreamType] = useState<'hls' | 'livekit'>('hls');
-  const [livekitUrl, setLivekitUrl] = useState(localStorage.getItem('livekit_url') || 'ws://5.83.153.142:7880');
+  const [livekitUrl, setLivekitUrl] = useState(
+    localStorage.getItem('livekit_url') || 
+    (window.location.protocol === 'https:' 
+      ? `wss://${window.location.hostname}/rtc` 
+      : `ws://5.83.153.142:7880`)
+  );
   const [showSessionDetails, setShowSessionDetails] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
   const [streamKey, setStreamKey] = useState('');
@@ -327,6 +331,27 @@ export default function AdminDashboard() {
                        </div>
                     </div>
 
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl space-y-3">
+                       <p className="text-[10px] font-black text-red-500 uppercase flex items-center gap-2">
+                         <Settings size={12} />
+                         🚨 HTTPS / SSL FIX (Nginx Proxy)
+                       </p>
+                       <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
+                          რადგან საიტი <span className="text-white font-bold">HTTPS</span>-ზეა, უნდა გამოიყენოთ <span className="text-blue-400 font-bold">WSS</span>. <br/>
+                          დაამატეთ ეს თქვენს Nginx კონფიგში (`/etc/nginx/sites-available/geostream`):
+                       </p>
+                       <pre className="text-[7px] font-mono text-zinc-300 bg-black/60 p-3 rounded-lg border border-white/5 leading-normal">
+{`location /rtc {
+    proxy_pass http://127.0.0.1:7880;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "Upgrade";
+    proxy_set_header Host $host;
+}`}
+                       </pre>
+                       <p className="text-[7px] text-zinc-500 italic">ამის შემდეგ LiveKit URL იქნება: <span className="text-white">wss://{window.location.hostname}/rtc</span></p>
+                    </div>
+
                     <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-2">
                        <p className="text-[9px] font-bold text-blue-400 uppercase">💡 მნიშვნელოვანი რჩევა</p>
                        <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
@@ -344,22 +369,25 @@ export default function AdminDashboard() {
                   </p>
                   <div className="grid grid-cols-1 gap-3">
                     <div className="p-3 bg-black/60 rounded-xl border border-red-500/10">
-                      <p className="text-[10px] text-white font-bold mb-1">1. შეამოწმეთ Firewall (VDS-ზე)</p>
-                      <code className="text-[9px] font-mono text-zinc-400 block bg-zinc-900/50 p-2 rounded">
-                        sudo ufw allow 1935,7880,7885/tcp
+                      <p className="text-[10px] text-white font-bold mb-1">1. Unknown directive "rtmp" (Nginx ფიქსი)</p>
+                      <p className="text-[8px] text-zinc-500 mb-2">თუ ტერმინალში ამ ერორს გიწერთ, გახსენით <code className="text-blue-400">/etc/nginx/nginx.conf</code> და სულ თავში დაამატეთ:</p>
+                      <code className="text-[9px] font-mono text-zinc-300 block bg-zinc-900/50 p-2 rounded">
+                        load_module modules/ngx_rtmp_module.so;
                       </code>
                     </div>
                     <div className="p-3 bg-black/60 rounded-xl border border-red-500/10 text-[9px] text-zinc-400 leading-relaxed uppercase">
-                      <p className="text-white font-bold mb-1">2. შეამოწმეთ Nginx/LiveKit სტატუსი</p>
-                      <code className="block bg-zinc-900/50 p-2 rounded text-zinc-300 font-mono mt-1">
-                        pm2 status
-                      </code>
+                      <p className="text-white font-bold mb-1">2. Invalid Port in URL (Nginx Fix)</p>
+                      <p className="text-[8px] text-zinc-500 mb-1">თუ გიწერთ <code className="text-red-400 italic">"invalid port in url"</code>:</p>
+                      <ul className="list-disc pl-4 space-y-1 text-[7px] text-zinc-500 lowercase">
+                         <li>Nginx RTMP არ უჭერს მხარს <span className="text-white">HTTPS</span>-ს Webhook-ებისთვის (<code className="text-white">on_publish</code>).</li>
+                         <li>წაშალეთ <code className="text-white">on_publish</code> ხაზი კონფიგიდან ტესტირებისთვის.</li>
+                         <li>ან გამოიყენეთ <span className="text-white">LiveKit Ingress</span> (ვარიანტი 1), მას საერთოდ არ სჭირდება Nginx.</li>
+                      </ul>
                     </div>
                     <div className="p-3 bg-black/60 rounded-xl border border-red-500/10 text-[9px] text-zinc-400 leading-relaxed uppercase">
-                      <p className="text-white font-bold mb-1">3. LOW LATENCY CONFIG</p>
-                      Settings {"->"} Output {"->"} Output Mode: <span className="text-white">Advanced</span>. <br/>
-                      Tune: <span className="text-blue-400">Zero-Latency</span>. <br/>
-                      სქრინის ხარისხისთვის გამოიყენეთ <span className="text-white">CBR</span> (4000-6000 Kbps).
+                      <p className="text-white font-bold mb-1">3. HTTPS / Chrome Flag</p>
+                      თუ საიტი არის <span className="text-white font-bold">HTTP</span> და არა HTTPS, კამერა/აუდიო იბლოკება. <br/>
+                      ჩართეთ: <code className="text-blue-400 select-all">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code> და ჩაწერეთ საიტის IP.
                     </div>
                   </div>
                 </div>
