@@ -43,8 +43,14 @@ export default function LiveKitStream({ roomName, userName, serverUrl }: LiveKit
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-10 bg-red-950/20 rounded-2xl border border-red-500/20 space-y-4 h-full">
-        <p className="text-[11px] font-black uppercase text-red-500 tracking-widest">ERROR: TOKEN FETCH FAILED</p>
-        <p className="text-[9px] text-zinc-500 uppercase text-center max-w-[200px]">{error}</p>
+        <p className="text-[11px] font-black uppercase text-red-500 tracking-widest text-center">
+          {error.includes('secure contexts') || error.includes('getUserMedia') ? 'SECURE CONTEXT REQUIRED (HTTPS)' : 'CONNECTION ERROR'}
+        </p>
+        <p className="text-[8px] text-zinc-500 uppercase text-center max-w-[250px] leading-relaxed">
+          {error.includes('secure contexts') || error.includes('getUserMedia')
+            ? 'ბრაუზერი ბლოკავს კამერას/მიკროფონს HTTP-ზე. გამოიყენეთ HTTPS ან Chrome Flags ტესტირებისთვის.' 
+            : error}
+        </p>
         <button 
            onClick={() => window.location.reload()}
            className="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-[9px] font-black text-red-400 hover:bg-red-500/20 transition-all uppercase"
@@ -66,8 +72,8 @@ export default function LiveKitStream({ roomName, userName, serverUrl }: LiveKit
 
   return (
     <LiveKitRoom
-      video={true}
-      audio={true}
+      video={false}
+      audio={false}
       token={token}
       serverUrl={serverUrl}
       data-lk-theme="default"
