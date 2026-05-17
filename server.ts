@@ -14,23 +14,37 @@ app.use(express.urlencoded({ extended: true }));
 // Supabase Init for Webhook
 import { createClient } from '@supabase/supabase-js';
 import ws from 'ws';
+import { AccessToken } from 'livekit-server-sdk';
 
-const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '',
+// Fix for Node.js environment without native WebSocket
+(global as any).WebSocket = ws;
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error("❌ ERROR: Missing Supabase environment variables!");
+  console.error("Please create a .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY");
+}
+
+const supabaseAdmin = (supabaseUrl && supabaseKey) ? createClient(
+  supabaseUrl,
+  supabaseKey,
   {
     auth: {
       persistSession: false
-    },
-    realtime: {
-      transport: ws
     }
   }
-);
+) : null;
 
 // Nginx RTMP Webhook
 // Nginx sends data as application/x-www-form-urlencoded
 app.post("/api/webhooks/rtmp", async (req, res) => {
+  if (!supabaseAdmin) {
+    console.error("Webhook ignored: Supabase client not initialized.");
+    return res.status(500).send('Environment Missing');
+  }
+
   const { call, name, addr } = req.body;
   
   console.log(`RTMP Webhook Received: ${call} for stream: ${name} from ${addr}`);
@@ -91,6 +105,35 @@ app.post("/api/webhooks/rtmp", async (req, res) => {
 // API: Health Check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
+});
+
+// LiveKit Token Generation
+app.get("/api/livekit/token", async (req, res) => {
+  const { room, username } = req.query;
+
+  if (!room || !username) {
+    return res.status(400).json({ error: 'Missing room or username' });
+  }
+
+  const apiKey = process.env.LIVEKIT_API_KEY;
+  const apiSecret = process.env.LIVEKIT_API_SECRET;
+
+  if (!apiKey || !apiSecret) {
+    return res.status(500).json({ error: 'LiveKit credentials not configured' });
+  }
+
+  const at = new AccessToken(apiKey, apiSecret, {
+    identity: username as string,
+  });
+
+  at.addGrant({
+    roomJoin: true,
+    room: room as string,
+    canPublish: true,
+    canSubscribe: true,
+  });
+
+  res.json({ token: await at.toJwt() });
 });
 
 // Mock stats - in a real VDS setup, you might query your media server (MediaMTX/Nginx) for actual viewer counts
