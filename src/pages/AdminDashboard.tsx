@@ -6,12 +6,13 @@ import HLSPlayer from '../components/HLSPlayer';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [title, setTitle] = useState('');
+  const [team1, setTeam1] = useState('');
+  const [team2, setTeam2] = useState('');
   const [roomId, setRoomId] = useState('');
   const [streamKey, setStreamKey] = useState('');
   const [streamUrl, setStreamUrl] = useState('');
   const [vdsIp, setVdsIp] = useState(localStorage.getItem('vds_ip') || '');
-  const [sessionSport, setSessionSport] = useState('Live');
+  const [sessionSport, setSessionSport] = useState('Football');
   const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
   const [sessionThumbnail, setSessionThumbnail] = useState('');
   const [activeTab, setActiveTab ] = useState<'sessions' | 'streams' | 'highlights' | 'schedule'>('sessions');
@@ -19,23 +20,24 @@ export default function AdminDashboard() {
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
-  const slugify = (text: string) => {
-    return text.toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-')
-      .replace(/[^\u10D0-\u10FA\w-]+/g, '');
-  };
+  const slugify = (text: string) => text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\u10D0-\u10FA\w-]+/g, '');
 
   useEffect(() => {
-    if (title) {
-      const slug = slugify(title);
+    if (team1 && team2) {
+      const slug = `${slugify(team1)}-vs-${slugify(team2)}`;
       setRoomId(slug);
       // Generate a shorter, random stream key based on the slug
       if (!streamKey) {
         setStreamKey(`${slug}-${Math.random().toString(36).substring(2, 7)}`);
       }
+    } else if (team1 || team2) {
+      const slug = slugify(team1 || team2);
+      setRoomId(slug);
+      if (!streamKey) {
+        setStreamKey(`${slug}-${Math.random().toString(36).substring(2, 7)}`);
+      }
     }
-  }, [title]);
+  }, [team1, team2]);
 
   // CMS States
   const [streams, setStreams] = useState<any[]>([]);
@@ -139,7 +141,9 @@ export default function AdminDashboard() {
       if (activeErr) console.warn('Active stream update failed:', activeErr);
 
       // 2. Sync with events table
-      const formattedTitle = title.toUpperCase();
+      const formattedTitle = (team1 && team2) 
+        ? `${team1.toUpperCase()} VS ${team2.toUpperCase()}`
+        : id.replace(/-/g, ' ').toUpperCase();
       
       const { data: existingEvent } = await supabase
         .from('events')
@@ -302,20 +306,58 @@ export default function AdminDashboard() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={                {!showSessionDetails ? (
+                className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  activeTab === tab ? 'bg-brand-primary text-white shadow-lg' : 'text-zinc-500 hover:text-white'
+                }`}
+              >
+                {tab === 'sessions' ? 'სესიები' : tab === 'streams' ? 'სტრიმები' : tab === 'highlights' ? 'მომენტები' : 'განრიგი'}
+              </button>
+            ))}
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 gap-8">
+          {activeTab === 'sessions' && (
+            <>
+              <section className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500 flex items-center gap-3">
+                    <Radio size={14} className="text-brand-primary" /> სესიის ინიციალიზაცია
+                  </h2>
+                  <button 
+                    onClick={stopBroadcast}
+                    className="px-4 py-2 bg-zinc-900 border border-white/5 hover:bg-red-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2"
+                  >
+                    <StopCircle size={12} /> ყველა ლაივის გათიშვა
+                  </button>
+                </div>
+
+                {!showSessionDetails ? (
                   <div className="bento-card p-10 bg-zinc-900/40 space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {/* Left: Input fields */}
                       <div className="space-y-6">
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">ლაივის სახელი</label>
-                          <input 
-                            type="text" 
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="მაგ: რეალ მადრიდი - ბარსელონა"
-                            className="w-full bg-black border border-brand-border rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-bold text-lg uppercase"
-                          />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">გუნდი 1</label>
+                            <input 
+                              type="text" 
+                              value={team1}
+                              onChange={(e) => setTeam1(e.target.value)}
+                              placeholder="..."
+                              className="w-full bg-black border border-brand-border rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-bold text-lg uppercase"
+                            />
+                          </div>
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">გუნდი 2</label>
+                            <input 
+                              type="text" 
+                              value={team2}
+                              onChange={(e) => setTeam2(e.target.value)}
+                              placeholder="..."
+                              className="w-full bg-black border border-brand-border rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-bold text-lg uppercase"
+                            />
+                          </div>
                         </div>
 
                         <div className="space-y-3">
@@ -325,16 +367,16 @@ export default function AdminDashboard() {
                             onChange={(e) => setSessionSport(e.target.value)}
                             className="w-full bg-black border border-brand-border rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-black text-xs uppercase tracking-widest text-white appearance-none cursor-pointer"
                           >
-                            <option value="Live">ლაივი (ზოგადი)</option>
                             <option value="Football">ფეხბურთი</option>
                             <option value="UFC">UFC</option>
                             <option value="Boxing">კრივი</option>
-                            <option value="Basketball">კალათბურთი</option>
+                            <option value="NBA">NBA</option>
+                            <option value="Live">ლაივი (ზოგადი)</option>
                           </select>
                         </div>
 
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სურათის ატვირთვა</label>
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">თამბნეილი</label>
                           <div className="flex gap-2">
                              <input 
                               type="text" 
@@ -377,31 +419,7 @@ export default function AdminDashboard() {
                       <div className="space-y-6 flex flex-col justify-between">
                         <div className="space-y-4">
                           <div className="p-4 bg-brand-primary/5 border border-brand-primary/10 rounded-2xl">
-                             <p className="text-[10px] font-bold text-zinc-400 uppercase leading-relaxed">ინფორმაციის შევსების შემდეგ დააკოპირეთ მონაცემები OBS-ისთვის და გაუშვით ლაივი. Preview მომენტალურად გამოჩნდება.</p>
-                          </div>
-                          
-                          <div className="space-y-2">
-                             <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">VDS IP მისამართი <Settings size={10} /></label>
-                             <input 
-                               type="text" 
-                               value={vdsIp}
-                               onChange={(e) => setVdsIp(e.target.value)}
-                               placeholder="მაგ: 5.83.153.142"
-                               className="w-full bg-zinc-900 border border-white/5 rounded-xl px-4 py-2 text-xs font-mono text-zinc-500 focus:border-brand-primary/30 outline-none"
-                             />
-                          </div>
-                        </div>
-
-                        <button 
-                          onClick={() => roomId && startStream(roomId)}
-                          disabled={!title}
-                          className="w-full py-6 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4 shadow-[0_20px_40px_-15px_rgba(255,0,51,0.5)] disabled:opacity-30 disabled:grayscale disabled:hover:scale-100"
-                        >
-                          <Monitor size={22} /> 
-                          <span className="text-sm uppercase tracking-widest">სესიის დაწყება</span>
-                        </button>
-                      </div>
-                    </div>�� შევსების შემდეგ სესიის დასაწყებად დააჭირეთ ღილაკს. თქვენ მიიღებთ OBS-ში ჩასაწერ მონაცემებს.</p>
+                             <p className="text-[10px] font-bold text-zinc-400 uppercase leading-relaxed">ინფორმაციის შევსების შემდეგ სესიის დასაწყებად დააჭირეთ ღილაკს. თქვენ მიიღებთ OBS-ში ჩასაწერ მონაცემებს.</p>
                           </div>
                           
                           <div className="space-y-2">
