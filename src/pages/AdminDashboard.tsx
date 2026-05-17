@@ -77,7 +77,7 @@ export default function AdminDashboard() {
         thumbnail: sessionThumbnail || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1000',
         stream_url: url,
         stream_key: key,
-        room_name: slug,
+        room_name: key,
         start_time: new Date().toISOString()
       }]);
 
@@ -287,45 +287,71 @@ export default function AdminDashboard() {
                      🚀 როგორ დავიწყოთ სტრიმი?
                   </p>
                   <div className="space-y-3">
-                    <div className="p-3 bg-black/40 rounded-xl space-y-2">
-                       <p className="text-[9px] font-bold text-white uppercase">1. OBS - WHIP (პირდაპირი LiveKit)</p>
-                       <p className="text-[8px] text-zinc-500 leading-relaxed font-mono">
-                          Settings {"->"} Stream {"->"} Service: <span className="text-white font-bold">WHIP</span> <br/>
-                          Server: <span className="text-blue-400 italic">http://{vdsIp}:7885/whip</span><br/>
-                          <span className="text-zinc-600">ან RTMP (Ingress-ით):</span> <br/>
-                          <span className="text-blue-400 italic">rtmp://{vdsIp}/live</span>
+                    <div className="p-4 bg-black/40 rounded-xl space-y-3 border border-white/5">
+                       <p className="text-[9px] font-bold text-white uppercase flex items-center gap-2">
+                         <Monitor size={12} className="text-blue-500" /> 
+                         1. OBS - WHIP (რეკომენდირებული)
                        </p>
+                       <div className="space-y-1 pl-5">
+                          <p className="text-[8px] text-zinc-500 font-mono">
+                            Settings {"->"} Stream {"->"} Service: <span className="text-white">WHIP</span>
+                          </p>
+                          <p className="text-[8px] text-zinc-500 font-mono">
+                            Server: <code className="text-blue-400">http://{vdsIp}:7885/whip</code>
+                          </p>
+                          <p className="text-[8px] text-zinc-400 italic">თუ WHIP-ს იყენებთ, Stream Key არ არის საჭირო, გამოიყენეთ Bearer Token</p>
+                       </div>
                     </div>
+                    
+                    <div className="p-4 bg-black/40 rounded-xl space-y-3 border border-white/5">
+                       <p className="text-[9px] font-bold text-white uppercase flex items-center gap-2">
+                         <Radio size={12} className="text-zinc-500" /> 
+                         2. OBS - RTMP (Nginx + LiveKit Ingress)
+                       </p>
+                       <div className="space-y-1 pl-5">
+                          <p className="text-[8px] text-zinc-500 font-mono">
+                            Service: <span className="text-white">Custom...</span>
+                          </p>
+                          <p className="text-[8px] text-zinc-500 font-mono">
+                            Server: <code className="text-blue-400">rtmp://{vdsIp}/live</code>
+                          </p>
+                          <p className="text-[8px] text-zinc-500 font-mono">
+                            Stream Key: <code className="text-blue-400">{streamKey}</code>
+                          </p>
+                       </div>
+                    </div>
+
                     <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-2">
-                       <p className="text-[9px] font-bold text-blue-400 uppercase">🚨 HTTPS / Mixed Content Warning</p>
+                       <p className="text-[9px] font-bold text-blue-400 uppercase">💡 მნიშვნელოვანი რჩევა</p>
                        <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
-                          თუ საიტს იყენებთ <span className="text-white font-bold">HTTPS</span>-ზე, ბრაუზერი დაბლოკავს <span className="text-red-400">ws://</span> კავშირს. <br/>
-                          გამოსავალი: <br/>
-                          1. გამოიყენეთ <span className="text-blue-400 font-bold">wss://</span> (მოითხოვს SSL-ს) <br/>
-                          2. ან შედით საიტზე <span className="text-blue-400 font-bold">http://</span> მისამართით.
+                          OBS-ში <span className="text-white">Output Mode</span> დააყენეთ <span className="text-white">Advanced</span>-ზე. <br/>
+                          <span className="text-white">Keyframe Interval</span> აუცილებლად უნდა იყოს <span className="text-blue-400">2s</span>.
                        </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="p-6 bg-red-950/20 border border-red-500/30 rounded-2xl space-y-4 shadow-xl">
-                  <p className="text-[11px] text-red-400 font-black uppercase flex items-center gap-2 italic">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    ❌ OBS ვერ უკავშირდება? (Failed to connect)
+                  <p className="text-[11px] text-red-500 font-black uppercase flex items-center gap-2 italic">
+                    <Trash2 size={14} />
+                    🚨 OBS "FAILED TO CONNECT" ფიქსი:
                   </p>
-                  <div className="space-y-4">
-                    <div className="p-3 bg-black/40 rounded-xl border border-white/5">
-                      <p className="text-[10px] text-orange-400 font-bold mb-1">1. პორტი 1935 დაკეტილია</p>
-                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/40 p-2 rounded">
-{`sudo ufw allow 1935/tcp
-sudo ufw reload`}
-                      </pre>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="p-3 bg-black/60 rounded-xl border border-red-500/10">
+                      <p className="text-[10px] text-white font-bold mb-1">1. შეამოწმეთ Firewall (VDS-ზე)</p>
+                      <code className="text-[9px] font-mono text-zinc-400 block bg-zinc-900/50 p-2 rounded">
+                        sudo ufw allow 1935,7880,7885/tcp
+                      </code>
                     </div>
-                    <div className="p-3 bg-black/40 rounded-xl border border-white/5">
-                      <p className="text-[10px] text-yellow-400 font-bold mb-1">2. Nginx კონფიგი აკლია</p>
-                      <p className="text-[8px] text-zinc-500 leading-relaxed mb-2">
-                        შეამოწმეთ გიწერიათ თუ არა <code className="text-white">rtmp {"{"} ... application live {"{"} ... hls on; ... {"}"} {"}"}</code> ფაილში <code className="text-white">/etc/nginx/nginx.conf</code>
-                      </p>
+                    <div className="p-3 bg-black/60 rounded-xl border border-red-500/10 text-[9px] text-zinc-400 leading-relaxed uppercase">
+                      <p className="text-white font-bold mb-1">2. შეამოწმეთ Nginx/LiveKit სტატუსი</p>
+                      <code className="block bg-zinc-900/50 p-2 rounded text-zinc-300 font-mono mt-1">
+                        pm2 status
+                      </code>
+                    </div>
+                    <div className="p-3 bg-black/60 rounded-xl border border-red-500/10 text-[9px] text-zinc-400 leading-relaxed uppercase">
+                      <p className="text-white font-bold mb-1">3. Mixed Content Error</p>
+                      თუ საიტი არის <span className="text-white">HTTPS</span>, ბრაუზერი დაბლოკავს კავშირს. შედით <span className="text-blue-400 font-bold">http://{vdsIp}:3000</span>-ზე.
                     </div>
                   </div>
                 </div>
