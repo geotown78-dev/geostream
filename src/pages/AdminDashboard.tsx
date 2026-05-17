@@ -262,56 +262,42 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="p-3 bg-zinc-900/50 border border-white/5 rounded-xl">
-                    <p className="text-white font-bold mb-1 uppercase">2. საუკეთესო ხარისხი (Settings -{'>'} Output)</p>
-                    <ul className="text-zinc-500 space-y-1 ml-2">
+                    <p className="text-white font-bold mb-1 uppercase">2. საუკეთესო ხარისხი (Settings -{">"} Output)</p>
+                    <ul className="text-zinc-500 space-y-1 ml-2 text-[8px]">
                        <li>• <span className="text-zinc-300">Output Mode:</span> Advanced</li>
                        <li>• <span className="text-zinc-300">Bitrate:</span> 2500 - 4500 Kbps</li>
                        <li>• <span className="text-zinc-300">Keyframe Interval:</span> 2s (აუცილებელია!)</li>
-                       <li>• <span className="text-zinc-300">CPU Usage:</span> veryfast</li>
-                       <li>• <span className="text-zinc-300">Tune:</span> zerolatency</li>
                     </ul>
-                  </div>
-
-                  <div className="p-3 bg-blue-900/10 border border-blue-500/20 rounded-xl">
-                    <p className="text-blue-400 font-bold mb-1 uppercase">⚠️ მნიშვნელოვანი:</p>
-                    <p className="text-zinc-400">სტრიმის გაშვების შემდეგ, საიტზე გამოჩენას დასჭირდება <span className="text-white font-bold">5-10 წამი</span> (HLS-ის სპეციფიკაა).</p>
                   </div>
                 </div>
               </div>
 
               <div className="p-6 bg-zinc-950 rounded-2xl border border-white/5 space-y-4">
-                <div className="max-h-[400px] overflow-y-auto bg-black p-4 rounded-xl border border-white/10">
+                <div className="max-h-[500px] overflow-y-auto bg-black p-4 rounded-xl border border-white/10">
                   <div className="space-y-6">
+                    {/* Setup Step 1 */}
                     <div>
-                      <p className="text-[10px] text-brand-primary font-black uppercase mb-2">🚀 ნაბიჯი 1: Nginx-ის სუფთა ინსტალაცია</p>
-                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5">
-{`# წაშალეთ ძველი
+                      <p className="text-[10px] text-brand-primary font-black uppercase mb-2">🚀 ნაბიჯი 1: Nginx-ის ინსტალაცია</p>
+                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5 whitespace-pre-wrap">
+{`# 1. წაშალეთ ძველი
 sudo apt-get remove nginx nginx-common nginx-full -y
 sudo apt-get purge nginx nginx-common nginx-full -y
 sudo apt-get autoremove -y
 
-# დააყენეთ ახალი RTMP-ით
+# 2. დააყენეთ ახალი RTMP-ით
 sudo apt-get update
 sudo apt-get install nginx libnginx-mod-rtmp -y`}
                       </pre>
                     </div>
 
+                    {/* Setup Step 2 */}
                     <div>
                       <p className="text-[10px] text-brand-primary font-black uppercase mb-2">⚙️ ნაბიჯი 2: Nginx კონფიგურაცია</p>
-                      <pre className="text-[9px] font-mono text-brand-primary/80 leading-relaxed bg-zinc-900/50 p-2 rounded border border-white/5">
-{`# 1. წაშალეთ დეფოლტ კონფიგურაციები (კრიტიკულია!)
+                      <pre className="text-[9px] font-mono text-brand-primary/80 leading-relaxed bg-zinc-900/50 p-2 rounded border border-white/5 overflow-x-auto">
+{`# 1. წაშალეთ დეფოლტ კონფიგი (კრიტიკულია!)
 sudo rm /etc/nginx/sites-enabled/default
-sudo rm /etc/nginx/sites-available/default
 
-# 2. ჩასვით ეს კოდი /etc/nginx/nginx.conf-ში:
-user www-data;
-worker_processes auto;
-include /etc/nginx/modules-enabled/*.conf;
-
-events {
-    worker_connections 768;
-}
-
+# 2. ჩაწერეთ ეს კოდი /etc/nginx/nginx.conf-ში:
 rtmp {
     server {
         listen 1935;
@@ -321,50 +307,27 @@ rtmp {
             hls_path /var/www/html/hls;
             hls_fragment 3;
             hls_playlist_length 60;
-            
-            # ატყობინებს საიტს სტრიმის დაწყებაზე
-            on_publish http://localhost:3000/api/webhooks/rtmp;
         }
     }
 }
 
 http {
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
-    
     server {
         listen 80;
-        server_name _;
-
         location / {
             proxy_pass http://localhost:3000;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection 'upgrade';
-            proxy_set_header Host $host;
-            proxy_cache_bypass $http_upgrade;
         }
-
         location /hls {
             add_header 'Access-Control-Allow-Origin' '*' always;
             alias /var/www/html/hls;
             expires -1;
-                            <div>
-                      <p className="text-[10px] text-orange-500 font-black uppercase mb-2">🛠️ 502 Bad Gateway-ს & ბილდის ფიქსი</p>
-                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5">
-{`# 1. შედით ფოლდერში
-cd /home/ubuntu/geostream
-
-# 2. შექმენით .env ფაილი (აუცილებელია!)
-nano .env
-# ჩაწერეთ შიგნით VITE_SUPABASE_URL და VITE_SUPABASE_ANON_KEY
-
-# 3. ხელახლა დააბილდეთ
-npm run build
-pm2 restart geostream`}
+        }
+    }
+}`}
                       </pre>
                     </div>
 
+                    {/* Diagnosis & Fixes */}
                     <div className="p-4 bg-green-950/40 border border-green-500/50 rounded-2xl space-y-4 shadow-2xl">
                       <p className="text-[11px] text-white font-black uppercase flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -375,34 +338,27 @@ pm2 restart geostream`}
                         <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
                           <p className="text-[10px] text-green-400 font-bold mb-1">✅ LIVEKIT: დაკავშირებულია!</p>
                           <p className="text-[9px] text-zinc-400 leading-relaxed">
-                             თქვენს კონსოლში წერია <span className="text-white">"connected"</span>. ეს ნიშნავს რომ LiveKit სრულყოფილად მუშაობს.
+                             თქვენს კონსოლში წერია <span className="text-white">"connected"</span> - ეს ნიშნავს რომ LiveKit მუშაობს.
                           </p>
                         </div>
 
                         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
                           <p className="text-[10px] text-red-400 font-bold mb-1">⚠️ Camera/Mic Blocked (HTTP Restriction):</p>
                           <p className="text-[9px] text-zinc-400 leading-relaxed">
-                            შეცდომა (<span className="text-white italic">Accessing media devices... insecure context</span>) ნიშნავს რომ ბრაუზერი <span className="text-white">http://</span>-ზე <span className="text-red-400 font-bold underline">ბლოკავს</span> კამერას.
+                            ბრაუზერი <span className="text-white">http://</span>-ზე <span className="text-red-400 font-bold">ბლოკავს</span> კამერას.
                             <br/>
-                            <span className="text-green-400 font-bold">გამოსავალი:</span> ეს არ გიშლით ხელს OBS-ით სტრიმვასა და საიტზე ჩვენებაზე. უბრალოდ აქ, ბრაუზერში, თქვენს თავს ვერ დაინახავთ.
+                            <span className="text-green-400 font-bold">გამოსავალი:</span> გამოიყენეთ <code className="bg-black px-1">http://5.83.153.142:3000</code> ლინკი.
                           </p>
                         </div>
 
                         <div className="p-3 bg-black/40 rounded-xl border border-white/5">
                           <p className="text-[10px] text-orange-400 font-bold mb-1">❌ OBS-ის ფიქსი (Failed to connect):</p>
-                          <p className="text-[9px] text-zinc-400 mb-2 leading-relaxed">
-                            თუ OBS ვერ უკავშირდება (Failed to connect), ნიშნავს რომ პორტი 1935 დაკეტილია ან Nginx-ს კონფიგი აკლია.
-                          </p>
-                          <pre className="text-[9px] font-mono text-orange-300 bg-zinc-900/50 p-2 rounded border border-white/5 overflow-x-auto">
-{`# 1. ნახეთ ნამდვილად ამუშავდა თუ არა RTMP:
-grep -r "rtmp" /etc/nginx/nginx.conf
-
-# 2. ჩაწერეთ ეს ტერმინალში პორტის გასახსნელად:
+                          <pre className="text-[9px] font-mono text-orange-300 bg-zinc-900/50 p-2 rounded">
+{`# 1. გახსენით პორტი 1935
 sudo ufw allow 1935/tcp
-sudo ufw allow 1935/udp
 sudo ufw reload
 
-# 3. დაარეფრეშეთ Nginx:
+# 2. დაარეფრეშეთ Nginx
 sudo nginx -t
 sudo systemctl restart nginx`}
                           </pre>
@@ -410,132 +366,24 @@ sudo systemctl restart nginx`}
                       </div>
                     </div>
 
-                        <div className="p-3 bg-black/40 rounded-xl border border-white/5">
-                          <p className="text-[10px] text-red-400 font-bold mb-1">❌ ბრაუზერის ბლოკი (Mixed Content):</p>
-                          <p className="text-[9px] text-zinc-400 leading-relaxed">
-                            ბოლო სკრინშოტში გიწერიათ "SecurityError" - ბრაუზერი ბლოკავს <span className="text-white italic">ws://</span>-ს, რადგან <span className="text-white">https://</span>-ით შედიხართ.
-                          </p>
-                          <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded">
-                            <p className="text-[9px] text-green-400 font-bold">
-                              ✅ გამოსავალი: ბრაუზერში ლინკი შეცვალეთ ამით:
-                              <br/>
-                              <code className="bg-zinc-900 px-2 py-1 rounded mt-1 block text-center select-all">http://5.83.153.142:3000</code>
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="p-3 bg-black/40 rounded-xl border border-white/5">
-                          <p className="text-[10px] text-orange-400 font-bold mb-1">❌ OBS კავშირის შეცდომა (Failed to connect):</p>
-                          <p className="text-[9px] text-zinc-400 mb-2 leading-relaxed">
-                            თუ OBS ვერ უკავშირდება (Failed to connect), ნიშნავს რომ პორტი 1935 დაკეტილია ან Nginx-ის RTMP მოდული არ არის ჩართული.
-                          </p>
-                          <pre className="text-[9px] font-mono text-orange-300 bg-zinc-900/50 p-2 rounded border border-white/5 overflow-x-auto">
-{`# 1. ნახეთ უსმენს თუ არა ვინმე 1935 პორტს (უნდა გამოგიგდოთ listen):
-sudo lsof -i :1935
-
-# 2. თუ ცარიელია, ნიშნავს რომ Nginx-ს RTMP კონფიგი აკლია.
-# 3. აუცილებლად გახსენით პორტი VDS-ის ფაირვოლშიც:
-sudo ufw allow 1935/tcp
-sudo ufw reload
-
-# 4. დაარეფრეშეთ Nginx:
-sudo systemctl restart nginx`}
-                          </pre>
-                        </div>
-
-                        <div className="p-3 bg-blue-900/10 border border-blue-500/20 rounded-xl">
-                           <p className="text-[9px] text-zinc-300">
-                             💡 <span className="text-blue-400 font-bold">მნიშვნელოვანი:</span> ბევრ VDS-ს (Oracle, Azure, AWS) აქვს "Security Groups" სადაც პორტი 1935 <span className="text-white font-bold tracking-tighter">ცალკე საიტიდან</span> უნდა გახსნათ.
-                           </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-blue-950/20 border border-blue-500/30 rounded-2xl space-y-3">
-                      <p className="text-[10px] text-blue-400 font-black uppercase flex items-center gap-2">🌍 რატომ არ ირთვება? (Networking Check)</p>
-                      <div className="space-y-2">
-                        <p className="text-[9px] text-zinc-400 leading-relaxed">
-                          1. <span className="text-white font-bold italic">Cloudflare-ს პორტი:</span> თუ იყენებთ დომენს (<span className="text-blue-400">geotown.xyz</span>) - <span className="text-red-400 font-bold">არ იმუშავებს</span>, რადგან Cloudflare ბლოკავს 7880 პორტს.
-                          <br/>
-                          <span className="text-green-400 text-[8px]">👉 გამოსავალი: .env-ში გამოიყენეთ პირდაპირი IP: </span> <code className="text-[8px] bg-black px-1">ws://5.83.153.142:7880</code>
-                        </p>
-                        <p className="text-[9px] text-zinc-400 leading-relaxed">
-                          2. <span className="text-white font-bold italic">HTTPS-ის ბლოკი:</span> თუ საიტზე შედიხართ <span className="text-green-400">https://</span>-ით, ბრაუზერი <span className="text-red-400 font-bold">დაბლოკავს</span> <span className="text-zinc-500">ws://</span>-ს.
-                          <br/>
-                          <span className="text-blue-400 text-[8px]">👉 გამოსავალი: შედით საიტზე IP-ით (http://5.83.153.142) ან დააყენეთ SSL LiveKit-ისთვის.</span>
-                        </p>
-                      </div>
-
-                      <div className="mt-4 p-3 bg-black/40 rounded-xl border border-white/5">
-                        <p className="text-[9px] text-zinc-300 font-bold mb-2">📄 აი ეს ჩააკოპირეთ .env-ში:</p>
-                        <pre className="text-[9px] font-mono text-blue-300 select-all cursor-pointer hover:text-white transition-colors">
-{`VITE_SUPABASE_URL=თქვენი_URL
-VITE_SUPABASE_ANON_KEY=თქვენი_KEY
-VITE_LIVEKIT_URL=ws://5.83.153.142:7880
-LIVEKIT_API_KEY=თქვენი_LK_KEY
-LIVEKIT_API_SECRET=თქვენი_LK_SECRET`}
-                        </pre>
-                      </div>
-                    </div>
-
+                    {/* Deployment commands */}
                     <div>
-                      <p className="text-[10px] text-brand-primary font-black uppercase mb-2">🚀 მართვის ბრძანებები</p>
+                      <p className="text-[10px] text-blue-400 font-black uppercase mb-2">🚀 მართვის ბრძანებები</p>
                       <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5">
-{`pm2 status          # სტატუსის შემოწმება
-pm2 restart geostream # საიტის რესტარტი
+{`pm2 restart geostream # საიტის რესტარტი
 pm2 restart livekit   # LiveKit-ის რესტარტი
-sudo nginx -t       # nginx კონფიგის შემოწმება
-sudo systemctl restart nginx # nginx რესტარტი`}
-                      </pre>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] text-red-500 font-black uppercase mb-2">🚨 521 / Web Server Down (სრული აღდგენა)</p>
-                      <p className="text-[8px] text-zinc-500 mb-2">მიყევით ამ ნაბიჯებს საიტის ასამუშავებლად:</p>
-                      <div className="space-y-4">
-                        <div className="p-3 bg-red-950/20 border border-red-500/30 rounded-xl shadow-lg">
-                          <p className="text-[9px] text-white font-bold mb-2">1. .env ფაილის შევსება (აუცილებელია!)</p>
-                          <p className="text-[8px] text-red-400 mb-2 italic">⚠️ თუ ეს ფაილი ცარიელია, საიტი არ ჩაირთვება!</p>
-                          <pre className="text-[9px] font-mono text-zinc-300 bg-black/40 p-2 rounded">
-{`nano /home/ubuntu/geostream/.env
-
-# ჩაწერეთ ეს მონაცემები (თქვენი Supabase-დან):
-VITE_SUPABASE_URL=URL_აქ
-VITE_SUPABASE_ANON_KEY=KEY_აქ
-VITE_LIVEKIT_URL=ws://თქვენი_ip:7880
-LIVEKIT_API_KEY=თქვენი_livekit_key
-LIVEKIT_API_SECRET=თქვენი_livekit_secret`}
-                          </pre>
-                        </div>
-
-                        <div className="p-3 bg-zinc-900 border border-white/10 rounded-xl">
-                          <p className="text-[9px] text-white font-bold mb-2">2. ბილდის ხელახალი გაშვება</p>
-                          <pre className="text-[9px] font-mono text-zinc-400">
-{`cd /home/ubuntu/geostream
-rm -rf dist
-npm run build
-pm2 restart geostream`}
-                          </pre>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] text-yellow-500 font-black uppercase mb-2">⚠️ "Welcome to nginx!" ფიქსი</p>
-                      <p className="text-[8px] text-zinc-500 mb-2">თუ საიტის მაგივრად Nginx-ის მისალმებას ხედავთ, გაუშვით ეს:</p>
-                      <pre className="text-[9px] font-mono text-yellow-500/80 bg-zinc-900/50 p-2 rounded border border-white/5">
-{`sudo rm /etc/nginx/sites-enabled/default
-sudo systemctl restart nginx`}
+sudo nginx -t         # Nginx შემოწმება
+sudo systemctl restart nginx # Nginx რესტარტი`}
                       </pre>
                     </div>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-[9px] text-white font-black uppercase tracking-widest">📋 ინსტრუქცია:</p>
+                  <p className="text-[9px] text-white font-black uppercase tracking-widest">📋 ინფორმაცია:</p>
                   <p className="text-[8px] text-zinc-500 font-bold uppercase leading-relaxed">
                     PM2 უზრუნველყოფს საიტის მუდმივ მუშაობას. <br/>
                     Nginx კი ამუშავებს სტრიმინგს და პორტების გადამისამართებას.<br/>
-                    <span className="text-brand-primary">პრობლემის შემთხვევაში შეამოწმეთ:</span> <code className="text-zinc-300">pm2 logs</code> და <code className="text-zinc-300">sudo nginx -t</code>
+                    <span className="text-brand-primary">პრობლემის შემთხვევაში:</span> <code className="text-zinc-300">pm2 logs</code>
                   </p>
                 </div>
               </div>
