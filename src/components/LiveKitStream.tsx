@@ -1,8 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import videojs from 'video.js';
-import 'video.js/dist/video-js.css';
 import { Loader2 } from 'lucide-react';
-import Player from 'video.js/dist/video.js';
 
 interface LiveKitStreamProps {
   vdsIp: string;
@@ -11,10 +8,9 @@ interface LiveKitStreamProps {
 
 export default function LiveKitStream({ vdsIp, streamKey }: LiveKitStreamProps) {
   const videoRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<Player | null>(null);
+  const playerRef = useRef<any>(null);
 
   // SRS HLS URL: http://IP:8080/live/streamKey.m3u8
-  // If using Nginx proxy for HTTPS: https://domain.com/live/streamKey.m3u8
   const isHttps = window.location.protocol === 'https:';
   const streamUrl = isHttps 
     ? `https://${window.location.hostname}/live/${streamKey}.m3u8`
@@ -23,26 +19,41 @@ export default function LiveKitStream({ vdsIp, streamKey }: LiveKitStreamProps) 
   useEffect(() => {
     if (!videoRef.current) return;
 
-    // Create video element
-    const videoElement = document.createElement('video');
-    videoElement.className = 'video-js vjs-big-play-centered vjs-theme-city';
-    videoRef.current.appendChild(videoElement);
+    let player: any = null;
 
-    const player = playerRef.current = videojs(videoElement, {
-      autoplay: true,
-      controls: true,
-      responsive: true,
-      fluid: true,
-      liveui: true,
-      sources: [{
-        src: streamUrl,
-        type: 'application/x-mpegURL'
-      }]
-    });
+    const initPlayer = async () => {
+      try {
+        const { default: vjs } = await import('video.js');
+        await import('video.js/dist/video-js.css');
 
-    player.on('error', () => {
-      console.log('Stream not ready or offline');
-    });
+        if (!videoRef.current) return;
+
+        // Create video element
+        const videoElement = document.createElement('video');
+        videoElement.className = 'video-js vjs-big-play-centered vjs-theme-city';
+        videoRef.current.appendChild(videoElement);
+
+        player = playerRef.current = vjs(videoElement, {
+          autoplay: true,
+          controls: true,
+          responsive: true,
+          fluid: true,
+          liveui: true,
+          sources: [{
+            src: streamUrl,
+            type: 'application/x-mpegURL'
+          }]
+        });
+
+        player.on('error', () => {
+          console.log('Stream not ready or offline');
+        });
+      } catch (err) {
+        console.error('Failed to load video.js:', err);
+      }
+    };
+
+    initPlayer();
 
     return () => {
       if (player) {
