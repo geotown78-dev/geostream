@@ -13,15 +13,10 @@ export default function AdminDashboard() {
   const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
   const [sessionThumbnail, setSessionThumbnail] = useState('');
   const [vdsIp, setVdsIp] = useState(localStorage.getItem('vds_ip') || '5.83.153.142');
-  const [livekitUrl, setLivekitUrl] = useState(
-    localStorage.getItem('livekit_url') || 
-    (window.location.protocol === 'https:' 
-      ? `wss://${window.location.hostname}/rtc` 
-      : `ws://5.83.153.142:7880`)
-  );
+  const [srsPort, setSrsPort] = useState('1935');
   const [showSessionDetails, setShowSessionDetails] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
-  const [streamKey, setStreamKey] = useState('');
+  const [streamKey, setStreamKey] = useState(`stream_${Math.random().toString(36).substring(7)}`);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -124,16 +119,16 @@ export default function AdminDashboard() {
         <header className="mb-12 flex justify-between items-end">
           <div>
             <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-2">
-              LIVEKIT <span className="text-blue-500">CONTROL</span>
+              SRS <span className="text-orange-500">LIVE</span>
             </h1>
-            <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.3em]">Ultra-Low Latency Management</p>
+            <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.3em]">Bento Streaming Dashboard</p>
           </div>
           <div className="flex gap-4">
              <div className="text-right">
                 <p className="text-[10px] font-black text-zinc-500 uppercase">SERVER STATUS</p>
                 <div className="flex items-center gap-2">
                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                   <span className="text-[11px] font-bold text-white">LIVEKIT ONLINE</span>
+                   <span className="text-[11px] font-bold text-white">SRS ONLINE</span>
                 </div>
              </div>
           </div>
@@ -216,11 +211,11 @@ export default function AdminDashboard() {
                     <label className="text-[10px] font-black text-white/60 uppercase tracking-widest">Server Config</label>
                   </div>
                   <div className="space-y-2">
-                    <span className="text-[9px] font-bold text-white/50 uppercase">LiveKit Server URL</span>
+                    <span className="text-[9px] font-bold text-white/50 uppercase">VDS IP ADDRESS</span>
                     <input 
-                      type="text" value={livekitUrl} onChange={(e) => setLivekitUrl(e.target.value)} 
+                      type="text" value={vdsIp} onChange={(e) => setVdsIp(e.target.value)} 
                       className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-mono text-white placeholder:text-white/20 outline-none focus:bg-white/20 transition-all"
-                      placeholder="ws://your-ip:7880"
+                      placeholder="5.83.153.142"
                     />
                   </div>
                 </div>
@@ -259,18 +254,18 @@ export default function AdminDashboard() {
               <div className="bento-card p-10 bg-zinc-900/30 border-white/5 space-y-8">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/10 rounded-lg"><Radio size={20} className="text-blue-500" /></div>
-                    <h3 className="text-xl font-black uppercase text-white tracking-tight">INGRESS CONFIG</h3>
+                    <div className="p-2 bg-orange-500/10 rounded-lg"><Radio size={20} className="text-orange-500" /></div>
+                    <h3 className="text-xl font-black uppercase text-white tracking-tight">SRS CONFIG</h3>
                   </div>
-                  <button onClick={() => setShowSessionDetails(false)} className="text-[9px] font-black uppercase text-blue-500 hover:bg-blue-500/5 px-4 py-2 border border-blue-500/20 rounded-full transition-all">დახურვა</button>
+                  <button onClick={() => setShowSessionDetails(false)} className="text-[9px] font-black uppercase text-orange-500 hover:bg-orange-500/5 px-4 py-2 border border-orange-500/20 rounded-full transition-all">დახურვა</button>
                 </div>
 
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">LIVEKIT URL</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">OBS RTMP URL</label>
                     <div className="flex bg-black border border-white/5 rounded-xl overflow-hidden">
-                      <code className="flex-1 p-5 font-mono text-xs text-blue-400 truncate">{livekitUrl}</code>
-                      <button onClick={() => copyToClipboard(livekitUrl, 'url')} className="px-6 border-l border-white/5 hover:bg-zinc-900 transition-all text-zinc-500 hover:text-white">
+                      <code className="flex-1 p-5 font-mono text-xs text-orange-400 truncate">rtmp://{vdsIp}/live</code>
+                      <button onClick={() => copyToClipboard(`rtmp://${vdsIp}/live`, 'url')} className="px-6 border-l border-white/5 hover:bg-zinc-900 transition-all text-zinc-500 hover:text-white">
                         {copiedUrl ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                       </button>
                     </div>
@@ -291,24 +286,19 @@ export default function AdminDashboard() {
                      🚀 როგორ დავიწყოთ სტრიმი?
                   </p>
                   <div className="space-y-3">
-                    <div className="p-4 bg-black/40 rounded-xl space-y-3 border border-white/5">
+                    <div className="p-4 bg-black/40 rounded-xl space-y-3 border border-orange-500/20">
                        <p className="text-[9px] font-bold text-white uppercase flex items-center gap-2">
-                         <Monitor size={12} className="text-blue-500" /> 
-                         1. OBS - WHIP (სქრინის გაზიარება)
+                         <Monitor size={12} className="text-orange-500" /> 
+                         1. OBS - SRS (RTMP)
                        </p>
                        <div className="space-y-1 pl-5">
-                          <p className="text-[8px] text-zinc-500 font-mono">
-                            Settings {"->"} Stream {"->"} Service: <span className="text-white">WHIP</span>
-                          </p>
-                          <p className="text-[8px] text-zinc-500 font-mono">
-                            Server: <code className="text-blue-400">http://{vdsIp}:7885/whip</code>
-                          </p>
-                          <p className="text-[8px] text-zinc-300 font-bold bg-blue-500/10 p-1 rounded inline-block mt-1">
-                            Bearer Token: <code className="text-white">{streamKey}</code>
-                          </p>
-                          <div className="mt-2 p-2 bg-zinc-900/50 rounded border border-white/5">
-                             <p className="text-[7px] text-zinc-500 uppercase font-black mb-1 italic text-blue-400">აუდიოსთვის:</p>
-                             <p className="text-[7px] text-zinc-600 uppercase">Sources-ში დაამატეთ "Screen Capture" და ჩართეთ "Desktop Audio"</p>
+                          <div>
+                            <p className="text-[7px] text-zinc-500 uppercase font-black">Server / URL:</p>
+                            <code className="text-[9px] text-orange-400 font-mono">rtmp://{vdsIp}/live</code>
+                          </div>
+                          <div>
+                            <p className="text-[7px] text-zinc-500 uppercase font-black">Stream Key:</p>
+                            <code className="text-[9px] text-white font-mono">{streamKey}</code>
                           </div>
                        </div>
                     </div>
@@ -316,17 +306,15 @@ export default function AdminDashboard() {
                     <div className="p-4 bg-black/40 rounded-xl space-y-3 border border-white/5">
                        <p className="text-[9px] font-bold text-white uppercase flex items-center gap-2">
                          <Radio size={12} className="text-zinc-500" /> 
-                         2. OBS - RTMP (Nginx + LiveKit Ingress)
+                         2. OBS SETTINGS
                        </p>
                        <div className="space-y-1 pl-5">
-                          <p className="text-[8px] text-zinc-500 font-mono">
-                            Service: <span className="text-white">Custom...</span>
-                          </p>
-                          <p className="text-[8px] text-zinc-500 font-mono">
-                            Server: <code className="text-blue-400">rtmp://{vdsIp}/live</code>
-                          </p>
-                          <p className="text-[8px] text-zinc-500 font-mono">
-                            Stream Key: <code className="text-blue-400">{streamKey}</code>
+                          <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
+                            - Output Mode: <span className="text-white">Advanced</span> <br/>
+                            - Rate Control: <span className="text-white">CBR</span> <br/>
+                            - Bitrate: <span className="text-white">2500 - 4500 Kbps</span> <br/>
+                            - Keyframe Interval: <span className="text-blue-400">2s</span> <br/>
+                            - Profile: <span className="text-white">Main / Baseline</span>
                           </p>
                        </div>
                     </div>
@@ -334,22 +322,33 @@ export default function AdminDashboard() {
                     <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl space-y-3">
                        <p className="text-[10px] font-black text-red-500 uppercase flex items-center gap-2">
                          <Settings size={12} />
-                         🚨 PM2 LOG ERRORS (FIXES)
+                         🚨 SERVER LOG ERRORS (FIXES)
                        </p>
-                       <div className="space-y-3">
+                       <div className="space-y-4">
                           <div className="space-y-1">
                             <p className="text-[8px] text-white font-bold">1. ENOENT: ... dist/index.html</p>
-                            <p className="text-[7px] text-zinc-500 uppercase">მიზეზი: სერვერზე აკლია ბილდი. გაუშვით:</p>
-                            <code className="text-[9px] font-mono text-zinc-300 block bg-black/60 p-2 rounded">npm run build</code>
+                            <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">მიზეზი: სერვერზე აკლია ბილდი. პროექტის პაპკაში გაუშვით:</p>
+                            <code className="text-[9px] font-mono text-zinc-300 block bg-black/60 p-2 rounded border border-white/5">npm run build</code>
+                            <p className="text-[6px] text-zinc-600 mt-1 italic italic">ეს შექმნის dist პაპკას, რომელსაც PM2 ეძებს.</p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-[8px] text-white font-bold">2. supabaseUrl is required</p>
-                            <p className="text-[7px] text-zinc-500 uppercase">მიზეზი: .env ფაილში ცვლადები აკლია. დაამატეთ:</p>
-                            <pre className="text-[7px] font-mono text-zinc-300 bg-black/60 p-2 rounded leading-tight">
-{`VITE_SUPABASE_URL=your_url
-VITE_SUPABASE_ANON_KEY=your_key`}
+                            <p className="text-[8px] text-white font-bold">2. dtls timeout / connection error</p>
+                            <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">მიზეზი: UDP პორტები დაბლოკილია. გაუშვით:</p>
+                            <code className="text-[9px] font-mono text-zinc-300 block bg-black/60 p-2 rounded border border-white/5">
+                               sudo ufw allow 1935,7880,7885/tcp <br/>
+                               sudo ufw allow 443,50000:60000/udp
+                            </code>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[8px] text-white font-bold">3. supabaseUrl is required</p>
+                            <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">მიზეზი: `.env` ფაილი აკლია ან ცარიელია. დაამატეთ:</p>
+                            <pre className="text-[7px] font-mono text-zinc-300 bg-black/60 p-2 rounded leading-tight border border-white/5">
+{`VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+LIVEKIT_API_KEY=...
+LIVEKIT_API_SECRET=...`}
                             </pre>
-                            <p className="text-[6px] text-red-400 italic font-bold uppercase">შემდეგ: pm2 restart geostream</p>
+                            <p className="text-[6px] text-red-400 italic font-bold uppercase mt-1">და PM2-ის რესტარტი: pm2 restart all</p>
                           </div>
                        </div>
                     </div>
@@ -357,18 +356,19 @@ VITE_SUPABASE_ANON_KEY=your_key`}
                     <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-3">
                        <p className="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2">
                          <Globe size={12} />
-                         🌐 NGINX SSL CONFIG (Proxy)
+                         🌐 SRS NGINX PROXY (HTTPS)
                        </p>
                        <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
                           ფაილი: <code className="text-white">/etc/nginx/sites-available/geostream</code>
                        </p>
                        <pre className="text-[7px] font-mono text-zinc-300 bg-black/60 p-3 rounded-lg border border-white/5 leading-normal">
-{`location /rtc {
-    proxy_pass http://127.0.0.1:7880;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "Upgrade";
-    proxy_set_header Host $host;
+{`location /live {
+    proxy_pass http://127.0.0.1:8080;
+    add_header Access-Control-Allow-Origin *;
+}
+
+location /rtc {
+    proxy_pass http://127.0.0.1:1985;
 }`}
                        </pre>
                     </div>
@@ -427,7 +427,7 @@ VITE_SUPABASE_ANON_KEY=your_key`}
                 </div>
               </div>
               <div className="flex-1 relative bg-zinc-950">
-                <LiveKitStream roomName={streamKey || 'preview'} userName="Admin" serverUrl={livekitUrl} />
+                <LiveKitStream vdsIp={vdsIp} streamKey={streamKey} />
               </div>
               <div className="p-4 border-t border-white/5 bg-zinc-900/20">
                  <div className="flex items-center justify-between">
