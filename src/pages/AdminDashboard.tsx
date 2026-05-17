@@ -116,295 +116,209 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen pt-32 pb-20 px-6 bg-black">
-      <div className="max-w-[1000px] mx-auto">
-        <header className="mb-12">
-          <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-2">
-            სტრიმის <span className="text-brand-primary">მართვა</span>
-          </h1>
-          <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.3em]">GeoStream Admin Core</p>
+      <div className="max-w-[1200px] mx-auto">
+        <header className="mb-12 flex justify-between items-end">
+          <div>
+            <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-2">
+              LIVEKIT <span className="text-blue-500">CONTROL</span>
+            </h1>
+            <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.3em]">Ultra-Low Latency Management</p>
+          </div>
+          <div className="flex gap-4">
+             <div className="text-right">
+                <p className="text-[10px] font-black text-zinc-500 uppercase">SERVER STATUS</p>
+                <div className="flex items-center gap-2">
+                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                   <span className="text-[11px] font-bold text-white">LIVEKIT ONLINE</span>
+                </div>
+             </div>
+          </div>
         </header>
 
         {!showSessionDetails ? (
-          <div className="bento-card p-12 bg-zinc-900/30 space-y-10 border-white/5">
-            <div className="grid md:grid-cols-2 gap-10">
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სახელი</label>
-                    <input 
-                      type="text" value={team1} onChange={(e) => setTeam1(e.target.value)}
-                      className="w-full bg-zinc-950 border border-white/10 rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-bold text-white uppercase"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">გუნდი 2 (სურვილისამებრ)</label>
-                    <input 
-                      type="text" value={team2} onChange={(e) => setTeam2(e.target.value)}
-                      className="w-full bg-zinc-950 border border-white/10 rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-bold text-white uppercase"
-                    />
-                  </div>
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              <div className="bento-card p-10 bg-zinc-900/30 border-white/5 space-y-8">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-blue-500/10 rounded-lg"><Monitor size={20} className="text-blue-500" /></div>
+                  <h2 className="text-xl font-black uppercase text-white tracking-tight">ახალი სესია</h2>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სპორტი</label>
-                  <select 
-                    value={sessionSport} onChange={(e) => setSessionSport(e.target.value)}
-                    className="w-full bg-zinc-950 border border-white/10 rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-black text-xs uppercase tracking-widest text-white cursor-pointer"
-                  >
-                    <option value="Football">ფეხბურთი</option>
-                    <option value="UFC">UFC</option>
-                    <option value="Boxing">კრივი</option>
-                    <option value="NBA">NBA</option>
-                    <option value="Live">ლაივი (სხვა)</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">თამბნეილი</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" value={sessionThumbnail} onChange={(e) => setSessionThumbnail(e.target.value)}
-                      className="flex-1 bg-zinc-950 border border-white/10 rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-bold text-xs"
-                    />
-                    <label className="cursor-pointer bg-brand-primary/10 border border-brand-primary/20 rounded-xl px-4 flex items-center justify-center hover:bg-brand-primary/20 transition-all group">
-                      {uploading ? <Loader2 className="animate-spin text-brand-primary" size={20} /> : <Upload size={20} className="text-brand-primary" />}
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} />
-                    </label>
-                  </div>
-                </div>
-                <label className="flex items-center gap-4 p-5 bg-zinc-950 border border-white/10 rounded-2xl cursor-pointer hover:border-brand-primary/30 transition-all group">
-                  <input type="checkbox" className="w-6 h-6 rounded accent-brand-primary" checked={sessionIsExclusive} onChange={(e) => setSessionIsExclusive(e.target.checked)} />
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-black uppercase text-white tracking-widest">ექსკლუზივი</span>
-                    <span className="text-[9px] font-bold text-zinc-600 uppercase">მთავარ გვერდზე</span>
-                  </div>
-                </label>
-              </div>
-              <div className="flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="p-4 bg-zinc-950 border border-white/5 rounded-2xl flex gap-1">
-                    <button 
-                      onClick={() => setStreamType('hls')}
-                      className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${streamType === 'hls' ? 'bg-brand-primary text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-                    >
-                      Classic RTMP/HLS
-                    </button>
-                    <button 
-                      onClick={() => setStreamType('livekit')}
-                      className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${streamType === 'livekit' ? 'bg-blue-600 text-white shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)]' : 'text-zinc-500 hover:text-zinc-300'}`}
-                    >
-                      Ultra-Fast LiveKit
-                    </button>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">მთავარი გუნდი / სათაური</label>
+                      <input 
+                        type="text" placeholder="მაგ: Real Madrid" value={team1} onChange={(e) => setTeam1(e.target.value)}
+                        className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-white uppercase"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">მოწინააღმდეგე (სურვილისამებრ)</label>
+                      <input 
+                        type="text" placeholder="მაგ: Barcelona" value={team2} onChange={(e) => setTeam2(e.target.value)}
+                        className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-white uppercase"
+                      />
+                    </div>
                   </div>
 
-                  <div className="p-6 bg-brand-primary/5 border border-brand-primary/10 rounded-2xl">
-                    <p className="text-[11px] font-bold text-zinc-400 uppercase leading-relaxed italic">შედი OBS-ში და გამოიყენე URL და KEY</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">VDS IP <Settings size={12} /></label>
-                      <input type="text" value={vdsIp} onChange={(e) => setVdsIp(e.target.value)} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-5 py-3 text-[10px] font-mono text-zinc-500 focus:border-brand-primary/30 outline-none" />
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">კატეგორია</label>
+                      <select 
+                        value={sessionSport} onChange={(e) => setSessionSport(e.target.value)}
+                        className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-black text-xs uppercase tracking-widest text-white cursor-pointer"
+                      >
+                        <option value="Football">ფეხბურთი</option>
+                        <option value="UFC">UFC</option>
+                        <option value="Boxing">კრივი</option>
+                        <option value="NBA">NBA</option>
+                        <option value="Live">ლაივი (სხვა)</option>
+                      </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">LiveKit URL <Settings size={12} /></label>
-                      <input type="text" value={livekitUrl} onChange={(e) => setLivekitUrl(e.target.value)} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-5 py-3 text-[10px] font-mono text-zinc-500 focus:border-blue-500/30 outline-none" />
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">თამბნეილი (URL)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" value={sessionThumbnail} onChange={(e) => setSessionThumbnail(e.target.value)}
+                          className="flex-1 bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-[10px] text-zinc-400"
+                        />
+                        <label className="cursor-pointer bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 flex items-center justify-center hover:bg-blue-500/20 transition-all group">
+                          {uploading ? <Loader2 className="animate-spin text-blue-500" size={18} /> : <Upload size={18} className="text-blue-500" />}
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} />
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                <div className="pt-4">
+                  <label className="flex items-center gap-4 p-5 bg-black border border-white/10 rounded-2xl cursor-pointer hover:border-blue-500/30 transition-all group shadow-inner">
+                    <input type="checkbox" className="w-6 h-6 rounded accent-blue-600" checked={sessionIsExclusive} onChange={(e) => setSessionIsExclusive(e.target.checked)} />
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-black uppercase text-white tracking-widest">ექსკლუზივი</span>
+                      <span className="text-[9px] font-bold text-zinc-600 uppercase italic">გამოჩნდება მთავარ სლაიდერში</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <div className="bento-card p-8 bg-blue-600 shadow-[0_30px_60px_-15px_rgba(37,99,235,0.3)] border-none flex flex-col justify-between min-h-[300px]">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Settings size={16} className="text-white/60" />
+                    <label className="text-[10px] font-black text-white/60 uppercase tracking-widest">Server Config</label>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-[9px] font-bold text-white/50 uppercase">LiveKit Server URL</span>
+                    <input 
+                      type="text" value={livekitUrl} onChange={(e) => setLivekitUrl(e.target.value)} 
+                      className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-mono text-white placeholder:text-white/20 outline-none focus:bg-white/20 transition-all"
+                      placeholder="ws://your-ip:7880"
+                    />
+                  </div>
+                </div>
+                
                 <button 
                   onClick={startSession}
-                  className="w-full py-7 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4 shadow-[0_20px_40px_-15px_rgba(255,0,51,0.4)] mt-10"
+                  className="w-full py-6 bg-white text-blue-600 font-black rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                 >
-                  <Monitor size={24} /> 
-                  <span className="text-sm uppercase tracking-widest">სესიის დაწყება</span>
+                  <Play size={20} fill="currentColor" /> 
+                  <span className="text-xs uppercase tracking-widest">სტრიმის დაწყება</span>
                 </button>
+              </div>
+
+              <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl space-y-4">
+                <div className="flex items-center gap-2 text-zinc-400">
+                  <TrendingUp size={14} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Info</span>
+                </div>
+                <p className="text-[11px] text-zinc-500 leading-relaxed font-bold italic">
+                  LiveKit უზრუნველყოფს 1 წამზე ნაკლებ დაყოვნებას. დარწმუნდით, რომ სერვერზე <span className="text-white">port 7880</span> გახსნილია.
+                </p>
               </div>
             </div>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-2 gap-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <div className="bento-card p-10 bg-zinc-900/30 border-white/10 space-y-8">
-              <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-black uppercase text-white tracking-tighter">OBS მონაცემები</h3>
-                <button onClick={() => setShowSessionDetails(false)} className="text-[10px] font-black uppercase text-brand-primary hover:underline px-3 py-1 bg-brand-primary/5 rounded-full">შეცვლა</button>
-              </div>
+          <div className="grid lg:grid-cols-2 gap-10">
+            <div className="space-y-8">
+              <div className="bento-card p-10 bg-zinc-900/30 border-white/5 space-y-8">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/10 rounded-lg"><Radio size={20} className="text-blue-500" /></div>
+                    <h3 className="text-xl font-black uppercase text-white tracking-tight">INGRESS CONFIG</h3>
+                  </div>
+                  <button onClick={() => setShowSessionDetails(false)} className="text-[9px] font-black uppercase text-blue-500 hover:bg-blue-500/5 px-4 py-2 border border-blue-500/20 rounded-full transition-all">დახურვა</button>
+                </div>
+
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">SERVER URL</label>
-                    <div className="flex bg-black border border-white/5 rounded-xl overflow-hidden group">
-                      <code className="flex-1 p-5 font-mono text-xs text-brand-primary truncate">rtmp://{vdsIp}/live</code>
-                      <button onClick={() => copyToClipboard(`rtmp://${vdsIp}/live`, 'url')} className="px-6 border-l border-white/5 hover:bg-zinc-900 transition-colors">
-                        {copiedUrl ? <Check size={18} className="text-green-500" /> : <Copy size={18} className="text-zinc-500" />}
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">LIVEKIT URL</label>
+                    <div className="flex bg-black border border-white/5 rounded-xl overflow-hidden">
+                      <code className="flex-1 p-5 font-mono text-xs text-blue-400 truncate">{livekitUrl}</code>
+                      <button onClick={() => copyToClipboard(livekitUrl, 'url')} className="px-6 border-l border-white/5 hover:bg-zinc-900 transition-all text-zinc-500 hover:text-white">
+                        {copiedUrl ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                       </button>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">STREAM KEY</label>
-                    <div className="flex bg-black border border-white/5 rounded-xl overflow-hidden group">
-                      <code className="flex-1 p-5 font-mono text-xs text-brand-primary truncate">{streamKey}</code>
-                      <button onClick={() => copyToClipboard(streamKey, 'key')} className="px-6 border-l border-white/5 hover:bg-zinc-900 transition-colors">
-                        {copiedKey ? <Check size={18} className="text-green-500" /> : <Copy size={18} className="text-zinc-500" />}
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">ROOM NAME / KEY</label>
+                    <div className="flex bg-black border border-white/5 rounded-xl overflow-hidden">
+                      <code className="flex-1 p-5 font-mono text-xs text-blue-400 truncate">{streamKey}</code>
+                      <button onClick={() => copyToClipboard(streamKey, 'key')} className="px-6 border-l border-white/5 hover:bg-zinc-900 transition-all text-zinc-500 hover:text-white">
+                        {copiedKey ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                       </button>
                     </div>
                   </div>
                 </div>
-              <div className="p-6 bg-zinc-950 rounded-2xl border border-white/5 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                  <span className="text-[10px] font-black uppercase text-zinc-400">📽️ OBS-ის გამართვა (ინსტრუქცია):</span>
-                </div>
-                <div className="space-y-4 text-[9px]">
-                  <div className="p-3 bg-zinc-900/50 border border-white/5 rounded-xl">
-                    <p className="text-white font-bold mb-1 uppercase">1. საით გავუშვა? (Settings -{'>'} Stream)</p>
-                    <ul className="text-zinc-500 space-y-1 ml-2">
-                       <li>• <span className="text-zinc-300">Service:</span> Custom...</li>
-                       <li>• <span className="text-zinc-300">Server:</span> <code className="text-blue-400">rtmp://{vdsIp}/live</code></li>
-                       <li>• <span className="text-zinc-300">Stream Key:</span> <code className="text-blue-400">{streamKey}</code></li>
-                    </ul>
-                  </div>
 
-                  <div className="p-3 bg-zinc-900/50 border border-white/5 rounded-xl">
-                    <p className="text-white font-bold mb-1 uppercase">2. საუკეთესო ხარისხი (Settings -{">"} Output)</p>
-                    <ul className="text-zinc-500 space-y-1 ml-2 text-[8px]">
-                       <li>• <span className="text-zinc-300">Output Mode:</span> Advanced</li>
-                       <li>• <span className="text-zinc-300">Bitrate:</span> 2500 - 4500 Kbps</li>
-                       <li>• <span className="text-zinc-300">Keyframe Interval:</span> 2s (აუცილებელია!)</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 bg-zinc-950 rounded-2xl border border-white/5 space-y-4">
-                <div className="max-h-[500px] overflow-y-auto bg-black p-4 rounded-xl border border-white/10">
-                  <div className="space-y-6">
-                    {/* Setup Step 1 */}
-                    <div>
-                      <p className="text-[10px] text-brand-primary font-black uppercase mb-2">🚀 ნაბიჯი 1: Nginx-ის ინსტალაცია</p>
-                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5 whitespace-pre-wrap">
-{`# 1. წაშალეთ ძველი
-sudo apt-get remove nginx nginx-common nginx-full -y
-sudo apt-get purge nginx nginx-common nginx-full -y
-sudo apt-get autoremove -y
-
-# 2. დააყენეთ ახალი RTMP-ით
-sudo apt-get update
-sudo apt-get install nginx libnginx-mod-rtmp -y`}
-                      </pre>
-                    </div>
-
-                    {/* Setup Step 2 */}
-                    <div>
-                      <p className="text-[10px] text-brand-primary font-black uppercase mb-2">⚙️ ნაბიჯი 2: Nginx კონფიგურაცია</p>
-                      <pre className="text-[9px] font-mono text-brand-primary/80 leading-relaxed bg-zinc-900/50 p-2 rounded border border-white/5 overflow-x-auto">
-{`# 1. წაშალეთ დეფოლტ კონფიგი (კრიტიკულია!)
-sudo rm /etc/nginx/sites-enabled/default
-
-# 2. ჩაწერეთ ეს კოდი /etc/nginx/nginx.conf-ში:
-rtmp {
-    server {
-        listen 1935;
-        application live {
-            live on;
-            hls on;
-            hls_path /var/www/html/hls;
-            hls_fragment 3;
-            hls_playlist_length 60;
-        }
-    }
-}
-
-http {
-    server {
-        listen 80;
-        location / {
-            proxy_pass http://localhost:3000;
-        }
-        location /hls {
-            add_header 'Access-Control-Allow-Origin' '*' always;
-            alias /var/www/html/hls;
-            expires -1;
-        }
-    }
-}`}
-                      </pre>
-                    </div>
-
-                    {/* Diagnosis & Fixes */}
-                    <div className="p-4 bg-green-950/40 border border-green-500/50 rounded-2xl space-y-4 shadow-2xl">
-                      <p className="text-[11px] text-white font-black uppercase flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        საბოლოო დიაგნოზი & ფიქსები
-                      </p>
-                      
-                      <div className="space-y-4">
-                        <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
-                          <p className="text-[10px] text-green-400 font-bold mb-1">✅ LIVEKIT: დაკავშირებულია!</p>
-                          <p className="text-[9px] text-zinc-400 leading-relaxed">
-                             თქვენს კონსოლში წერია <span className="text-white">"connected"</span> - ეს ნიშნავს რომ LiveKit მუშაობს.
-                          </p>
-                        </div>
-
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
-                          <p className="text-[10px] text-red-400 font-bold mb-1">⚠️ Camera/Mic Blocked (HTTP Restriction):</p>
-                          <p className="text-[9px] text-zinc-400 leading-relaxed">
-                            ბრაუზერი <span className="text-white">http://</span>-ზე <span className="text-red-400 font-bold">ბლოკავს</span> კამერას.
-                            <br/>
-                            <span className="text-green-400 font-bold">გამოსავალი:</span> გამოიყენეთ <code className="bg-black px-1">http://5.83.153.142:3000</code> ლინკი.
-                          </p>
-                        </div>
-
-                        <div className="p-3 bg-black/40 rounded-xl border border-white/5">
-                          <p className="text-[10px] text-orange-400 font-bold mb-1">❌ OBS-ის ფიქსი (Failed to connect):</p>
-                          <pre className="text-[9px] font-mono text-orange-300 bg-zinc-900/50 p-2 rounded">
-{`# 1. გახსენით პორტი 1935
-sudo ufw allow 1935/tcp
-sudo ufw reload
-
-# 2. დაარეფრეშეთ Nginx
-sudo nginx -t
-sudo systemctl restart nginx`}
-                          </pre>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Deployment commands */}
-                    <div>
-                      <p className="text-[10px] text-blue-400 font-black uppercase mb-2">🚀 მართვის ბრძანებები</p>
-                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5">
-{`pm2 restart geostream # საიტის რესტარტი
-pm2 restart livekit   # LiveKit-ის რესტარტი
-sudo nginx -t         # Nginx შემოწმება
-sudo systemctl restart nginx # Nginx რესტარტი`}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-[9px] text-white font-black uppercase tracking-widest">📋 ინფორმაცია:</p>
-                  <p className="text-[8px] text-zinc-500 font-bold uppercase leading-relaxed">
-                    PM2 უზრუნველყოფს საიტის მუდმივ მუშაობას. <br/>
-                    Nginx კი ამუშავებს სტრიმინგს და პორტების გადამისამართებას.<br/>
-                    <span className="text-brand-primary">პრობლემის შემთხვევაში:</span> <code className="text-zinc-300">pm2 logs</code>
+                <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-2xl space-y-4">
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                     🚀 როგორ დავიწყოთ სტრიმი?
                   </p>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-black/40 rounded-xl space-y-2">
+                       <p className="text-[9px] font-bold text-white uppercase">1. OBS - WHIP (რეკომენდირებული)</p>
+                       <p className="text-[8px] text-zinc-500 leading-relaxed">
+                          Settings {">"} Stream {">"} Service: <span className="text-white">WHIP</span>. <br/>
+                          Server: <span className="text-blue-400 italic">http://{vdsIp}:7885/whip</span> (თუ Ingress გაქვთ).
+                       </p>
+                    </div>
+                    <div className="p-3 bg-black/40 rounded-xl space-y-2">
+                       <p className="text-[9px] font-bold text-white uppercase">2. ბრაუზერიდან სტრიმი</p>
+                       <p className="text-[8px] text-zinc-500 leading-relaxed">
+                          შეგიძლიათ პირდაპირი სტრიმი მარჯვენა მხარეს არსებული <span className="text-blue-400">Preview</span> ფანჯრიდანაც გაუშვათ (კამერა/მიკროფონი).
+                       </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="bento-card bg-black border-white/5 overflow-hidden flex flex-col min-h-[450px]">
-              <div className="p-5 border-b border-white/5 flex items-center justify-between bg-zinc-900/20">
+
+            <div className="bento-card bg-black border-white/5 overflow-hidden flex flex-col h-[600px] shadow-2xl">
+              <div className="p-5 border-b border-white/5 flex items-center justify-between bg-zinc-900/40">
                 <div className="flex items-center gap-3">
-                   <div className="p-1.5 bg-brand-primary/10 rounded"><Monitor size={14} className="text-brand-primary" /></div>
-                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Preview</span>
+                   <div className="p-2 bg-blue-500/10 rounded"><Monitor size={16} className="text-blue-500" /></div>
+                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Live Monitor</span>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1 bg-red-500/10 rounded-full">
-                   <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                   <span className="text-[9px] font-black uppercase text-red-500">Live</span>
+                <div className="flex items-center gap-2 px-4 py-1.5 bg-red-600 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.4)]">
+                   <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                   <span className="text-[9px] font-black uppercase text-white tracking-widest">Broadcasting</span>
                 </div>
               </div>
-              <div className="flex-1 relative bg-zinc-950 flex items-center justify-center">
-                {streamType === 'hls' ? (
-                  <HLSPlayer url={streamUrl} className="w-full h-full object-contain" autoPlay={true} controls={true} />
-                ) : (
-                  <LiveKitStream roomName={streamKey || 'preview'} userName="Admin" serverUrl={livekitUrl} />
-                )}
+              <div className="flex-1 relative bg-zinc-950">
+                <LiveKitStream roomName={streamKey || 'preview'} userName="Admin" serverUrl={livekitUrl} />
+              </div>
+              <div className="p-4 border-t border-white/5 bg-zinc-900/20">
+                 <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                       <span className="text-[10px] font-black text-white uppercase">{team2 ? `${team1} VS ${team2}` : team1}</span>
+                       <span className="text-[8px] text-zinc-500 uppercase font-bold">{sessionSport} • Low Latency Mode</span>
+                    </div>
+                    <button className="px-4 py-2 bg-red-600/10 border border-red-600/20 text-red-500 text-[10px] font-black uppercase rounded-lg hover:bg-red-600/20 transition-all">სტრიმის გათიშვა</button>
+                 </div>
               </div>
             </div>
           </div>
