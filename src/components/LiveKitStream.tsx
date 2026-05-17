@@ -1,17 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import {
   LiveKitRoom,
-  VideoConference,
-  useToken,
-  ControlBar,
+  RoomAudioRenderer,
+  TrackLoop,
+  useTracks,
+  TrackRefContext,
+  VideoTrack,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
+import { Track } from 'livekit-client';
 import { Loader2 } from 'lucide-react';
 
 interface LiveKitStreamProps {
   roomName: string;
   userName: string;
   serverUrl: string;
+}
+
+function SimpleViewer() {
+  const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
+  
+  if (tracks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full space-y-4 text-zinc-500">
+        <div className="w-12 h-12 rounded-full border-2 border-zinc-800 border-t-blue-500 animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-center">სტრიმის მოლოდინი...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-2 p-2 h-full bg-black">
+      <TrackLoop tracks={tracks}>
+        <TrackRefContext.Consumer>
+          {(track) => track && <VideoTrack trackRef={track} className="w-full h-full object-contain rounded-xl" />}
+        </TrackRefContext.Consumer>
+      </TrackLoop>
+    </div>
+  );
 }
 
 export default function LiveKitStream({ roomName, userName, serverUrl }: LiveKitStreamProps) {
@@ -63,8 +89,8 @@ export default function LiveKitStream({ roomName, userName, serverUrl }: LiveKit
 
   if (!token) {
     return (
-      <div className="flex flex-col items-center justify-center p-10 bg-zinc-900/50 rounded-2xl border border-white/5 space-y-4">
-        <Loader2 className="w-8 h-8 text-brand-primary animate-spin" />
+      <div className="flex flex-col items-center justify-center p-10 bg-zinc-900/50 rounded-2xl border border-white/5 space-y-4 h-full">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
         <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">LiveKit-თან დაკავშირება...</p>
       </div>
     );
@@ -77,10 +103,11 @@ export default function LiveKitStream({ roomName, userName, serverUrl }: LiveKit
       token={token}
       serverUrl={serverUrl}
       data-lk-theme="default"
-      style={{ height: '100%', width: '100%' }}
+      style={{ height: '100dvh', width: '100%' }}
       onDisconnected={() => setToken(undefined)}
     >
-      <VideoConference />
+      <SimpleViewer />
+      <RoomAudioRenderer />
     </LiveKitRoom>
   );
 }
