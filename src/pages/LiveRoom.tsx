@@ -4,13 +4,18 @@ import { cn } from '../lib/utils';
 import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
+import LiveKitStream from '../components/LiveKitStream';
 
 function ViewerStream({ 
   streamUrl, 
-  isGlobalPaused 
+  isGlobalPaused,
+  roomId,
+  livekitUrl
 }: { 
   streamUrl: string;
   isGlobalPaused: boolean;
+  roomId?: string;
+  livekitUrl?: string;
 }) {
   const [isPaused, setIsPaused] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -30,7 +35,7 @@ function ViewerStream({
 
   return (
     <div ref={containerRef} className="relative h-full w-full group overflow-hidden bg-black">
-      {streamUrl ? (
+      {streamUrl && streamUrl.endsWith('.m3u8') ? (
         <HLSPlayer 
           url={streamUrl}
           autoPlay={!effectivePaused}
@@ -39,6 +44,8 @@ function ViewerStream({
             effectivePaused ? 'opacity-40 grayscale blur-sm' : ''
           )}
         />
+      ) : roomId && livekitUrl ? (
+        <LiveKitStream roomName={roomId} userName={`Viewer-${Math.random().toString(36).substring(7)}`} serverUrl={livekitUrl} />
       ) : (
         <div className="h-full w-full flex items-center justify-center text-zinc-500 font-black uppercase tracking-widest bg-zinc-950 px-8 text-center leading-relaxed">
           საკუთარი VDS სტრიმის URL არ არის მითითებული ან სტრიმი არ არის აქტიური...
@@ -126,6 +133,7 @@ export default function LiveRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [streamUrl, setStreamUrl] = useState<string>('');
+  const [livekitUrl, setLivekitUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [isGlobalPaused, setIsGlobalPaused] = useState(false);
@@ -147,18 +155,26 @@ export default function LiveRoom() {
         setLoading(true);
         const { data, error } = await supabase
           .from('events')
-          .select('stream_url')
+          .select('stream_url, room_name')
           .eq('room_name', roomId)
           .maybeSingle();
         
         if (error) throw error;
-        if (data?.stream_url) {
-          let url = data.stream_url;
-          // Fix: Ensure URL ends with .m3u8 if it's our HLS path
-          if (url && url.includes('/hls/') && !url.endsWith('.m3u8')) {
-            url += '.m3u8';
+        if (data) {
+          if (data.stream_url) {
+            let url = data.stream_url;
+            if (url && url.includes('/hls/') && !url.endsWith('.m3u8')) {
+              url += '.m3u8';
+            }
+            setStreamUrl(url);
           }
-          setStreamUrl(url);
+          
+          // Defaults or derived info
+          if (!data.stream_url || !data.stream_url.endsWith('.m3u8')) {
+            // Check for LiveKit config in metadata or fallback to a default if we have IP
+            const savedUrl = localStorage.getItem('livekit_url') || 'ws://5.83.153.142:7880';
+            setLivekitUrl(savedUrl);
+          }
         }
       } catch (e: any) {
         console.error('Failed to fetch stream url:', e.message || e);
@@ -259,7 +275,7 @@ export default function LiveRoom() {
         {/* Main Stream Area */}
         <div className="col-span-12 lg:col-span-9 flex flex-col gap-4 sm:gap-6 h-full overflow-hidden">
           <div className="aspect-video sm:flex-1 bg-brand-surface rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-brand-border relative group shadow-2xl">
-            <ViewerStream streamUrl={streamUrl} isGlobalPaused={isGlobalPaused} />
+            <ViewerStream streamUrl={streamUrl} isGlobalPaused={isGlobalPaused} roomId={roomId} livekitUrl={livekitUrl} />
             
             {/* Custom Overlay */}
             <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex gap-2 sm:gap-3 pointer-events-none">
