@@ -334,11 +334,33 @@ export default function AdminDashboard() {
                     <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl space-y-3">
                        <p className="text-[10px] font-black text-red-500 uppercase flex items-center gap-2">
                          <Settings size={12} />
-                         🚨 HTTPS / SSL FIX (Nginx Proxy)
+                         🚨 PM2 LOG ERRORS (FIXES)
+                       </p>
+                       <div className="space-y-3">
+                          <div className="space-y-1">
+                            <p className="text-[8px] text-white font-bold">1. ENOENT: ... dist/index.html</p>
+                            <p className="text-[7px] text-zinc-500 uppercase">მიზეზი: სერვერზე აკლია ბილდი. გაუშვით:</p>
+                            <code className="text-[9px] font-mono text-zinc-300 block bg-black/60 p-2 rounded">npm run build</code>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[8px] text-white font-bold">2. supabaseUrl is required</p>
+                            <p className="text-[7px] text-zinc-500 uppercase">მიზეზი: .env ფაილში ცვლადები აკლია. დაამატეთ:</p>
+                            <pre className="text-[7px] font-mono text-zinc-300 bg-black/60 p-2 rounded leading-tight">
+{`VITE_SUPABASE_URL=your_url
+VITE_SUPABASE_ANON_KEY=your_key`}
+                            </pre>
+                            <p className="text-[6px] text-red-400 italic font-bold uppercase">შემდეგ: pm2 restart geostream</p>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-3">
+                       <p className="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2">
+                         <Globe size={12} />
+                         🌐 NGINX SSL CONFIG (Proxy)
                        </p>
                        <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
-                          რადგან საიტი <span className="text-white font-bold">HTTPS</span>-ზეა, უნდა გამოიყენოთ <span className="text-blue-400 font-bold">WSS</span>. <br/>
-                          დაამატეთ ეს თქვენს Nginx კონფიგში (`/etc/nginx/sites-available/geostream`):
+                          ფაილი: <code className="text-white">/etc/nginx/sites-available/geostream</code>
                        </p>
                        <pre className="text-[7px] font-mono text-zinc-300 bg-black/60 p-3 rounded-lg border border-white/5 leading-normal">
 {`location /rtc {
@@ -349,7 +371,6 @@ export default function AdminDashboard() {
     proxy_set_header Host $host;
 }`}
                        </pre>
-                       <p className="text-[7px] text-zinc-500 italic">ამის შემდეგ LiveKit URL იქნება: <span className="text-white">wss://{window.location.hostname}/rtc</span></p>
                     </div>
 
                     <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-2">
