@@ -299,7 +299,9 @@ export default function AdminDashboard() {
                           <p className="text-[8px] text-zinc-500 font-mono">
                             Server: <code className="text-blue-400">http://{vdsIp}:7885/whip</code>
                           </p>
-                          <p className="text-[8px] text-zinc-400 italic">თუ WHIP-ს იყენებთ, Stream Key არ არის საჭირო, გამოიყენეთ Bearer Token</p>
+                          <p className="text-[8px] text-zinc-300 font-bold bg-blue-500/10 p-1 rounded inline-block mt-1">
+                            Bearer Token: <code className="text-white">{streamKey}</code>
+                          </p>
                        </div>
                     </div>
                     
