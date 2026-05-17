@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2 } from 'lucide-react';
+import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { MOCK_EVENTS } from '../constants';
+import HLSPlayer from '../components/HLSPlayer';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -16,6 +16,9 @@ export default function AdminDashboard() {
   const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
   const [sessionThumbnail, setSessionThumbnail] = useState('');
   const [activeTab, setActiveTab ] = useState<'sessions' | 'streams' | 'highlights' | 'schedule'>('sessions');
+  const [showSessionDetails, setShowSessionDetails] = useState(false);
+  const [copiedKey, setCopiedKey] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
   const slugify = (text: string) => text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\u10D0-\u10FA\w-]+/g, '');
 
@@ -123,8 +126,6 @@ export default function AdminDashboard() {
   };
 
   const startStream = async (id: string) => {
-    navigate(`/broadcast/${id}`);
-    
     // Save VDS IP for next time
     if (vdsIp) localStorage.setItem('vds_ip', vdsIp);
 
@@ -161,6 +162,8 @@ export default function AdminDashboard() {
         finalStreamUrl += '.m3u8';
       }
 
+      setStreamUrl(finalStreamUrl);
+
       const eventData = {
         room_name: id,
         title: formattedTitle,
@@ -188,6 +191,7 @@ export default function AdminDashboard() {
         if (insertErr) handleSupabaseError(insertErr, 'Events Insert');
       }
 
+      setShowSessionDetails(true);
     } catch (e) {
       console.warn('Supabase sync process encountered an error:', e);
     }
@@ -316,174 +320,124 @@ export default function AdminDashboard() {
           {activeTab === 'sessions' && (
             <>
               <section className="space-y-6">
-                <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500 flex items-center gap-3">
-                  <Radio size={14} className="text-brand-primary" /> სესიის ინიციალიზაცია
-                </h2>
-                <div className="bento-card p-10 bg-brand-primary/5 border-brand-primary/20 space-y-8">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-black uppercase text-zinc-400">სტრიმის კონტროლი</h3>
-                    <button 
-                      onClick={stopBroadcast}
-                      className="px-4 py-2 bg-zinc-800 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2"
-                    >
-                      <StopCircle size={14} /> ყველა ლაივის შეჩერება
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Team Inputs Area */}
-                    <div className="lg:col-span-8 space-y-6">
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">პირველი გუნდი</label>
-                          <input 
-                            type="text" 
-                            value={team1}
-                            onChange={(e) => setTeam1(e.target.value)}
-                            placeholder="მაგ: რეალ მადრიდი"
-                            className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-xl uppercase tracking-tighter placeholder:text-zinc-800 text-white"
-                          />
-                        </div>
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">მეორე გუნდი</label>
-                          <input 
-                            type="text" 
-                            value={team2}
-                            onChange={(e) => setTeam2(e.target.value)}
-                            placeholder="მაგ: ბარსელონა"
-                            className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-xl uppercase tracking-tighter placeholder:text-zinc-800 text-white"
-                          />
-                        </div>
-                      </div>
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-500 flex items-center gap-3">
+                    <Radio size={14} className="text-brand-primary" /> სესიის ინიციალიზაცია
+                  </h2>
+                  <button 
+                    onClick={stopBroadcast}
+                    className="px-4 py-2 bg-zinc-900 border border-white/5 hover:bg-red-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2"
+                  >
+                    <StopCircle size={12} /> ყველა ლაივის გათიშვა
+                  </button>
+                </div>
 
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტრიმის იდენტიფიკატორი (ავტომატური)</label>
-                        <input 
-                          type="text" 
-                          value={roomId}
-                          readOnly
-                          className="w-full bg-zinc-900/40 border border-brand-border/30 rounded-xl px-5 py-3 text-zinc-500 font-mono text-xs outline-none"
-                        />
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-brand-primary uppercase tracking-widest ml-1">OBS STREAM KEY (ეს ჩაწერეთ OBS-ში)</label>
-                        <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            value={streamKey}
-                            onChange={(e) => setStreamKey(e.target.value)}
-                            className="flex-1 bg-black border border-brand-primary/30 rounded-xl px-5 py-3 focus:border-brand-primary outline-none transition-all font-mono text-sm text-white"
-                          />
-                          <button 
-                            onClick={() => setStreamKey(`${roomId}-${Math.random().toString(36).substring(2, 7)}`)}
-                            className="px-4 bg-zinc-800 rounded-xl text-[9px] font-black uppercase hover:bg-zinc-700 transition-colors"
-                          >
-                            რეგენერაცია
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
-                          თამბნეილის ატვირთვა <ImageIcon size={12} className="text-brand-primary" />
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div className="md:col-span-3">
+                {!showSessionDetails ? (
+                  <div className="bento-card p-10 bg-zinc-900/40 space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Left: Input fields */}
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">გუნდი 1</label>
                             <input 
+                              type="text" 
+                              value={team1}
+                              onChange={(e) => setTeam1(e.target.value)}
+                              placeholder="..."
+                              className="w-full bg-black border border-brand-border rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-bold text-lg uppercase"
+                            />
+                          </div>
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">გუნდი 2</label>
+                            <input 
+                              type="text" 
+                              value={team2}
+                              onChange={(e) => setTeam2(e.target.value)}
+                              placeholder="..."
+                              className="w-full bg-black border border-brand-border rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-bold text-lg uppercase"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სპორტის სახეობა</label>
+                          <select 
+                            value={sessionSport}
+                            onChange={(e) => setSessionSport(e.target.value)}
+                            className="w-full bg-black border border-brand-border rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-black text-xs uppercase tracking-widest text-white appearance-none cursor-pointer"
+                          >
+                            <option value="Football">ფეხბურთი</option>
+                            <option value="UFC">UFC</option>
+                            <option value="Boxing">კრივი</option>
+                            <option value="NBA">NBA</option>
+                            <option value="Live">ლაივი (ზოგადი)</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">თამბნეილი</label>
+                          <div className="flex gap-2">
+                             <input 
                               type="text" 
                               value={sessionThumbnail}
                               onChange={(e) => setSessionThumbnail(e.target.value)}
                               placeholder="სურათის URL..."
-                              className="w-full bg-black border border-brand-border rounded-xl px-5 py-5 focus:border-brand-primary outline-none transition-all font-bold text-sm text-white"
+                              className="flex-1 bg-black border border-brand-border rounded-xl p-4 focus:border-brand-primary outline-none transition-all font-bold text-xs"
                             />
+                            <label className="cursor-pointer bg-brand-primary/10 border border-brand-primary/20 rounded-xl px-4 flex items-center justify-center hover:bg-brand-primary/20 transition-all">
+                              {uploading === 'session-thumb' ? <Loader2 className="animate-spin text-brand-primary" size={18} /> : <Upload size={18} className="text-brand-primary" />}
+                              <input 
+                                type="file" className="hidden" accept="image/*"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const url = await handleFileUpload(file, 'private');
+                                    if (url) setSessionThumbnail(url);
+                                  }
+                                }}
+                              />
+                            </label>
                           </div>
-                          <label className="cursor-pointer bg-brand-primary/10 border-2 border-dashed border-brand-primary/30 rounded-xl px-5 py-5 hover:bg-brand-primary/20 hover:border-brand-primary transition-all flex items-center justify-center gap-3">
-                            {uploading === 'session-thumb' ? (
-                              <Loader2 className="animate-spin text-brand-primary" size={20} />
-                            ) : (
-                              <>
-                                <Upload className="text-brand-primary" size={20} />
-                                <span className="text-[10px] font-black uppercase text-brand-primary">ატვირთვა</span>
-                              </>
-                            )}
-                            <input 
-                              type="file" 
-                              className="hidden" 
-                              accept="image/*"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const url = await handleFileUpload(file, 'private');
-                                  if (url) setSessionThumbnail(url);
-                                }
-                              }}
-                            />
-                          </label>
                         </div>
-                      </div>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-brand-primary uppercase tracking-widest ml-1 flex items-center gap-2">
-                             თქვენი VDS IP (ავტომატიზაციისთვის) <Settings size={12} />
-                          </label>
-                          <input 
-                            type="text" 
-                            value={vdsIp}
-                            onChange={(e) => setVdsIp(e.target.value)}
-                            placeholder="მაგ: 1.2.3.4"
-                            className="w-full bg-brand-primary/10 border border-brand-primary/30 rounded-xl px-5 py-3 focus:border-brand-primary outline-none transition-all font-mono text-xs text-brand-primary"
-                          />
-                        </div>
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">VDS სტრიმის URL (სურვილისამებრ ხელით)</label>
-                          <input 
-                            type="text" 
-                            value={streamUrl}
-                            onChange={(e) => setStreamUrl(e.target.value)}
-                            placeholder="ცარიელი დატოვეთ IP-ს გამოსაყენებლად"
-                            className="w-full bg-black border border-brand-border rounded-xl px-5 py-3 focus:border-brand-primary outline-none transition-all font-mono text-xs text-zinc-400"
-                          />
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Controls Area */}
-                    <div className="lg:col-span-4 space-y-6">
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სპორტის სახეობა</label>
-                        <select 
-                          value={sessionSport}
-                          onChange={(e) => setSessionSport(e.target.value)}
-                          className="w-full bg-black border border-brand-border rounded-2xl p-5 focus:border-brand-primary outline-none transition-all font-black text-sm uppercase tracking-widest text-white appearance-none cursor-pointer"
-                        >
-                          <option value="Football">ფეხბურთი</option>
-                          <option value="UFC">UFC</option>
-                          <option value="Boxing">კრივი</option>
-                          <option value="NBA">NBA</option>
-                        </select>
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">სტატუსი</label>
-                        <label className="flex items-center gap-4 px-6 py-[22px] bg-black border border-brand-border rounded-2xl cursor-pointer hover:border-brand-primary/50 transition-all group">
+                        <label className="flex items-center gap-4 p-4 bg-black border border-brand-border rounded-xl cursor-pointer hover:border-brand-primary/30 transition-all group">
                           <input 
                             type="checkbox" 
-                            className="w-6 h-6 rounded accent-brand-primary" 
+                            className="w-5 h-5 rounded accent-brand-primary" 
                             checked={sessionIsExclusive}
                             onChange={(e) => setSessionIsExclusive(e.target.checked)}
                           />
                           <div className="flex flex-col">
-                            <span className="text-[11px] font-black uppercase text-white tracking-widest">ექსკლუზივი</span>
-                            <span className="text-[9px] font-bold text-zinc-500 uppercase">გამოჩნდება მთავარ ბანერზე</span>
+                            <span className="text-[10px] font-black uppercase text-white tracking-widest">ექსკლუზივი</span>
+                            <span className="text-[8px] font-bold text-zinc-600 uppercase">გამოჩნდება მთავარ ბანერზე</span>
                           </div>
                         </label>
                       </div>
 
-                      <div className="pt-2">
+                      {/* Right: Action and hidden settings */}
+                      <div className="space-y-6 flex flex-col justify-between">
+                        <div className="space-y-4">
+                          <div className="p-4 bg-brand-primary/5 border border-brand-primary/10 rounded-2xl">
+                             <p className="text-[10px] font-bold text-zinc-400 uppercase leading-relaxed">ინფორმაციის შევსების შემდეგ სესიის დასაწყებად დააჭირეთ ღილაკს. თქვენ მიიღებთ OBS-ში ჩასაწერ მონაცემებს.</p>
+                          </div>
+                          
+                          <div className="space-y-2">
+                             <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">VDS IP მისამართი <Settings size={10} /></label>
+                             <input 
+                               type="text" 
+                               value={vdsIp}
+                               onChange={(e) => setVdsIp(e.target.value)}
+                               placeholder="მაგ: 5.83.153.142"
+                               className="w-full bg-zinc-900 border border-white/5 rounded-xl px-4 py-2 text-xs font-mono text-zinc-500 focus:border-brand-primary/30 outline-none"
+                             />
+                          </div>
+                        </div>
+
                         <button 
                           onClick={() => roomId && startStream(roomId)}
-                          disabled={!roomId}
-                          className="w-full py-6 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4 shadow-[0_20px_40px_-15px_rgba(255,0,51,0.5)] disabled:opacity-50"
+                          disabled={!team1 || !team2}
+                          className="w-full py-6 bg-brand-primary text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4 shadow-[0_20px_40px_-15px_rgba(255,0,51,0.5)] disabled:opacity-30 disabled:grayscale disabled:hover:scale-100"
                         >
                           <Monitor size={22} /> 
                           <span className="text-sm uppercase tracking-widest">სესიის დაწყება</span>
@@ -491,7 +445,105 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid lg:grid-cols-2 gap-8">
+                    {/* OBS Info */}
+                    <div className="bento-card p-10 bg-brand-primary/5 border-brand-primary/30 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-black uppercase text-white">OBS მონაცემები</h3>
+                          <button 
+                            onClick={() => setShowSessionDetails(false)}
+                            className="text-[10px] font-black uppercase text-brand-primary hover:underline"
+                          >
+                            შეცვლა / დაბრუნება
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase">ეს მონაცემები ჩაწერეთ OBS-ში (Settings - Stream)</p>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">SERVER URL</label>
+                          <div className="flex bg-black border border-brand-border rounded-xl overflow-hidden">
+                            <code className="flex-1 p-4 font-mono text-xs text-brand-primary truncate">rtmp://{vdsIp || 'VDS_IP'}/live</code>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(`rtmp://${vdsIp}/live`);
+                                setCopiedUrl(true);
+                                setTimeout(() => setCopiedUrl(false), 2000);
+                              }}
+                              className="px-4 border-l border-brand-border hover:bg-zinc-900 transition-colors"
+                            >
+                              {copiedUrl ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-zinc-500" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">STREAM KEY</label>
+                          <div className="flex bg-black border border-brand-border rounded-xl overflow-hidden">
+                            <code className="flex-1 p-4 font-mono text-xs text-brand-primary truncate">{streamKey}</code>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(streamKey);
+                                setCopiedKey(true);
+                                setTimeout(() => setCopiedKey(false), 2000);
+                              }}
+                              className="px-4 border-l border-brand-border hover:bg-zinc-900 transition-colors"
+                            >
+                              {copiedKey ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-zinc-500" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 p-4 bg-zinc-900/50 rounded-xl border border-white/5 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
+                          <span className="text-[10px] font-black uppercase text-zinc-300">ინსტრუქცია:</span>
+                        </div>
+                        <ol className="text-[10px] text-zinc-500 space-y-2 font-bold uppercase leading-relaxed">
+                          <li>1. გახსენით OBS - Settings - Stream</li>
+                          <li>2. Service: Custom...</li>
+                          <li>3. ჩაწერეთ Server და Stream Key</li>
+                          <li>4. დააჭირეთ "Start Streaming"</li>
+                        </ol>
+                      </div>
+                    </div>
+
+                    {/* Preview Player */}
+                    <div className="bento-card bg-black border-zinc-800 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
+                      <div className="p-4 border-b border-white/5 flex items-center justify-between ">
+                        <div className="flex items-center gap-3">
+                           <div className="p-1.5 bg-brand-primary/10 rounded">
+                              <Monitor size={12} className="text-brand-primary" />
+                           </div>
+                           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Live Preview</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <div className="w-2 h-2 rounded-full bg-zinc-800" id="preview-status-dot" />
+                           <span className="text-[9px] font-black uppercase text-zinc-600">Waiting for source</span>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-h-[300px] relative bg-zinc-950 flex items-center justify-center">
+                        {streamUrl ? (
+                          <HLSPlayer 
+                            url={streamUrl} 
+                            className="w-full h-full object-contain"
+                            autoPlay={true}
+                            controls={true}
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center gap-4 text-center p-8">
+                             <Loader2 size={32} className="text-zinc-800 animate-spin" />
+                             <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.2em]">სტრიმის მისამართი მზადდება...</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </section>
 
               <section className="space-y-6">
