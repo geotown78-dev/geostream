@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
+import LiveKitStream from '../components/LiveKitStream';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -12,6 +13,8 @@ export default function AdminDashboard() {
   const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
   const [sessionThumbnail, setSessionThumbnail] = useState('');
   const [vdsIp, setVdsIp] = useState(localStorage.getItem('vds_ip') || '5.83.153.142');
+  const [streamType, setStreamType] = useState<'hls' | 'livekit'>('hls');
+  const [livekitUrl, setLivekitUrl] = useState(localStorage.getItem('livekit_url') || 'ws://5.83.153.142:7880');
   const [showSessionDetails, setShowSessionDetails] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
   const [streamKey, setStreamKey] = useState('');
@@ -20,9 +23,13 @@ export default function AdminDashboard() {
   const [uploading, setUploading] = useState(false);
 
   const startSession = async () => {
-    if (!team1) return;
+    if (!team1) {
+      alert('გთხოვთ შეიყვანოთ დასახელება');
+      return;
+    }
     
     localStorage.setItem('vds_ip', vdsIp);
+    localStorage.setItem('livekit_url', livekitUrl);
     const slug = `${team1.toLowerCase().trim().replace(/\s+/g, '-')}${team2 ? `-vs-${team2.toLowerCase().trim().replace(/\s+/g, '-')}` : ''}`;
     const key = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
     const url = `http://${vdsIp}/hls/${key}.m3u8`;
@@ -45,9 +52,9 @@ export default function AdminDashboard() {
 
       if (error) throw error;
       setShowSessionDetails(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error starting session:', err);
-      alert('სესიის დაწყება ვერ მოხერხდა');
+      alert('შეცდომა: ' + (err.message || 'სესიის დაწყება ვერ მოხერხდა'));
     }
   };
 
@@ -142,12 +149,33 @@ export default function AdminDashboard() {
               </div>
               <div className="flex flex-col justify-between">
                 <div className="space-y-4">
+                  <div className="p-4 bg-zinc-950 border border-white/5 rounded-2xl flex gap-1">
+                    <button 
+                      onClick={() => setStreamType('hls')}
+                      className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${streamType === 'hls' ? 'bg-brand-primary text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                      Classic RTMP/HLS
+                    </button>
+                    <button 
+                      onClick={() => setStreamType('livekit')}
+                      className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${streamType === 'livekit' ? 'bg-blue-600 text-white shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)]' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                      Ultra-Fast LiveKit
+                    </button>
+                  </div>
+
                   <div className="p-6 bg-brand-primary/5 border border-brand-primary/10 rounded-2xl">
                     <p className="text-[11px] font-bold text-zinc-400 uppercase leading-relaxed italic">შედი OBS-ში და გამოიყენე URL და KEY</p>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">VDS IP <Settings size={12} /></label>
-                    <input type="text" value={vdsIp} onChange={(e) => setVdsIp(e.target.value)} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-5 py-3 text-xs font-mono text-zinc-500 focus:border-brand-primary/30 outline-none" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">VDS IP <Settings size={12} /></label>
+                      <input type="text" value={vdsIp} onChange={(e) => setVdsIp(e.target.value)} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-5 py-3 text-[10px] font-mono text-zinc-500 focus:border-brand-primary/30 outline-none" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">LiveKit URL <Settings size={12} /></label>
+                      <input type="text" value={livekitUrl} onChange={(e) => setLivekitUrl(e.target.value)} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-5 py-3 text-[10px] font-mono text-zinc-500 focus:border-blue-500/30 outline-none" />
+                    </div>
                   </div>
                 </div>
                 <button 
@@ -190,7 +218,208 @@ export default function AdminDashboard() {
               <div className="p-6 bg-zinc-950 rounded-2xl border border-white/5 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
-                  <span className="text-[10px] font-black uppercase text-zinc-400">ველოდებით OBS-ს...</span>
+                  <span className="text-[10px] font-black uppercase text-zinc-400">VDS-ის სრული კონფიგურაცია:</span>
+                </div>
+                <div className="max-h-[400px] overflow-y-auto bg-black p-4 rounded-xl border border-white/10">
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-[10px] text-brand-primary font-black uppercase mb-2">🚀 ნაბიჯი 1: Nginx-ის სუფთა ინსტალაცია</p>
+                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5">
+{`# წაშალეთ ძველი
+sudo apt-get remove nginx nginx-common nginx-full -y
+sudo apt-get purge nginx nginx-common nginx-full -y
+sudo apt-get autoremove -y
+
+# დააყენეთ ახალი RTMP-ით
+sudo apt-get update
+sudo apt-get install nginx libnginx-mod-rtmp -y`}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] text-brand-primary font-black uppercase mb-2">⚙️ ნაბიჯი 2: Nginx კონფიგურაცია</p>
+                      <pre className="text-[9px] font-mono text-brand-primary/80 leading-relaxed bg-zinc-900/50 p-2 rounded border border-white/5">
+{`# 1. წაშალეთ დეფოლტ კონფიგურაციები (კრიტიკულია!)
+sudo rm /etc/nginx/sites-enabled/default
+sudo rm /etc/nginx/sites-available/default
+
+# 2. ჩასვით ეს კოდი /etc/nginx/nginx.conf-ში:
+user www-data;
+worker_processes auto;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+    worker_connections 768;
+}
+
+rtmp {
+    server {
+        listen 1935;
+        application live {
+            live on;
+            hls on;
+            hls_path /var/www/html/hls;
+            hls_fragment 3;
+            hls_playlist_length 60;
+            
+            # ატყობინებს საიტს სტრიმის დაწყებაზე
+            on_publish http://localhost:3000/api/webhooks/rtmp;
+        }
+    }
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    
+    server {
+        listen 80;
+        server_name _;
+
+        location / {
+            proxy_pass http://localhost:3000;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }
+
+        location /hls {
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            alias /var/www/html/hls;
+            expires -1;
+        }
+    }
+}`}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] text-red-500 font-black uppercase mb-2">🔄 სრული გასუფთავება (Fresh Start)</p>
+                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5">
+{`# 1. PM2-ის გასუფთავება
+pm2 delete all
+
+# 2. Nginx-ის "Welcome" გვერდის წაშლა (მნიშვნელოვანი!)
+sudo rm /etc/nginx/sites-enabled/default
+sudo systemctl restart nginx
+
+# 3. პროექტის ხელახლა გადმოწერა
+cd /home/ubuntu
+sudo rm -rf geostream
+git clone <თქვენი_ლინკი> geostream
+cd geostream
+
+# 4. ბიბლიოთეკების დაყენება
+npm install
+npm install hls.js --save
+
+# 5. გარემო ცვლადების დაყენება (კრიტიკულია 502-ის ასაცილებლად!)
+# შექმენით ფაილი და ჩასვით თქვენი Supabase მონაცემები
+nano .env
+# ჩაწერეთ:
+# VITE_SUPABASE_URL=...
+# VITE_SUPABASE_ANON_KEY=...
+
+# 6. ბილდი
+npm run build
+
+# 7. გაშვება
+NODE_ENV=production pm2 start dist/server.cjs --name geostream
+pm2 save`}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] text-orange-500 font-black uppercase mb-2">🛠️ 502 Bad Gateway-ს & ბილდის ფიქსი</p>
+                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5">
+{`# 1. შედით ფოლდერში
+cd /home/ubuntu/geostream
+
+# 2. შექმენით .env ფაილი (აუცილებელია!)
+nano .env
+# ჩაწერეთ შიგნით ეს:
+# VITE_SUPABASE_URL=თქვენი_ლინკი
+# VITE_SUPABASE_ANON_KEY=თქვენი_კეი
+
+# 3. დააინსტალირეთ ბიბლიოთეკები თავიდან
+rm -rf node_modules package-lock.json
+npm install
+npm install hls.js --save
+
+# 4. დააბილდეთ ახლიდან
+npm run build
+
+# 5. გაუშვით PM2-ზე
+pm2 delete all
+NODE_ENV=production pm2 start dist/server.cjs --name geostream
+pm2 save`}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] text-green-500 font-black uppercase mb-2">🔄 განახლება GitHub-იდან</p>
+                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5">
+{`# 1. გადადით პროექტში
+cd /home/ubuntu/geostream
+
+# 2. ჩამოწერეთ ცვლილებები
+git pull origin main
+
+# 3. დააყენეთ ახალი ბიბლიოთეკები
+npm install
+
+# 4. დააბილდეთ და დაარეფრეშეთ
+npm run build
+pm2 restart geostream`}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] text-blue-500 font-black uppercase mb-2">⚡ LiveKit-ის გამართვა (API Keys)</p>
+                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5">
+{`# 1. LiveKit-ის სერვერის ინსტალაცია
+curl -sSL https://get.livekit.io | bash
+
+# 2. კონფიგურაციის შექმნა (API Key-ების ნახვა)
+# გაუშვით ეს და დააკოპირეთ API Key და Secret:
+livekit-server generate-keys
+
+# 3. შექმენით livekit.yaml ფაილი:
+nano livekit.yaml
+# ჩაწერეთ შიგ (შეცვალეთ თქვენი Key-ებით):
+# port: 7880
+# keys:
+#   API_KEY_აქ: SECRET_აქ
+
+# 4. .env ფაილში დაამატეთ ეს მონაცემები
+nano /home/ubuntu/geostream/.env
+# LIVEKIT_API_KEY=თქვენი_key
+# LIVEKIT_API_SECRET=თქვენი_secret
+
+# 5. გაშვება
+pm2 start "livekit-server --config livekit.yaml" --name livekit`}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] text-brand-primary font-black uppercase mb-2">🚀 მართვის ბრძანებები</p>
+                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/50 p-2 rounded border border-white/5">
+{`pm2 status          # სტატუსის შემოწმება
+sudo nginx -t       # nginx კონფიგის შემოწმება
+sudo systemctl restart nginx # nginx რესტარტი`}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[9px] text-white font-black uppercase tracking-widest">📋 ინსტრუქცია:</p>
+                  <p className="text-[8px] text-zinc-500 font-bold uppercase leading-relaxed">
+                    PM2 უზრუნველყოფს საიტის მუდმივ მუშაობას. <br/>
+                    Nginx კი ამუშავებს სტრიმინგს და პორტების გადამისამართებას.<br/>
+                    <span className="text-brand-primary">პრობლემის შემთხვევაში შეამოწმეთ:</span> <code className="text-zinc-300">pm2 logs</code> და <code className="text-zinc-300">sudo nginx -t</code>
+                  </p>
                 </div>
               </div>
             </div>
@@ -206,7 +435,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="flex-1 relative bg-zinc-950 flex items-center justify-center">
-                <HLSPlayer url={streamUrl} className="w-full h-full object-contain" autoPlay={true} controls={true} />
+                {streamType === 'hls' ? (
+                  <HLSPlayer url={streamUrl} className="w-full h-full object-contain" autoPlay={true} controls={true} />
+                ) : (
+                  <LiveKitStream roomName={streamKey || 'preview'} userName="Admin" serverUrl={livekitUrl} />
+                )}
               </div>
             </div>
           </div>
