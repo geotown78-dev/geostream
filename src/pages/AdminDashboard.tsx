@@ -230,7 +230,7 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
-              <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl space-y-4">
+                  <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl space-y-4">
                 <div className="flex items-center gap-2 text-zinc-400">
                   <TrendingUp size={14} />
                   <span className="text-[10px] font-black uppercase tracking-widest">Info</span>
@@ -238,6 +238,14 @@ export default function AdminDashboard() {
                 <p className="text-[11px] text-zinc-500 leading-relaxed font-bold italic">
                   LiveKit უზრუნველყოფს 1 წამზე ნაკლებ დაყოვნებას. დარწმუნდით, რომ სერვერზე <span className="text-white">port 7880</span> გახსნილია.
                 </p>
+                <div className="pt-2 border-t border-white/5 space-y-2">
+                   <p className="text-[9px] text-red-400 font-bold uppercase">🚨 თუ არ ირთვება:</p>
+                   <p className="text-[8px] text-zinc-600 leading-relaxed uppercase">
+                      1. .env ფაილში ჩაწერეთ LIVEKIT_API_KEY <br/>
+                      2. გახსენით პორტი: <code className="text-zinc-400">sudo ufw allow 1935,7880,7885/tcp</code> <br/>
+                      3. PM2-ის რესტარტი: <code className="text-zinc-400">pm2 restart all</code>
+                   </p>
+                </div>
               </div>
             </div>
           </div>
@@ -280,17 +288,42 @@ export default function AdminDashboard() {
                   </p>
                   <div className="space-y-3">
                     <div className="p-3 bg-black/40 rounded-xl space-y-2">
-                       <p className="text-[9px] font-bold text-white uppercase">1. OBS - WHIP (რეკომენდირებული)</p>
+                       <p className="text-[9px] font-bold text-white uppercase">1. OBS - RTMP (Nginx)</p>
                        <p className="text-[8px] text-zinc-500 leading-relaxed">
-                          Settings {">"} Stream {">"} Service: <span className="text-white">WHIP</span>. <br/>
-                          Server: <span className="text-blue-400 italic">http://{vdsIp}:7885/whip</span> (თუ Ingress გაქვთ).
+                          Settings {">"} Stream {">"} Custom. <br/>
+                          Server: <span className="text-blue-400">rtmp://{vdsIp}/live</span> <br/>
+                          Key: <span className="text-blue-400">{streamKey}</span>
                        </p>
                     </div>
                     <div className="p-3 bg-black/40 rounded-xl space-y-2">
-                       <p className="text-[9px] font-bold text-white uppercase">2. ბრაუზერიდან სტრიმი</p>
+                       <p className="text-[9px] font-bold text-white uppercase">2. OBS - WHIP (LiveKit Direct)</p>
                        <p className="text-[8px] text-zinc-500 leading-relaxed">
-                          შეგიძლიათ პირდაპირი სტრიმი მარჯვენა მხარეს არსებული <span className="text-blue-400">Preview</span> ფანჯრიდანაც გაუშვათ (კამერა/მიკროფონი).
+                          Settings {">"} Stream {">"} Service: <span className="text-white">WHIP</span>. <br/>
+                          Server: <span className="text-blue-400 italic">http://{vdsIp}:7885/whip</span><br/>
+                          Bearer Token: (LiveKit Ingress Token)
                        </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-red-950/20 border border-red-500/30 rounded-2xl space-y-4 shadow-xl">
+                  <p className="text-[11px] text-red-400 font-black uppercase flex items-center gap-2 italic">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    ❌ OBS ვერ უკავშირდება? (Failed to connect)
+                  </p>
+                  <div className="space-y-4">
+                    <div className="p-3 bg-black/40 rounded-xl border border-white/5">
+                      <p className="text-[10px] text-orange-400 font-bold mb-1">1. პორტი 1935 დაკეტილია</p>
+                      <pre className="text-[9px] font-mono text-zinc-400 bg-zinc-900/40 p-2 rounded">
+{`sudo ufw allow 1935/tcp
+sudo ufw reload`}
+                      </pre>
+                    </div>
+                    <div className="p-3 bg-black/40 rounded-xl border border-white/5">
+                      <p className="text-[10px] text-yellow-400 font-bold mb-1">2. Nginx კონფიგი აკლია</p>
+                      <p className="text-[8px] text-zinc-500 leading-relaxed mb-2">
+                        შეამოწმეთ გიწერიათ თუ არა <code className="text-white">rtmp {"{"} ... application live {"{"} ... hls on; ... {"}"} {"}"}</code> ფაილში <code className="text-white">/etc/nginx/nginx.conf</code>
+                      </p>
                     </div>
                   </div>
                 </div>
