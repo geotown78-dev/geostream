@@ -1,113 +1,69 @@
-import React, { useState, useEffect } from 'react';
-import {
-  LiveKitRoom,
-  RoomAudioRenderer,
-  TrackLoop,
-  useTracks,
-  TrackRefContext,
-  VideoTrack,
-} from '@livekit/components-react';
-import '@livekit/components-styles';
-import { Track } from 'livekit-client';
+import React, { useEffect, useRef } from 'react';
+import videojs from 'video.js';
+import 'video.js/dist/video-js.css';
 import { Loader2 } from 'lucide-react';
+import Player from 'video.js/dist/video.js';
 
 interface LiveKitStreamProps {
-  roomName: string;
-  userName: string;
-  serverUrl: string;
+  vdsIp: string;
+  streamKey: string;
 }
 
-function SimpleViewer() {
-  const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
-  
-  if (tracks.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full space-y-4 text-zinc-500">
-        <div className="w-12 h-12 rounded-full border-2 border-zinc-800 border-t-blue-500 animate-spin" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-center">სტრიმის მოლოდინი...</p>
-      </div>
-    );
-  }
+export default function LiveKitStream({ vdsIp, streamKey }: LiveKitStreamProps) {
+  const videoRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<Player | null>(null);
+
+  // SRS HLS URL: http://IP:8080/live/streamKey.m3u8
+  // If using Nginx proxy for HTTPS: https://domain.com/live/streamKey.m3u8
+  const isHttps = window.location.protocol === 'https:';
+  const streamUrl = isHttps 
+    ? `https://${window.location.hostname}/live/${streamKey}.m3u8`
+    : `http://${vdsIp}:8080/live/${streamKey}.m3u8`;
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+
+    // Create video element
+    const videoElement = document.createElement('video');
+    videoElement.className = 'video-js vjs-big-play-centered vjs-theme-city';
+    videoRef.current.appendChild(videoElement);
+
+    const player = playerRef.current = videojs(videoElement, {
+      autoplay: true,
+      controls: true,
+      responsive: true,
+      fluid: true,
+      liveui: true,
+      sources: [{
+        src: streamUrl,
+        type: 'application/x-mpegURL'
+      }]
+    });
+
+    player.on('error', () => {
+      console.log('Stream not ready or offline');
+    });
+
+    return () => {
+      if (player) {
+        player.dispose();
+        playerRef.current = null;
+      }
+    };
+  }, [streamUrl]);
 
   return (
-    <div className="grid grid-cols-1 gap-2 p-2 h-full bg-black">
-      <TrackLoop tracks={tracks}>
-        <TrackRefContext.Consumer>
-          {(track) => track && <VideoTrack trackRef={track} className="w-full h-full object-contain rounded-xl" />}
-        </TrackRefContext.Consumer>
-      </TrackLoop>
+    <div className="relative w-full h-full bg-black rounded-2xl overflow-hidden group">
+      <div ref={videoRef} className="w-full h-full" />
+      
+      {/* Label */}
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+        <div className="px-2 py-1 bg-black/60 backdrop-blur-md rounded border border-white/10 flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+          <span className="text-[8px] font-black text-white uppercase tracking-tighter">SRS LIVE</span>
+        </div>
+      </div>
     </div>
   );
 }
 
-export default function LiveKitStream({ roomName, userName, serverUrl }: LiveKitStreamProps) {
-  const [token, setToken] = useState<string | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        setError(null);
-        const resp = await fetch(
-          `/api/livekit/token?room=${roomName}&username=${userName}`
-        );
-        
-        if (!resp.ok) {
-           const errorData = await resp.json();
-           throw new Error(errorData.error || `HTTP error! status: ${resp.status}`);
-        }
-        
-        const data = await resp.json();
-        setToken(data.token);
-      } catch (e: any) {
-        console.error('Failed to fetch token', e);
-        setError(e.message || 'დაკავშირება ვერ მოხერხდა');
-      }
-    })();
-  }, [roomName, userName]);
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center p-10 bg-red-950/20 rounded-2xl border border-red-500/20 space-y-4 h-full">
-        <p className="text-[11px] font-black uppercase text-red-500 tracking-widest text-center">
-          {error.includes('secure contexts') || error.includes('getUserMedia') ? 'SECURE CONTEXT REQUIRED (HTTPS)' : 'CONNECTION ERROR'}
-        </p>
-        <p className="text-[8px] text-zinc-500 uppercase text-center max-w-[250px] leading-relaxed">
-          {error.includes('secure contexts') || error.includes('getUserMedia')
-            ? 'ბრაუზერი ბლოკავს კამერას/მიკროფონს HTTP-ზე. გამოიყენეთ HTTPS ან Chrome Flags ტესტირებისთვის.' 
-            : error}
-        </p>
-        <button 
-           onClick={() => window.location.reload()}
-           className="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-[9px] font-black text-red-400 hover:bg-red-500/20 transition-all uppercase"
-        >
-          სცადეთ თავიდან
-        </button>
-      </div>
-    );
-  }
-
-  if (!token) {
-    return (
-      <div className="flex flex-col items-center justify-center p-10 bg-zinc-900/50 rounded-2xl border border-white/5 space-y-4 h-full">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-        <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">LiveKit-თან დაკავშირება...</p>
-      </div>
-    );
-  }
-
-  return (
-    <LiveKitRoom
-      video={false}
-      audio={false}
-      token={token}
-      serverUrl={serverUrl}
-      data-lk-theme="default"
-      style={{ height: '100dvh', width: '100%' }}
-      onDisconnected={() => setToken(undefined)}
-    >
-      <SimpleViewer />
-      <RoomAudioRenderer />
-    </LiveKitRoom>
-  );
-}
