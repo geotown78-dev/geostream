@@ -290,7 +290,7 @@ export default function AdminDashboard() {
                     <div className="p-4 bg-black/40 rounded-xl space-y-3 border border-white/5">
                        <p className="text-[9px] font-bold text-white uppercase flex items-center gap-2">
                          <Monitor size={12} className="text-blue-500" /> 
-                         1. OBS - WHIP (რეკომენდირებული)
+                         1. OBS - WHIP (სქრინის გაზიარება)
                        </p>
                        <div className="space-y-1 pl-5">
                           <p className="text-[8px] text-zinc-500 font-mono">
@@ -302,6 +302,10 @@ export default function AdminDashboard() {
                           <p className="text-[8px] text-zinc-300 font-bold bg-blue-500/10 p-1 rounded inline-block mt-1">
                             Bearer Token: <code className="text-white">{streamKey}</code>
                           </p>
+                          <div className="mt-2 p-2 bg-zinc-900/50 rounded border border-white/5">
+                             <p className="text-[7px] text-zinc-500 uppercase font-black mb-1 italic text-blue-400">აუდიოსთვის:</p>
+                             <p className="text-[7px] text-zinc-600 uppercase">Sources-ში დაამატეთ "Screen Capture" და ჩართეთ "Desktop Audio"</p>
+                          </div>
                        </div>
                     </div>
                     
@@ -352,8 +356,10 @@ export default function AdminDashboard() {
                       </code>
                     </div>
                     <div className="p-3 bg-black/60 rounded-xl border border-red-500/10 text-[9px] text-zinc-400 leading-relaxed uppercase">
-                      <p className="text-white font-bold mb-1">3. Mixed Content Error</p>
-                      თუ საიტი არის <span className="text-white">HTTPS</span>, ბრაუზერი დაბლოკავს კავშირს. შედით <span className="text-blue-400 font-bold">http://{vdsIp}:3000</span>-ზე.
+                      <p className="text-white font-bold mb-1">3. LOW LATENCY CONFIG</p>
+                      Settings {"->"} Output {"->"} Output Mode: <span className="text-white">Advanced</span>. <br/>
+                      Tune: <span className="text-blue-400">Zero-Latency</span>. <br/>
+                      სქრინის ხარისხისთვის გამოიყენეთ <span className="text-white">CBR</span> (4000-6000 Kbps).
                     </div>
                   </div>
                 </div>
