@@ -288,19 +288,21 @@ export default function AdminDashboard() {
                   </p>
                   <div className="space-y-3">
                     <div className="p-3 bg-black/40 rounded-xl space-y-2">
-                       <p className="text-[9px] font-bold text-white uppercase">1. OBS - RTMP (Nginx)</p>
-                       <p className="text-[8px] text-zinc-500 leading-relaxed">
-                          Settings {">"} Stream {">"} Custom. <br/>
-                          Server: <span className="text-blue-400">rtmp://{vdsIp}/live</span> <br/>
-                          Key: <span className="text-blue-400">{streamKey}</span>
+                       <p className="text-[9px] font-bold text-white uppercase">1. OBS - WHIP (პირდაპირი LiveKit)</p>
+                       <p className="text-[8px] text-zinc-500 leading-relaxed font-mono">
+                          Settings {"->"} Stream {"->"} Service: <span className="text-white font-bold">WHIP</span> <br/>
+                          Server: <span className="text-blue-400 italic">http://{vdsIp}:7885/whip</span><br/>
+                          <span className="text-zinc-600">ან RTMP (Ingress-ით):</span> <br/>
+                          <span className="text-blue-400 italic">rtmp://{vdsIp}/live</span>
                        </p>
                     </div>
-                    <div className="p-3 bg-black/40 rounded-xl space-y-2">
-                       <p className="text-[9px] font-bold text-white uppercase">2. OBS - WHIP (LiveKit Direct)</p>
-                       <p className="text-[8px] text-zinc-500 leading-relaxed">
-                          Settings {">"} Stream {">"} Service: <span className="text-white">WHIP</span>. <br/>
-                          Server: <span className="text-blue-400 italic">http://{vdsIp}:7885/whip</span><br/>
-                          Bearer Token: (LiveKit Ingress Token)
+                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-2">
+                       <p className="text-[9px] font-bold text-blue-400 uppercase">🚨 HTTPS / Mixed Content Warning</p>
+                       <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
+                          თუ საიტს იყენებთ <span className="text-white font-bold">HTTPS</span>-ზე, ბრაუზერი დაბლოკავს <span className="text-red-400">ws://</span> კავშირს. <br/>
+                          გამოსავალი: <br/>
+                          1. გამოიყენეთ <span className="text-blue-400 font-bold">wss://</span> (მოითხოვს SSL-ს) <br/>
+                          2. ან შედით საიტზე <span className="text-blue-400 font-bold">http://</span> მისამართით.
                        </p>
                     </div>
                   </div>
