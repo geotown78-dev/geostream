@@ -19,23 +19,25 @@ import { AccessToken } from 'livekit-server-sdk';
 // Fix for Node.js environment without native WebSocket
 (global as any).WebSocket = ws;
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error("❌ ERROR: Missing Supabase environment variables!");
-  console.error("Please create a .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY");
-}
+let supabaseAdmin: any = null;
 
-const supabaseAdmin = (supabaseUrl && supabaseKey) ? createClient(
-  supabaseUrl,
-  supabaseKey,
-  {
-    auth: {
-      persistSession: false
-    }
+if (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http')) {
+  try {
+    supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false
+      }
+    });
+    console.log("✅ Supabase admin initialized");
+  } catch (err) {
+    console.error("❌ Failed to initialize Supabase client:", err);
   }
-) : null;
+} else {
+  console.warn("⚠️ Supabase credentials missing or invalid - Webhooks will be disabled.");
+}
 
 // Nginx RTMP Webhook
 // Nginx sends data as application/x-www-form-urlencoded
