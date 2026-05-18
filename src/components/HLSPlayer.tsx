@@ -58,6 +58,8 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
           if (autoPlay) {
             video.play().catch(e => {
               console.log("Autoplay blocked, attempting muted play:", e);
+              video.muted = true;
+              video.play().catch(err => console.error("Muted play also failed:", err));
             });
           }
         });
