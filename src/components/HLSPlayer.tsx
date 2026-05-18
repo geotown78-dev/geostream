@@ -66,7 +66,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         
         hls.on(Hls.Events.ERROR, (event, data) => {
           if (data.response?.code === 404 || data.response?.code === 406) {
-            setErrorStatus('პირდაპირი ტრანსლაცია დასრულებულია');
+            setErrorStatus('სტრიმი მზადდება... (404)');
           }
 
           if (data.fatal) {
@@ -149,9 +149,9 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
           <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
             <span className="text-red-500 text-2xl font-black">!</span>
           </div>
-          <div className="space-y-1">
-            <p className="text-white font-black uppercase tracking-widest text-xs">{errorStatus}</p>
-            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">თუ ტრანსლაცია ჯერ არ დაწყებულა, სცადეთ მოგვიანებით</p>
+        <div className="space-y-1">
+            <p className="text-white font-black uppercase tracking-widest text-[10px]">{errorStatus}</p>
+            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight">დაელოდეთ სტრიმერს ან გადატვირთეთ გვერდი</p>
           </div>
         </div>
       )}
