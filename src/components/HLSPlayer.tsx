@@ -26,52 +26,76 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
     video.volume = volume;
 
     if (Hls.isSupported()) {
-      hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        manifestLoadingMaxRetry: 4,
-        levelLoadingMaxRetry: 4,
-      });
-      hls.loadSource(url);
-      hls.attachMedia(video);
-      
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setErrorStatus(null);
-        if (autoPlay) {
-          video.play().catch(e => {
-            console.log("Autoplay blocked, attempting muted play:", e);
-            // We don't force video.muted = true here globally because it would break the prop sync
-            // but for the initial autoplay it might be necessary.
-            // Let's just try to play. If it fails, it fails.
-          });
-        }
-      });
-      
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.response?.code === 404 || data.response?.code === 406) {
-          setErrorStatus('პირდაპირი ტრანსლაცია დასრულებულია');
+      try {
+        const cleanUrl = url?.trim();
+        if (!cleanUrl) {
+          setErrorStatus('სტრიმის მისამართი ცარიელია');
+          return;
         }
 
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              console.log("Fatal network error encountered, try to recover");
-              hls?.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              console.log("Fatal media error encountered, try to recover");
-              hls?.recoverMediaError();
-              break;
-            default:
-              console.log("Fatal error, cannot recover");
-              setErrorStatus('სტრიმის ჩატვირთვა ვერ მოხერხდა.');
-              hls?.destroy();
-              break;
+        console.log("Initializing HLS for:", cleanUrl);
+
+        hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          manifestLoadingMaxRetry: 6,
+          levelLoadingMaxRetry: 6,
+          backBufferLength: 90,
+          xhrSetup: (xhr) => {
+            xhr.withCredentials = false;
           }
-        }
-      });
+        });
+
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          console.log("HLS Media Attached, loading source:", cleanUrl);
+          hls?.loadSource(cleanUrl);
+        });
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          setErrorStatus(null);
+          if (autoPlay) {
+            video.play().catch(e => {
+              console.log("Autoplay blocked, attempting muted play:", e);
+            });
+          }
+        });
+        
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.response?.code === 404 || data.response?.code === 406) {
+            setErrorStatus('პირდაპირი ტრანსლაცია დასრულებულია');
+          }
+
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.log("Fatal network error encountered, try to recover");
+                hls?.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log("Fatal media error encountered, try to recover");
+                hls?.recoverMediaError();
+                break;
+              default:
+                console.log("Fatal error, cannot recover");
+                setErrorStatus('სტრიმის ჩატვირთვა ვერ მოხერხდა.');
+                hls?.destroy();
+                break;
+            }
+          }
+        });
+      } catch (err) {
+        console.error("HLS init error:", err);
+        setErrorStatus('ფლეიერის ინიციალიზაცია ვერ მოხერხდა.');
+      }
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = url;
+      const cleanUrl = url?.trim();
+      if (!cleanUrl) {
+        setErrorStatus('სტრიმის მისამართი ცარიელია');
+        return;
+      }
+      video.src = cleanUrl;
       video.addEventListener('loadedmetadata', () => {
         if (autoPlay) {
           video.play().catch(e => console.log("Autoplay blocked:", e));
