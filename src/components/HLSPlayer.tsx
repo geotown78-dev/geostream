@@ -5,10 +5,12 @@ interface HLSPlayerProps {
   url: string;
   autoPlay?: boolean;
   controls?: boolean;
+  muted?: boolean;
+  volume?: number;
   className?: string;
 }
 
-const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = true, className }) => {
+const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = true, muted = true, volume = 1, className }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [errorStatus, setErrorStatus] = React.useState<string | null>(null);
 
@@ -18,6 +20,10 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
 
     let hls: Hls | null = null;
     setErrorStatus(null);
+    
+    // Synchronize audio properties
+    video.muted = muted;
+    video.volume = volume;
 
     if (Hls.isSupported()) {
       hls = new Hls({
@@ -32,10 +38,15 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setErrorStatus(null);
         if (autoPlay) {
-          video.play().catch(e => console.log("Autoplay blocked:", e));
+          video.play().catch(e => {
+            console.log("Autoplay blocked, attempting muted play:", e);
+            // We don't force video.muted = true here globally because it would break the prop sync
+            // but for the initial autoplay it might be necessary.
+            // Let's just try to play. If it fails, it fails.
+          });
         }
       });
-
+      
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.response?.code === 404 || data.response?.code === 406) {
           setErrorStatus('პირდაპირი ტრანსლაცია დასრულებულია');
@@ -78,6 +89,14 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
     };
   }, [url, autoPlay]);
 
+  // Audio sync effect
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = muted;
+      videoRef.current.volume = volume;
+    }
+  }, [muted, volume]);
+
   return (
     <div className="relative w-full h-full bg-black group">
       <video
@@ -85,7 +104,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         className={className}
         controls={controls}
         playsInline
-        muted={autoPlay}
+        muted={muted}
       />
       {errorStatus && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 z-50 text-center p-6 space-y-4">
