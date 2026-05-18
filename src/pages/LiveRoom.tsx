@@ -1,400 +1,124 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { cn } from '../lib/utils';
-import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import HLSPlayer from '../components/HLSPlayer';
+import React, { useEffect, useRef } from 'react';
+import Hls from 'hls.js';
 
-function ViewerStream({ 
-  streamUrl, 
-  isGlobalPaused,
-}: { 
-  streamUrl: string;
-  isGlobalPaused: boolean;
-  roomId?: string;
-  vdsIp?: string;
-}) {
-  const [isPaused, setIsPaused] = useState(false);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  const toggleFullscreen = () => {
-    if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  const effectivePaused = isPaused || isGlobalPaused;
-
-  return (
-    <div ref={containerRef} className="relative h-full w-full group overflow-hidden bg-black">
-      {streamUrl && streamUrl.endsWith('.m3u8') ? (
-        <HLSPlayer 
-          url={streamUrl}
-          autoPlay={!effectivePaused}
-          className={cn(
-            "h-full w-full object-contain transition-all duration-300",
-            effectivePaused ? 'opacity-40 grayscale blur-sm' : ''
-          )}
-        />
-      ) : (
-        <div className="h-full w-full flex items-center justify-center text-zinc-500 font-black uppercase tracking-widest bg-zinc-950 px-8 text-center leading-relaxed">
-          სტრიმი არ არის აქტიური ან URL არასწორია...
-        </div>
-      )}
-      
-      {effectivePaused && (
-        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center animate-pulse border border-white/20">
-              <Pause size={40} className="text-white ml-1" fill="white" />
-            </div>
-            {isGlobalPaused && (
-              <span className="text-[10px] font-black uppercase text-brand-primary tracking-[0.3em] bg-black/40 px-4 py-1 rounded-full border border-brand-primary/20 backdrop-blur-md">
-                სტრიმერმა დააპაუზა
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className={cn(
-        "absolute inset-x-0 bottom-0 p-4 sm:p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity z-30",
-        effectivePaused ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-      )}>
-        <div className="flex items-center gap-3 sm:gap-4">
-          <button 
-            onClick={() => setIsPaused(!isPaused)}
-            disabled={isGlobalPaused}
-            className={cn(
-              "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border backdrop-blur-md flex items-center justify-center transition-all shadow-lg",
-              isGlobalPaused 
-                ? "bg-zinc-800/50 border-white/5 cursor-not-allowed opacity-50" 
-                : "bg-brand-primary/20 border-brand-primary/30 hover:bg-brand-primary/40"
-            )}
-          >
-            {effectivePaused ? <Play size={20} fill="white" className="ml-0.5 sm:ml-1" /> : <Pause size={20} fill="white" />}
-          </button>
-          
-          <div className="flex flex-col">
-            <span className="text-[8px] sm:text-[10px] font-black text-brand-primary uppercase tracking-widest">
-              {effectivePaused ? (isGlobalPaused ? 'დაპაუზებულია ადმინის მიერ' : 'დაპაუზებულია') : 'ლაივი'}
-            </span>
-            <span className="text-[10px] sm:text-xs font-bold text-white uppercase tracking-tighter">
-              პირდაპირი სტრიმი VDS-იდან
-            </span>
-          </div>
-          
-          <div className="hidden xs:flex items-center gap-3 ml-2 sm:ml-6 bg-black/40 p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/5 backdrop-blur-md">
-             <button 
-              onClick={() => setIsMuted(!isMuted)}
-              className="text-white hover:text-brand-primary transition-colors"
-             >
-               {isMuted || volume === 0 ? <VolumeX size={16} sm:size={18} /> : <Volume2 size={16} sm:size={18} />}
-             </button>
-             <input 
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={isMuted ? 0 : volume}
-              onChange={(e) => {
-                setVolume(parseFloat(e.target.value));
-                if (isMuted) setIsMuted(false);
-              }}
-              className="w-16 sm:w-24 h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-primary"
-             />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 sm:gap-4">
-          <button 
-            onClick={toggleFullscreen}
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-zinc-800/40 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-zinc-800 transition-all"
-          >
-            <Maximize size={18} className="text-white" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+interface HLSPlayerProps {
+  url: string;
+  autoPlay?: boolean;
+  controls?: boolean;
+  muted?: boolean;
+  volume?: number;
+  className?: string;
 }
 
-export default function LiveRoom() {
-  const { roomId } = useParams();
-  const navigate = useNavigate();
-  const [streamUrl, setStreamUrl] = useState<string>('');
-  const [vdsIp, setVdsIp] = useState<string>('5.83.153.142');
-  const [showSettings, setShowSettings] = useState(false);
-  const [tempIp, setTempIp] = useState(vdsIp);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [isGlobalPaused, setIsGlobalPaused] = useState(false);
+const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = true, muted = true, volume = 1, className }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [errorStatus, setErrorStatus] = React.useState<string | null>(null);
 
   useEffect(() => {
-    if (!roomId) return;
+    const video = videoRef.current;
+    if (!video) return;
 
-    const syncPauseState = async () => {
-      try {
-        const { data, error } = await supabase.from('active_streams').select('is_paused').eq('id', 'global-stream').maybeSingle();
-        if (data) setIsGlobalPaused(!!data.is_paused);
-      } catch (err: any) {
-        console.error('Error syncing pause state:', err.message || err);
-      }
-    };
+    let hls: Hls | null = null;
+    setErrorStatus(null);
+    
+    // Synchronize audio properties
+    video.muted = muted;
+    video.volume = volume;
 
-    const fetchStreamInfo = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('events')
-          .select('stream_url, room_name')
-          .eq('room_name', roomId)
-          .maybeSingle();
-        
-        if (error) throw error;
-        if (data) {
-          if (data.stream_url) {
-            let url = data.stream_url;
-            if (url && url.includes('/hls/') && !url.endsWith('.m3u8')) {
-              url += '.m3u8';
-            }
-            setStreamUrl(url);
-          }
-          
-          // Defaults or derived info
-          if (!data.stream_url || !data.stream_url.endsWith('.m3u8')) {
-            // Check for IP config
-            const savedIp = localStorage.getItem('vds_ip') || '5.83.153.142';
-            setVdsIp(savedIp);
+    if (Hls.isSupported()) {
+      hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        manifestLoadingMaxRetry: 4,
+        levelLoadingMaxRetry: 4,
+      });
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setErrorStatus(null);
+        if (autoPlay) {
+          video.play().catch(e => {
+            console.log("Autoplay blocked, attempting muted play:", e);
+            // We don't force video.muted = true here globally because it would break the prop sync
+            // but for the initial autoplay it might be necessary.
+            // Let's just try to play. If it fails, it fails.
+          });
+        }
+      });
+      
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.response?.code === 404 || data.response?.code === 406) {
+          setErrorStatus('პირდაპირი ტრანსლაცია დასრულებულია');
+        }
+
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.log("Fatal network error encountered, try to recover");
+              hls?.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log("Fatal media error encountered, try to recover");
+              hls?.recoverMediaError();
+              break;
+            default:
+              console.log("Fatal error, cannot recover");
+              setErrorStatus('სტრიმის ჩატვირთვა ვერ მოხერხდა.');
+              hls?.destroy();
+              break;
           }
         }
-      } catch (e: any) {
-        console.error('Failed to fetch stream url:', e.message || e);
-        // Default to a placeholder if needed, or error out
-         setError('სტრიმის ინფორმაცია ვერ მოიძებნა ბაზაში.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    syncPauseState();
-    fetchStreamInfo();
-
-    const channel = supabase
-      .channel('pause-sync')
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
-        table: 'active_streams',
-        filter: `id=eq.global-stream`
-      }, (payload) => {
-        setIsGlobalPaused(!!payload.new.is_paused);
-      })
-      .subscribe();
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+      video.addEventListener('loadedmetadata', () => {
+        if (autoPlay) {
+          video.play().catch(e => console.log("Autoplay blocked:", e));
+        }
+      });
+      video.addEventListener('error', () => {
+        setErrorStatus('სტრიმის ჩატვირთვა ვერ მოხერხდა (Native Error).');
+      });
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (hls) {
+        hls.destroy();
+      }
     };
-  }, [roomId]);
+  }, [url, autoPlay]);
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <p className="text-red-400 mb-4">{error}</p>
-        <button onClick={() => navigate('/')} className="text-brand-cyan underline">მთავარზე დაბრუნება</button>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="animate-spin text-brand-primary mx-auto" size={40} />
-          <p className="text-xs font-black uppercase tracking-widest text-zinc-500">მზადდება...</p>
-        </div>
-      </div>
-    );
-  }
+  // Audio sync effect
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = muted;
+      videoRef.current.volume = volume;
+    }
+  }, [muted, volume]);
 
   return (
-    <div className="min-h-screen bg-brand-black pt-20 sm:pt-32 pb-12 px-4 sm:px-6">
-      <style>{`
-        /* Hide participant list, control bar and sidebar for viewers */
-        .viewer-mode .lk-control-bar,
-        .viewer-mode .lk-participant-list,
-        .viewer-mode .lk-sidebar,
-        .viewer-mode .lk-settings-menu-modal,
-        .viewer-mode .lk-participant-name,
-        .viewer-mode .lk-participant-metadata,
-        .viewer-mode .lk-audio-visualizer,
-        .viewer-mode .lk-connection-quality,
-        .viewer-mode .lk-participant-placeholder {
-          display: none !important;
-        }
-        
-        /* Make the main video area fill the space properly when parts are hidden */
-        .viewer-mode .lk-video-conference-inner {
-          flex-direction: column !important;
-          background: transparent !important;
-        }
-
-        .viewer-mode .lk-grid-layout {
-          padding: 0 !important;
-          background: transparent !important;
-        }
-
-        .viewer-mode .lk-focus-layout {
-          padding: 0 !important;
-        }
-
-        /* Ensure the video tile itself doesn't have a background or border that shows placeholders */
-        .viewer-mode .lk-participant-tile {
-          background: transparent !important;
-          border: none !important;
-        }
-        
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-
-      <div className="max-w-[1600px] mx-auto gap-6 sm:grid sm:grid-cols-12 overflow-hidden h-auto sm:h-[calc(100vh-10rem)]">
-        {/* Main Stream Area */}
-        <div className="col-span-12 lg:col-span-9 flex flex-col gap-4 sm:gap-6 h-full overflow-hidden">
-          <div className="aspect-video sm:flex-1 bg-brand-surface rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-brand-border relative group shadow-2xl">
-            <ViewerStream streamUrl={streamUrl} isGlobalPaused={isGlobalPaused} roomId={roomId} vdsIp={vdsIp} />
-            
-            {/* Custom Overlay */}
-            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex gap-2 sm:gap-3 pointer-events-none">
-              <div className="bg-red-600 text-white px-2 sm:px-3 py-1 rounded-md text-[8px] sm:text-[10px] font-black flex items-center gap-1.5 sm:gap-2 uppercase">
-                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-white rounded-full animate-pulse"></span> 
-                პირდაპირი
-              </div>
-              <div className="bg-black/60 backdrop-blur-md px-2 sm:px-3 py-1 rounded-md text-[8px] sm:text-[10px] font-black uppercase tracking-widest hidden xs:block text-zinc-300">
-                4K • 60 FPS
-              </div>
-            </div>
-            
-            <div className="absolute bottom-16 sm:bottom-8 right-4 sm:right-8 z-20 flex items-center gap-3 sm:gap-4 text-[9px] sm:text-xs font-black bg-black/40 backdrop-blur-md p-1.5 sm:p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/10 pointer-events-none">
-              <div className="text-zinc-100 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-brand-primary" />
-                124.5K
-              </div>
-              <div className="h-3 sm:h-4 w-[1px] bg-white/20" />
-              <div className="text-brand-primary uppercase tracking-widest">LIVE</div>
-            </div>
+    <div className="relative w-full h-full bg-black group">
+      <video
+        ref={videoRef}
+        className={className}
+        controls={controls}
+        playsInline
+        muted={muted}
+      />
+      {errorStatus && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 z-50 text-center p-6 space-y-4">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+            <span className="text-red-500 text-2xl font-black">!</span>
           </div>
-          
-          <div className="bento-card p-6 sm:p-8 bg-zinc-900/40">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-6 sm:gap-0">
-              <div>
-                <h1 className="text-xl sm:text-4xl font-black mb-2 uppercase tracking-tighter italic">
-                  უყურებთ: <span className="text-brand-primary">{roomId?.replace(/-/g, ' ')}</span>
-                </h1>
-                <p className="text-zinc-500 font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.2em]">სესიის ID: {roomId}-prod-01</p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                <button 
-                  onClick={() => setShowSettings(true)}
-                  className="w-full sm:w-auto px-6 py-3 bg-zinc-800 border border-white/5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
-                >
-                  სერვერის პარამეტრები
-                </button>
-                <button 
-                  onClick={() => navigate('/')}
-                  className="w-full sm:w-auto px-6 py-3 bg-brand-surface border border-brand-border rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-brand-surface-light transition-all flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft size={14} /> სტრიმიდან გამოსვლა
-                </button>
-              </div>
-            </div>
+          <div className="space-y-1">
+            <p className="text-white font-black uppercase tracking-widest text-xs">{errorStatus}</p>
+            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">თუ ტრანსლაცია ჯერ არ დაწყებულა, სცადეთ მოგვიანებით</p>
           </div>
         </div>
-
-        {/* Settings Modal */}
-        {showSettings && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-brand-surface border border-brand-border rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-8">
-              <div>
-                <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-2">VDS სერვერის კონფიგურაცია</h3>
-                <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">მიუთითეთ თქვენი Nginx-RTMP სერვერის IP მისამართი</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-brand-primary">სერვერის IP (Nginx)</label>
-                <input 
-                  type="text" 
-                  value={tempIp}
-                  onChange={(e) => setTempIp(e.target.value)}
-                  placeholder="მაგ: 5.83.153.142"
-                  className="w-full bg-black/50 border border-brand-border rounded-xl px-4 py-3 text-sm font-bold focus:border-brand-primary outline-none transition-colors"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button 
-                  onClick={() => setShowSettings(false)}
-                  className="flex-1 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-zinc-900 hover:bg-zinc-800 transition-colors"
-                >
-                  გაუქმება
-                </button>
-                <button 
-                  onClick={() => {
-                    setVdsIp(tempIp);
-                    localStorage.setItem('vds_ip', tempIp);
-                    setShowSettings(false);
-                  }}
-                  className="flex-1 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-brand-primary text-black hover:opacity-90 transition-opacity"
-                >
-                  შენახვა
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Chat Side Panel */}
-        <aside className="hidden lg:flex col-span-3 bento-card flex-col overflow-hidden h-full bg-zinc-900/40">
-          <div className="p-6 border-b border-brand-border flex justify-between items-center bg-zinc-950/40">
-            <h3 className="font-black uppercase text-[10px] tracking-widest text-zinc-400">ლაივ ჩატი</h3>
-            <span className="text-[10px] text-brand-primary font-black animate-pulse">● სინქრონიზაცია</span>
-          </div>
-          
-          <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
-            {[
-              { user: 'GEORGI', msg: 'What a golazo! 🔥', color: 'text-brand-primary' },
-              { user: 'NINO', msg: 'Apex is carrying the stream tonight', color: 'text-brand-secondary' },
-              { user: 'SANDRO', msg: 'Lakers looking strong in the warmup', color: 'text-orange-400' },
-              { user: 'DAVID', msg: 'Is the 4K feed working for everyone?', color: 'text-blue-400' },
-            ].map((chat, i) => (
-              <div key={i} className="flex gap-4">
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 shrink-0" />
-                <div>
-                  <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${chat.color}`}>{chat.user}</p>
-                  <p className="text-xs text-zinc-300 leading-relaxed font-medium">{chat.msg}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-6 bg-zinc-950/40 border-t border-brand-border">
-            <div className="bg-brand-surface p-4 rounded-2xl text-[10px] text-zinc-500 flex justify-between items-center font-bold uppercase tracking-widest border border-brand-border cursor-text hover:border-brand-primary/50 transition-colors">
-              დაწერეთ შეტყობინება...
-              <Play size={12} className="rotate-[-45deg] text-brand-primary" fill="currentColor" />
-            </div>
-          </div>
-        </aside>
-      </div>
+      )}
     </div>
   );
-}
+};
+
+export default HLSPlayer;
