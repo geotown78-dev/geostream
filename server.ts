@@ -14,7 +14,6 @@ app.use(express.urlencoded({ extended: true }));
 // Supabase Init for Webhook
 import { createClient } from '@supabase/supabase-js';
 import ws from 'ws';
-import { AccessToken } from 'livekit-server-sdk';
 
 // Fix for Node.js environment without native WebSocket
 (global as any).WebSocket = ws;
@@ -109,47 +108,7 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
 });
 
-// LiveKit Token Generation
-app.get("/api/livekit/token", async (req, res) => {
-  const { room, username } = req.query;
-
-  console.log(`Token request for room: ${room}, user: ${username}`);
-
-  if (!room || !username) {
-    console.error("❌ Token request missing room or username");
-    return res.status(400).json({ error: 'Missing room or username' });
-  }
-
-  const apiKey = process.env.LIVEKIT_API_KEY;
-  const apiSecret = process.env.LIVEKIT_API_SECRET;
-
-  if (!apiKey || !apiSecret) {
-    console.error("❌ LIVEKIT_API_KEY or LIVEKIT_API_SECRET is missing in .env!");
-    return res.status(500).json({ error: 'LiveKit credentials not configured' });
-  }
-
-  try {
-    const at = new AccessToken(apiKey, apiSecret, {
-      identity: username as string,
-    });
-
-    at.addGrant({
-      roomJoin: true,
-      room: room as string,
-      canPublish: true,
-      canSubscribe: true,
-    });
-
-    const token = await at.toJwt();
-    console.log(`✅ Token generated successfully for ${username}`);
-    res.json({ token });
-  } catch (error) {
-    console.error("❌ Error generating LiveKit token:", error);
-    res.status(500).json({ error: 'Failed to generate token' });
-  }
-});
-
-// Mock stats - in a real VDS setup, you might query your media server (MediaMTX/Nginx) for actual viewer counts
+// Mock stats
 app.get("/api/stats", async (req, res) => {
   res.json({
     activeRooms: 1,
