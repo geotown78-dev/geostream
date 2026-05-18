@@ -448,7 +448,7 @@ location /rtc {
                 </div>
               </div>
               <div className="flex-1 relative bg-zinc-950">
-                <HLSPlayer url={streamUrl} autoPlay={true} className="w-full h-full object-contain" />
+                <HLSPlayer url={streamUrl} autoPlay={true} controls={false} className="w-full h-full object-contain" />
               </div>
               <div className="p-4 border-t border-white/5 bg-zinc-900/20">
                  <div className="flex items-center justify-between">
