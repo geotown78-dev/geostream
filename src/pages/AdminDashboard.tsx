@@ -16,20 +16,32 @@ export default function AdminDashboard() {
   const [vdsIp, setVdsIp] = useState(localStorage.getItem('vds_ip') || '5.83.153.142');
   const [srsPort, setSrsPort] = useState('1935');
   const [showSessionDetails, setShowSessionDetails] = useState(false);
-  const [streamUrl, setStreamUrl] = useState('');
+  const [streamUrl, setStreamUrl] = useState(localStorage.getItem('current_stream_url') || '');
   const [isMonitorMuted, setIsMonitorMuted] = useState(true);
   const [isMonitorPaused, setIsMonitorPaused] = useState(false);
-  const [streamKey, setStreamKey] = useState(`stream_${Math.random().toString(36).substring(7)}`);
+  const [streamKey, setStreamKey] = useState(localStorage.getItem('current_stream_key') || `stream_${Math.random().toString(36).substring(7)}`);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    const savedBroadcasting = localStorage.getItem('is_broadcasting') === 'true';
+    if (savedBroadcasting) {
+      setShowSessionDetails(true);
+      const t1 = localStorage.getItem('current_team1') || '';
+      const t2 = localStorage.getItem('current_team2') || '';
+      const sport = localStorage.getItem('current_sport') || 'Football';
+      setTeam1(t1);
+      setTeam2(t2);
+      setSessionSport(sport);
+    }
+  }, []);
 
   const copyToClipboard = async (text: string, type: 'url' | 'key') => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
       } else {
-        // Fallback for non-secure contexts (HTTP)
         const textArea = document.createElement("textarea");
         textArea.value = text;
         textArea.style.position = "fixed";
@@ -51,7 +63,6 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error('Copy failed:', err);
-      alert('ვერ დაკოპირდა: ' + text);
     }
   };
 
@@ -65,7 +76,6 @@ export default function AdminDashboard() {
     const slug = `${team1.toLowerCase().trim().replace(/\s+/g, '-')}${team2 ? `-vs-${team2.toLowerCase().trim().replace(/\s+/g, '-')}` : ''}`;
     const key = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
     
-    // Dynamic protocol for the stored URL
     const isHttps = window.location.protocol === 'https:';
     const protocol = isHttps ? 'https' : 'http';
     const hostname = vdsIp || window.location.hostname;
@@ -74,8 +84,15 @@ export default function AdminDashboard() {
     setStreamKey(key);
     setStreamUrl(url);
 
+    localStorage.setItem('is_broadcasting', 'true');
+    localStorage.setItem('current_stream_key', key);
+    localStorage.setItem('current_stream_url', url);
+    localStorage.setItem('current_team1', team1);
+    localStorage.setItem('current_team2', team2);
+    localStorage.setItem('current_sport', sessionSport);
+
     try {
-      const { error } = await supabase.from('events').insert([{
+      await supabase.from('events').insert([{
         title: team2 ? `${team1} VS ${team2}` : team1,
         sport: sessionSport,
         is_live: true,
@@ -86,12 +103,9 @@ export default function AdminDashboard() {
         room_name: key,
         start_time: new Date().toISOString()
       }]);
-
-      if (error) throw error;
       setShowSessionDetails(true);
     } catch (err: any) {
       console.error('Error starting session:', err);
-      alert('შეცდომა: ' + (err.message || 'სესიის დაწყება ვერ მოხერხდა'));
     }
   };
 
@@ -114,7 +128,7 @@ export default function AdminDashboard() {
 
       setSessionThumbnail(publicUrl);
     } catch (error: any) {
-      alert('ატვირთვა ვერ მოხერხდა: ' + (error.message || 'Error'));
+      alert('ატვირთვა ვერ მოხერხდა');
     } finally {
       setUploading(false);
     }
@@ -162,7 +176,7 @@ export default function AdminDashboard() {
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">მოწინააღმდეგე (სურვილისამებრ)</label>
                       <input 
-                        type="text" placeholder="მაგ: Barcelona" value={team2} onChange={(e) => setTeam2(e.target.value)}
+                        type="text" placeholder="მაგ: Barcelona" value={team2} onChange={(e) => team2 === '' ? setTeam2(e.target.value) : setTeam2(e.target.value)}
                         className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-white uppercase"
                       />
                     </div>
@@ -183,7 +197,7 @@ export default function AdminDashboard() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">თამბნეილი (URL)</label>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">თამბნეილი</label>
                       <div className="flex gap-2">
                         <input 
                           type="text" value={sessionThumbnail} onChange={(e) => setSessionThumbnail(e.target.value)}
@@ -211,7 +225,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="space-y-8">
-              <div className="bento-card p-8 bg-blue-600 shadow-[0_30px_60px_-15px_rgba(37,99,235,0.3)] border-none flex flex-col justify-between min-h-[300px]">
+              <div className="bento-card p-8 bg-blue-600 shadow-xl border-none flex flex-col justify-between min-h-[300px]">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Settings size={16} className="text-white/60" />
@@ -221,8 +235,7 @@ export default function AdminDashboard() {
                     <span className="text-[9px] font-bold text-white/50 uppercase">VDS IP / DOMAIN NAME</span>
                     <input 
                       type="text" value={vdsIp} onChange={(e) => setVdsIp(e.target.value)} 
-                      className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-mono text-white placeholder:text-white/20 outline-none focus:bg-white/20 transition-all"
-                      placeholder="მაგ: 5.83.153.142 ან geotown.xyz"
+                      className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-mono text-white outline-none focus:bg-white/20 transition-all"
                     />
                   </div>
                 </div>
@@ -235,24 +248,6 @@ export default function AdminDashboard() {
                   <span className="text-xs uppercase tracking-widest">სტრიმის დაწყება</span>
                 </button>
               </div>
-
-                  <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl space-y-4">
-                <div className="flex items-center gap-2 text-zinc-400">
-                  <TrendingUp size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Info</span>
-                </div>
-                <p className="text-[11px] text-zinc-500 leading-relaxed font-bold italic">
-                  HLS უზრუნველყოფს სტაბილურ ტრანსლაციას. დარწმუნდით, რომ სერვერზე <span className="text-white">port 1935</span> და <span className="text-white">80/8080 (HLS)</span> გახსნილია.
-                </p>
-                <div className="pt-2 border-t border-white/5 space-y-2">
-                   <p className="text-[9px] text-red-400 font-bold uppercase">🚨 თუ არ ირთვება:</p>
-                   <p className="text-[8px] text-zinc-600 leading-relaxed uppercase">
-                      1. .env ფაილში ჩაწერეთ SUPABASE URL & KEY <br/>
-                      2. გახსენით პორტი: <code className="text-zinc-400">sudo ufw allow 1935,80,443/tcp</code> <br/>
-                      3. PM2-ის რესტარტი: <code className="text-zinc-400">pm2 restart all</code>
-                   </p>
-                </div>
-              </div>
             </div>
           </div>
         ) : (
@@ -264,7 +259,15 @@ export default function AdminDashboard() {
                     <div className="p-2 bg-brand-primary/10 rounded-lg"><Radio size={20} className="text-brand-primary" /></div>
                     <h3 className="text-xl font-black uppercase text-white tracking-tight">NGINX CONFIG</h3>
                   </div>
-                  <button onClick={() => setShowSessionDetails(false)} className="text-[9px] font-black uppercase text-brand-primary hover:bg-brand-primary/5 px-4 py-2 border border-brand-primary/20 rounded-full transition-all">დახურვა</button>
+                  <button 
+                    onClick={() => {
+                      setShowSessionDetails(false);
+                      localStorage.setItem('is_broadcasting', 'false');
+                    }}
+                    className="text-[9px] font-black uppercase text-brand-primary hover:bg-brand-primary/5 px-4 py-2 border border-brand-primary/20 rounded-full transition-all"
+                  >
+                    შეწყვეტა
+                  </button>
                 </div>
 
                 <div className="space-y-6">
@@ -288,171 +291,29 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-2xl space-y-4">
-                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                     🚀 როგორ დავიწყოთ სტრიმი?
-                  </p>
-                  <div className="space-y-3">
-                    <div className="p-4 bg-black/40 rounded-xl space-y-3 border border-brand-primary/20">
-                       <p className="text-[9px] font-bold text-white uppercase flex items-center gap-2">
-                         <Monitor size={12} className="text-brand-primary" /> 
-                         1. OBS - NGINX (RTMP)
-                       </p>
-                       <div className="space-y-1 pl-5">
-                          <div>
-                            <p className="text-[7px] text-zinc-500 uppercase font-black">Server / URL:</p>
-                            <code className="text-[9px] text-brand-primary font-mono">rtmp://{vdsIp}/live</code>
-                          </div>
-                          <div>
-                            <p className="text-[7px] text-zinc-500 uppercase font-black">Stream Key:</p>
-                            <code className="text-[9px] text-white font-mono">{streamKey}</code>
-                          </div>
-                       </div>
-                    </div>
-                    
-                    <div className="p-4 bg-black/40 rounded-xl space-y-3 border border-white/5">
-                       <p className="text-[9px] font-bold text-white uppercase flex items-center gap-2">
-                         <Radio size={12} className="text-zinc-500" /> 
-                         2. OBS SETTINGS
-                       </p>
-                       <div className="space-y-1 pl-5">
-                          <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
-                            - Output Mode: <span className="text-white">Advanced</span> <br/>
-                            - Rate Control: <span className="text-white">CBR</span> <br/>
-                            - Bitrate: <span className="text-white">2500 - 4500 Kbps</span> <br/>
-                            - Keyframe Interval: <span className="text-blue-400">2s</span> <br/>
-                            - Profile: <span className="text-white">Main / Baseline</span>
-                          </p>
-                       </div>
-                    </div>
-
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl space-y-3">
-                       <p className="text-[10px] font-black text-red-500 uppercase flex items-center gap-2">
-                         <Settings size={12} />
-                         🚨 SERVER LOG ERRORS (FIXES)
-                       </p>
-                       <div className="space-y-4">
-                          <div className="space-y-1">
-                            <p className="text-[8px] text-white font-bold">1. ENOENT: ... dist/index.html</p>
-                            <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">მიზეზი: სერვერზე აკლია ბილდი. პროექტის პაპკაში გაუშვით:</p>
-                            <code className="text-[9px] font-mono text-zinc-300 block bg-black/60 p-2 rounded border border-white/5">npm run build</code>
-                            <p className="text-[6px] text-zinc-600 mt-1 italic italic">ეს შექმნის dist პაპკას, რომელსაც PM2 ეძებს.</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-[8px] text-white font-bold">2. HLS 404 (Not Found)</p>
-                            <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">თუ ფლეიერი აჩვენებს 404-ს, შექმენით პაპკა და მიეცით უფლებები:</p>
-                            <code className="text-[9px] font-mono text-zinc-300 block bg-black/60 p-2 rounded border border-white/5">
-                               sudo mkdir -p /var/www/html/hls <br/>
-                               sudo chmod -R 777 /var/www/html/hls
-                            </code>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-[8px] text-white font-bold">3. connection refused / IP Block</p>
-                            <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">მიზეზი: Firewall ან Nginx არასწორი კონფიგი. <br/> დარწმუნდით რომ პორტი 80 ან 8080 ღიაა HLS-ისთვის.</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-[8px] text-white font-bold">4. supabaseUrl is required</p>
-                            <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">მიზეზი: `.env` ფაილი აკლია ან ცარიელია. დაამატეთ:</p>
-                            <pre className="text-[7px] font-mono text-zinc-300 bg-black/60 p-2 rounded leading-tight border border-white/5">
-{`VITE_SUPABASE_URL=...
-VITE_SUPABASE_ANON_KEY=...`}
-                            </pre>
-                            <p className="text-[6px] text-red-400 italic font-bold uppercase mt-1">და PM2-ის რესტარტი: pm2 restart all</p>
-                          </div>
-                       </div>
-                    </div>
-
-                    <div className="p-3 bg-zinc-900/50 border border-white/5 rounded-xl space-y-3">
-                       <p className="text-[10px] font-black text-zinc-400 uppercase flex items-center gap-2">
-                         <Upload size={12} />
-                         🚀 GIT UPDATE (VDS REFRESH)
-                       </p>
-                       <div className="space-y-2">
-                          <p className="text-[7px] text-zinc-500 uppercase">როგორ ავსახოთ ცვლილებები VDS-ზე:</p>
-                          <code className="text-[8px] font-mono text-zinc-300 block bg-black/60 p-2 rounded border border-white/5 whitespace-pre">
-{`git pull
-npm install
-npm run build
-pm2 restart all`}
-                          </code>
-                       </div>
-                    </div>
-
-                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-3">
-                       <p className="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2">
-                         <Globe size={12} />
-                         🌐 SRS NGINX PROXY (HTTPS)
-                       </p>
-                       <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
-                          ფაილი: <code className="text-white">/etc/nginx/sites-available/geostream</code>
-                       </p>
-                       <pre className="text-[7px] font-mono text-zinc-300 bg-black/60 p-3 rounded-lg border border-white/5 leading-normal">
-{`location /live {
-    proxy_pass http://127.0.0.1:8080;
-    add_header Access-Control-Allow-Origin *;
-}
-
-location /rtc {
-    proxy_pass http://127.0.0.1:1985;
-}`}
-                       </pre>
-                    </div>
-
-                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-2">
-                       <p className="text-[9px] font-bold text-blue-400 uppercase">💡 მნიშვნელოვანი რჩევა</p>
-                       <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
-                          OBS-ში <span className="text-white">Output Mode</span> დააყენეთ <span className="text-white">Advanced</span>-ზე. <br/>
-                          <span className="text-white">Keyframe Interval</span> აუცილებლად უნდა იყოს <span className="text-blue-400">2s</span>.
-                       </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 bg-red-950/20 border border-red-500/30 rounded-2xl space-y-4 shadow-xl">
-                  <p className="text-[11px] text-red-500 font-black uppercase flex items-center gap-2 italic">
-                    <Trash2 size={14} />
-                    🚨 OBS "FAILED TO CONNECT" ფიქსი:
-                  </p>
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="p-3 bg-black/60 rounded-xl border border-red-500/10">
-                      <p className="text-[10px] text-white font-bold mb-1">1. Unknown directive "rtmp" (Nginx ფიქსი)</p>
-                      <p className="text-[8px] text-zinc-500 mb-2">თუ ტერმინალში ამ ერორს გიწერთ, გახსენით <code className="text-blue-400">/etc/nginx/nginx.conf</code> და სულ თავში დაამატეთ:</p>
-                      <code className="text-[9px] font-mono text-zinc-300 block bg-zinc-900/50 p-2 rounded">
-                        load_module modules/ngx_rtmp_module.so;
-                      </code>
-                    </div>
-                    <div className="p-3 bg-black/60 rounded-xl border border-red-500/10 text-[9px] text-zinc-400 leading-relaxed uppercase">
-                      <p className="text-white font-bold mb-1">2. Invalid Port in URL (Nginx Fix)</p>
-                      <p className="text-[8px] text-zinc-500 mb-1">თუ გიწერთ <code className="text-red-400 italic">"invalid port in url"</code>:</p>
-                      <ul className="list-disc pl-4 space-y-1 text-[7px] text-zinc-500 lowercase">
-                         <li>Nginx RTMP არ უჭერს მხარს <span className="text-white">HTTPS</span>-ს Webhook-ებისთვის (<code className="text-white">on_publish</code>).</li>
-                         <li>წაშალეთ <code className="text-white">on_publish</code> ხაზი კონფიგიდან ტესტირებისთვის.</li>
-                         <li>ან გამოიყენეთ <span className="text-white">LiveKit Ingress</span> (ვარიანტი 1), მას საერთოდ არ სჭირდება Nginx.</li>
-                      </ul>
-                    </div>
-                    <div className="p-3 bg-black/60 rounded-xl border border-red-500/10 text-[9px] text-zinc-400 leading-relaxed uppercase">
-                      <p className="text-white font-bold mb-1">3. HTTPS / Chrome Flag</p>
-                      თუ საიტი არის <span className="text-white font-bold">HTTP</span> და არა HTTPS, კამერა/აუდიო იბლოკება. <br/>
-                      ჩართეთ: <code className="text-blue-400 select-all">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code> და ჩაწერეთ საიტის IP.
-                    </div>
-                  </div>
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-2">
+                   <p className="text-[9px] font-bold text-blue-400 uppercase">💡 მნიშვნელოვანი რჩევა</p>
+                   <p className="text-[8px] text-zinc-400 leading-relaxed uppercase">
+                      OBS-ში Output Mode დააყენეთ Advanced-ზე. <br/>
+                      Keyframe Interval აუცილებლად უნდა იყოს 2s.
+                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bento-card bg-black border-white/5 overflow-hidden flex flex-col h-[600px] shadow-2xl relative group">
-              <div className="p-5 border-b border-white/5 flex items-center justify-between bg-zinc-900/40 z-10">
+            <div className="bento-card bg-black border-white/5 overflow-hidden flex flex-col h-[500px] sm:h-[600px] shadow-2xl relative group">
+              <div className="p-4 border-b border-white/5 flex items-center justify-between bg-zinc-900/40 z-10">
                 <div className="flex items-center gap-3">
-                   <div className="p-2 bg-blue-500/10 rounded"><Monitor size={16} className="text-blue-500" /></div>
-                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Live Monitor</span>
+                   <div className="p-1.5 bg-blue-500/10 rounded-lg"><Monitor size={14} className="text-blue-500" /></div>
+                   <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Live Monitor</span>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-1.5 bg-red-600 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.4)]">
-                   <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                   <span className="text-[9px] font-black uppercase text-white tracking-widest">Broadcasting</span>
+                <div className="flex items-center gap-2 px-3 py-1 bg-red-600 rounded-lg shadow-lg">
+                   <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                   <span className="text-[8px] font-black uppercase text-white tracking-widest">Broadcasting</span>
                 </div>
               </div>
               
-              <div className="flex-1 relative bg-zinc-950 overflow-hidden">
+              <div className="flex-1 relative bg-zinc-950">
                 <HLSPlayer 
                   url={streamUrl} 
                   autoPlay={!isMonitorPaused} 
@@ -461,46 +322,55 @@ location /rtc {
                   className="w-full h-full object-contain" 
                 />
                 
-                {/* Admin Monitor Controls Overlay */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-3 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 z-20">
-                   <button 
-                    onClick={() => setIsMonitorPaused(!isMonitorPaused)}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
-                   >
-                     {isMonitorPaused ? <PlayIcon size={20} fill="currentColor" /> : <Pause size={20} fill="currentColor" />}
-                   </button>
-
-                   <div className="w-px h-4 bg-white/10" />
-
-                   <button 
-                    onClick={() => setIsMonitorMuted(!isMonitorMuted)}
-                    className={cn(
-                      "p-2 hover:bg-white/10 rounded-full transition-all",
-                      isMonitorMuted ? "text-brand-primary animate-pulse" : "text-white"
-                    )}
-                   >
-                     {isMonitorMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                   </button>
+                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
+                   <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md p-1.5 rounded-xl border border-white/5">
+                     <button onClick={() => setIsMonitorPaused(!isMonitorPaused)} className="p-2 hover:bg-white/10 rounded-lg text-white">
+                       {isMonitorPaused ? <PlayIcon size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
+                     </button>
+                     <div className="w-px h-3 bg-white/10" />
+                     <button onClick={() => setIsMonitorMuted(!isMonitorMuted)} className={cn("p-2 hover:bg-white/10 rounded-lg transition-all", isMonitorMuted ? "text-brand-primary" : "text-white")}>
+                       {isMonitorMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                     </button>
+                   </div>
                    
-                   {isMonitorMuted && !isMonitorPaused && (
-                     <span className="text-[8px] font-black uppercase text-brand-primary tracking-widest animate-pulse">Muted</span>
-                   )}
+                   <button 
+                     onClick={() => { const u = streamUrl; setStreamUrl(''); setTimeout(() => setStreamUrl(u), 50); }}
+                     className="p-2 px-3 bg-white/5 hover:bg-white/10 rounded-lg text-[8px] font-black uppercase text-zinc-400 border border-white/5"
+                   >
+                     Refresh
+                   </button>
                 </div>
 
                 {isMonitorPaused && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] pointer-events-none">
-                     <PlayIcon size={48} className="text-white/20" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px] pointer-events-none">
+                     <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
+                        <PlayIcon size={24} className="text-white fill-white ml-1" />
+                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="p-4 border-t border-white/5 bg-zinc-900/20">
+              <div className="p-4 border-t border-white/5 bg-zinc-900/20 backdrop-blur-md">
                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                       <span className="text-[10px] font-black text-white uppercase">{team2 ? `${team1} VS ${team2}` : team1}</span>
-                       <span className="text-[8px] text-zinc-500 uppercase font-bold">{sessionSport} • NGINX HLS Mode</span>
+                    <div className="flex flex-col gap-0.5">
+                       <span className="text-[10px] font-black text-white uppercase tracking-tight">{team2 ? `${team1} VS ${team2}` : team1}</span>
+                       <div className="flex items-center gap-1.5">
+                         <span className="text-[7px] text-zinc-500 uppercase font-black tracking-widest">{sessionSport}</span>
+                         <div className="w-1 h-1 rounded-full bg-zinc-700" />
+                         <span className="text-[7px] text-brand-primary uppercase font-black tracking-widest">HLS</span>
+                       </div>
                     </div>
-                    <button className="px-4 py-2 bg-red-600/10 border border-red-600/20 text-red-500 text-[10px] font-black uppercase rounded-lg hover:bg-red-600/20 transition-all">სტრიმის გათიშვა</button>
+                    <button 
+                      onClick={() => {
+                        setShowSessionDetails(false);
+                        localStorage.setItem('is_broadcasting', 'false');
+                        localStorage.removeItem('current_stream_url');
+                        localStorage.removeItem('current_stream_key');
+                      }}
+                      className="px-4 py-2 bg-red-600 text-white text-[9px] font-black uppercase rounded-lg hover:bg-red-700 transition-all"
+                    >
+                      გათიშვა
+                    </button>
                  </div>
               </div>
             </div>
@@ -510,4 +380,3 @@ location /rtc {
     </div>
   );
 }
-
