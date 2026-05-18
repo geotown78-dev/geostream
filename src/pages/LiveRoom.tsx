@@ -4,13 +4,10 @@ import { cn } from '../lib/utils';
 import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
-import LiveKitStream from '../components/LiveKitStream';
 
 function ViewerStream({ 
   streamUrl, 
   isGlobalPaused,
-  roomId,
-  vdsIp
 }: { 
   streamUrl: string;
   isGlobalPaused: boolean;
@@ -44,11 +41,9 @@ function ViewerStream({
             effectivePaused ? 'opacity-40 grayscale blur-sm' : ''
           )}
         />
-      ) : roomId && vdsIp ? (
-        <LiveKitStream vdsIp={vdsIp} streamKey={roomId} />
       ) : (
         <div className="h-full w-full flex items-center justify-center text-zinc-500 font-black uppercase tracking-widest bg-zinc-950 px-8 text-center leading-relaxed">
-          საკუთარი VDS სტრიმის URL არ არის მითითებული ან სტრიმი არ არის აქტიური...
+          სტრიმი არ არის აქტიური ან URL არასწორია...
         </div>
       )}
       
