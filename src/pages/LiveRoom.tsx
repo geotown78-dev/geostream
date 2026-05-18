@@ -144,7 +144,14 @@ export default function LiveRoom() {
   const [error, setError] = useState<string>('');
   const [isGlobalPaused, setIsGlobalPaused] = useState(false);
   const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    // Try to auto-detect domain
+    if (window.location.hostname !== 'localhost' && !window.location.hostname.match(/^[0-9.]+$/)) {
+      setVdsIp(window.location.hostname);
+    }
+  }, []);
 
   useEffect(() => {
     if (!roomId) return;
@@ -182,11 +189,12 @@ export default function LiveRoom() {
             const savedVDS = localStorage.getItem('vds_ip') || vdsIp;
             
             if (isPageHttps && !url.startsWith('https://')) {
-               // Try to rebuild the URL using the saved VDS IP/Domain or current hostname
-               // This fixes SSL issues if the URL in DB was saved with a raw IP
                const urlPath = url.split('/hls/')[1];
                if (urlPath) {
-                 url = `https://${savedVDS}/hls/${urlPath}`;
+                 // Priority: 1. Current hostname (if not IP) 2. Saved VDS IP/Domain
+                 const currentHost = window.location.hostname;
+                 const bestHost = (currentHost && !currentHost.match(/^[0-9.]+$/)) ? currentHost : savedVDS;
+                 url = `https://${bestHost}/hls/${urlPath}`;
                }
             }
             
