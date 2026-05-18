@@ -134,6 +134,8 @@ export default function LiveRoom() {
   const navigate = useNavigate();
   const [streamUrl, setStreamUrl] = useState<string>('');
   const [vdsIp, setVdsIp] = useState<string>('5.83.153.142');
+  const [showSettings, setShowSettings] = useState(false);
+  const [tempIp, setTempIp] = useState(vdsIp);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [isGlobalPaused, setIsGlobalPaused] = useState(false);
@@ -306,15 +308,65 @@ export default function LiveRoom() {
                 </h1>
                 <p className="text-zinc-500 font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.2em]">სესიის ID: {roomId}-prod-01</p>
               </div>
-              <button 
-                onClick={() => navigate('/')}
-                className="w-full sm:w-auto px-6 py-3 bg-brand-surface border border-brand-border rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-brand-surface-light transition-all flex items-center justify-center gap-2"
-              >
-                <ArrowLeft size={14} /> სტრიმიდან გამოსვლა
-              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <button 
+                  onClick={() => setShowSettings(true)}
+                  className="w-full sm:w-auto px-6 py-3 bg-zinc-800 border border-white/5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                >
+                  სერვერის პარამეტრები
+                </button>
+                <button 
+                  onClick={() => navigate('/')}
+                  className="w-full sm:w-auto px-6 py-3 bg-brand-surface border border-brand-border rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-brand-surface-light transition-all flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft size={14} /> სტრიმიდან გამოსვლა
+                </button>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Settings Modal */}
+        {showSettings && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-brand-surface border border-brand-border rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-8">
+              <div>
+                <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-2">VDS სერვერის კონფიგურაცია</h3>
+                <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">მიუთითეთ თქვენი SRS სერვერის IP მისამართი</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-brand-primary">სერვერის IP (SRS)</label>
+                <input 
+                  type="text" 
+                  value={tempIp}
+                  onChange={(e) => setTempIp(e.target.value)}
+                  placeholder="მაგ: 5.83.153.142"
+                  className="w-full bg-black/50 border border-brand-border rounded-xl px-4 py-3 text-sm font-bold focus:border-brand-primary outline-none transition-colors"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => setShowSettings(false)}
+                  className="flex-1 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-zinc-900 hover:bg-zinc-800 transition-colors"
+                >
+                  გაუქმება
+                </button>
+                <button 
+                  onClick={() => {
+                    setVdsIp(tempIp);
+                    localStorage.setItem('vds_ip', tempIp);
+                    setShowSettings(false);
+                  }}
+                  className="flex-1 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-brand-primary text-black hover:opacity-90 transition-opacity"
+                >
+                  შენახვა
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Chat Side Panel */}
         <aside className="hidden lg:flex col-span-3 bento-card flex-col overflow-hidden h-full bg-zinc-900/40">
