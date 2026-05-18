@@ -42,6 +42,7 @@ function ViewerStream({
         <HLSPlayer 
           url={streamUrl}
           autoPlay={!effectivePaused}
+          controls={false}
           muted={isMuted}
           volume={volume}
           className={cn(
@@ -143,7 +144,7 @@ export default function LiveRoom() {
   const [error, setError] = useState<string>('');
   const [isGlobalPaused, setIsGlobalPaused] = useState(false);
   const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
     if (!roomId) return;
