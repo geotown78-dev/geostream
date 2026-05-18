@@ -145,13 +145,13 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         muted={muted}
       />
       {errorStatus && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 z-50 text-center p-6 space-y-4">
-          <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-            <span className="text-red-500 text-2xl font-black">!</span>
+        <div className="absolute top-4 left-4 right-4 flex items-center gap-3 p-3 bg-zinc-950/80 backdrop-blur-md border border-white/5 rounded-xl z-50 animate-in fade-in slide-in-from-top-2 duration-500">
+          <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+            <span className="text-red-500 text-sm font-black">!</span>
           </div>
-        <div className="space-y-1">
-            <p className="text-white font-black uppercase tracking-widest text-[10px]">{errorStatus}</p>
-            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight">დაელოდეთ სტრიმერს ან გადატვირთეთ გვერდი</p>
+          <div className="flex flex-col">
+            <p className="text-white font-black uppercase tracking-widest text-[8px] leading-tight">{errorStatus}</p>
+            <p className="text-[7px] text-zinc-500 font-bold uppercase tracking-tight">დაელოდეთ სტრიმერს...</p>
           </div>
         </div>
       )}
