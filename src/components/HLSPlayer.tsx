@@ -123,6 +123,18 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
     }
   }, [muted, volume]);
 
+  // Playback sync effect
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (autoPlay) {
+      video.play().catch(e => console.log("Play failed or blocked:", e));
+    } else {
+      video.pause();
+    }
+  }, [autoPlay]);
+
   return (
     <div className="relative w-full h-full bg-black group">
       <video
