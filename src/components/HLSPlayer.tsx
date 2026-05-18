@@ -38,7 +38,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
 
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.response?.code === 404 || data.response?.code === 406) {
-          setErrorStatus('სტრიმი არ მოიძებნა. გადაამოწმეთ OBS-ში STREAM KEY.');
+          setErrorStatus('პირდაპირი ტრანსლაცია დასრულებულია');
         }
 
         if (data.fatal) {
@@ -94,7 +94,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
           </div>
           <div className="space-y-1">
             <p className="text-white font-black uppercase tracking-widest text-xs">{errorStatus}</p>
-            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">დარწმუნდით რომ OBS-ში სწორი გასაღები გაქვთ ჩაწერილი</p>
+            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">თუ ტრანსლაცია ჯერ არ დაწყებულა, სცადეთ მოგვიანებით</p>
           </div>
         </div>
       )}
