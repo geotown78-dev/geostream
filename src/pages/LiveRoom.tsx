@@ -97,13 +97,28 @@ function ViewerStream({
               პირდაპირი სტრიმი VDS-იდან
             </span>
           </div>
+
+          {isMuted && !effectivePaused && (
+            <button 
+              onClick={() => setIsMuted(false)}
+              className="ml-2 sm:ml-4 px-3 py-1 bg-brand-primary text-black text-[8px] sm:text-[9px] font-black uppercase rounded animate-pulse hover:scale-105 transition-all"
+            >
+              ჩართეთ ხმა
+            </button>
+          )}
           
-          <div className="hidden xs:flex items-center gap-3 ml-2 sm:ml-6 bg-black/40 p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/5 backdrop-blur-md">
+          <div className="flex items-center gap-2 sm:gap-3 ml-1 sm:ml-6 bg-black/40 p-2 px-2 sm:px-4 rounded-lg sm:rounded-xl border border-white/5 backdrop-blur-md">
              <button 
-              onClick={() => setIsMuted(!isMuted)}
-              className="text-white hover:text-brand-primary transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMuted(!isMuted);
+              }}
+              className={cn(
+                "text-white hover:text-brand-primary transition-all p-1",
+                isMuted ? "animate-bounce text-brand-primary" : ""
+              )}
              >
-               {isMuted || volume === 0 ? <VolumeX size={16} sm:size={18} /> : <Volume2 size={16} sm:size={18} />}
+               {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
              </button>
              <input 
               type="range"
@@ -115,7 +130,7 @@ function ViewerStream({
                 setVolume(parseFloat(e.target.value));
                 if (isMuted) setIsMuted(false);
               }}
-              className="w-16 sm:w-24 h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+              className="w-12 sm:w-24 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-primary"
              />
           </div>
         </div>
@@ -144,7 +159,7 @@ export default function LiveRoom() {
   const [error, setError] = useState<string>('');
   const [isGlobalPaused, setIsGlobalPaused] = useState(false);
   const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
     // Try to auto-detect domain
