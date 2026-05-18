@@ -361,15 +361,8 @@ export default function LiveRoom() {
                 <h1 className="text-xl sm:text-4xl font-black mb-2 uppercase tracking-tighter italic">
                   უყურებთ: <span className="text-brand-primary">{roomId?.replace(/-/g, ' ')}</span>
                 </h1>
-                <p className="text-zinc-500 font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.2em]">სესიის ID: {roomId}-prod-01</p>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                <button 
-                  onClick={() => setShowSettings(true)}
-                  className="w-full sm:w-auto px-6 py-3 bg-zinc-800 border border-white/5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
-                >
-                  სერვერის პარამეტრები
-                </button>
                 <button 
                   onClick={() => navigate('/')}
                   className="w-full sm:w-auto px-6 py-3 bg-brand-surface border border-brand-border rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-brand-surface-light transition-all flex items-center justify-center gap-2"
