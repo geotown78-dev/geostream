@@ -61,7 +61,12 @@ export default function AdminDashboard() {
     localStorage.setItem('vds_ip', vdsIp);
     const slug = `${team1.toLowerCase().trim().replace(/\s+/g, '-')}${team2 ? `-vs-${team2.toLowerCase().trim().replace(/\s+/g, '-')}` : ''}`;
     const key = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
-    const url = `http://${vdsIp}/hls/${key}.m3u8`;
+    
+    // Dynamic protocol for the stored URL
+    const isHttps = window.location.protocol === 'https:';
+    const protocol = isHttps ? 'https' : 'http';
+    const hostname = vdsIp || window.location.hostname;
+    const url = `${protocol}://${hostname}/hls/${key}.m3u8`;
     
     setStreamKey(key);
     setStreamUrl(url);
