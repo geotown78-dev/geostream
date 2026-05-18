@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe } from 'lucide-react';
+import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe, Share2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
 import LiveKitStream from '../components/LiveKitStream';
+import BrowserBroadcaster from '../components/BrowserBroadcaster';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -354,6 +355,36 @@ LIVEKIT_API_SECRET=...`}
                             </pre>
                             <p className="text-[6px] text-red-400 italic font-bold uppercase mt-1">და PM2-ის რესტარტი: pm2 restart all</p>
                           </div>
+                       </div>
+                    </div>
+
+                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-3">
+                       <p className="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2">
+                         <Share2 size={12} />
+                         🖥️ BROWSER SCREEN SHARE
+                       </p>
+                       <p className="text-[8px] text-zinc-400 leading-relaxed uppercase mb-2">
+                          თუ არ გსურთ OBS-ის გამოყენება, შეგიძლიათ გააზიაროთ ეკრანი პირდაპირ აქედან:
+                       </p>
+                       <BrowserBroadcaster 
+                        roomName={streamKey} 
+                        vdsIp={vdsIp}
+                       />
+                    </div>
+
+                    <div className="p-3 bg-zinc-900/50 border border-white/5 rounded-xl space-y-3">
+                       <p className="text-[10px] font-black text-zinc-400 uppercase flex items-center gap-2">
+                         <Upload size={12} />
+                         🚀 GIT UPDATE (VDS REFRESH)
+                       </p>
+                       <div className="space-y-2">
+                          <p className="text-[7px] text-zinc-500 uppercase">როგორ ავსახოთ ცვლილებები VDS-ზე:</p>
+                          <code className="text-[8px] font-mono text-zinc-300 block bg-black/60 p-2 rounded border border-white/5 whitespace-pre">
+{`git pull
+npm install
+npm run build
+pm2 restart all`}
+                          </code>
                        </div>
                     </div>
 
