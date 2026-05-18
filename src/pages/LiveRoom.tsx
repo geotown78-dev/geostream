@@ -332,11 +332,11 @@ export default function LiveRoom() {
             <div className="bg-brand-surface border border-brand-border rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-8">
               <div>
                 <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-2">VDS სერვერის კონფიგურაცია</h3>
-                <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">მიუთითეთ თქვენი SRS სერვერის IP მისამართი</p>
+                <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">მიუთითეთ თქვენი Nginx-RTMP სერვერის IP მისამართი</p>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-brand-primary">სერვერის IP (SRS)</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-brand-primary">სერვერის IP (Nginx)</label>
                 <input 
                   type="text" 
                   value={tempIp}
