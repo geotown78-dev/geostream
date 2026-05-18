@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
+import { Volume2, VolumeX, Pause, Play as PlayIcon } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -15,6 +17,8 @@ export default function AdminDashboard() {
   const [srsPort, setSrsPort] = useState('1935');
   const [showSessionDetails, setShowSessionDetails] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
+  const [isMonitorMuted, setIsMonitorMuted] = useState(true);
+  const [isMonitorPaused, setIsMonitorPaused] = useState(false);
   const [streamKey, setStreamKey] = useState(`stream_${Math.random().toString(36).substring(7)}`);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -436,8 +440,8 @@ location /rtc {
               </div>
             </div>
 
-            <div className="bento-card bg-black border-white/5 overflow-hidden flex flex-col h-[600px] shadow-2xl">
-              <div className="p-5 border-b border-white/5 flex items-center justify-between bg-zinc-900/40">
+            <div className="bento-card bg-black border-white/5 overflow-hidden flex flex-col h-[600px] shadow-2xl relative group">
+              <div className="p-5 border-b border-white/5 flex items-center justify-between bg-zinc-900/40 z-10">
                 <div className="flex items-center gap-3">
                    <div className="p-2 bg-blue-500/10 rounded"><Monitor size={16} className="text-blue-500" /></div>
                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Live Monitor</span>
@@ -447,9 +451,49 @@ location /rtc {
                    <span className="text-[9px] font-black uppercase text-white tracking-widest">Broadcasting</span>
                 </div>
               </div>
-              <div className="flex-1 relative bg-zinc-950">
-                <HLSPlayer url={streamUrl} autoPlay={true} controls={false} className="w-full h-full object-contain" />
+              
+              <div className="flex-1 relative bg-zinc-950 overflow-hidden">
+                <HLSPlayer 
+                  url={streamUrl} 
+                  autoPlay={!isMonitorPaused} 
+                  muted={isMonitorMuted}
+                  controls={false} 
+                  className="w-full h-full object-contain" 
+                />
+                
+                {/* Admin Monitor Controls Overlay */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-3 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 z-20">
+                   <button 
+                    onClick={() => setIsMonitorPaused(!isMonitorPaused)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
+                   >
+                     {isMonitorPaused ? <PlayIcon size={20} fill="currentColor" /> : <Pause size={20} fill="currentColor" />}
+                   </button>
+
+                   <div className="w-px h-4 bg-white/10" />
+
+                   <button 
+                    onClick={() => setIsMonitorMuted(!isMonitorMuted)}
+                    className={cn(
+                      "p-2 hover:bg-white/10 rounded-full transition-all",
+                      isMonitorMuted ? "text-brand-primary animate-pulse" : "text-white"
+                    )}
+                   >
+                     {isMonitorMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                   </button>
+                   
+                   {isMonitorMuted && !isMonitorPaused && (
+                     <span className="text-[8px] font-black uppercase text-brand-primary tracking-widest animate-pulse">Muted</span>
+                   )}
+                </div>
+
+                {isMonitorPaused && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] pointer-events-none">
+                     <PlayIcon size={48} className="text-white/20" />
+                  </div>
+                )}
               </div>
+
               <div className="p-4 border-t border-white/5 bg-zinc-900/20">
                  <div className="flex items-center justify-between">
                     <div className="flex flex-col">
