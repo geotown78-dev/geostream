@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink } from 'lucide-react';
+import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
 import LiveKitStream from '../components/LiveKitStream';
@@ -59,7 +59,6 @@ export default function AdminDashboard() {
     }
     
     localStorage.setItem('vds_ip', vdsIp);
-    localStorage.setItem('livekit_url', livekitUrl);
     const slug = `${team1.toLowerCase().trim().replace(/\s+/g, '-')}${team2 ? `-vs-${team2.toLowerCase().trim().replace(/\s+/g, '-')}` : ''}`;
     const key = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
     const url = `http://${vdsIp}/hls/${key}.m3u8`;
@@ -119,7 +118,7 @@ export default function AdminDashboard() {
         <header className="mb-12 flex justify-between items-end">
           <div>
             <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-2">
-              SRS <span className="text-orange-500">LIVE</span>
+              NGINX <span className="text-brand-primary">LIVE</span>
             </h1>
             <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.3em]">Bento Streaming Dashboard</p>
           </div>
@@ -254,17 +253,17 @@ export default function AdminDashboard() {
               <div className="bento-card p-10 bg-zinc-900/30 border-white/5 space-y-8">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-500/10 rounded-lg"><Radio size={20} className="text-orange-500" /></div>
-                    <h3 className="text-xl font-black uppercase text-white tracking-tight">SRS CONFIG</h3>
+                    <div className="p-2 bg-brand-primary/10 rounded-lg"><Radio size={20} className="text-brand-primary" /></div>
+                    <h3 className="text-xl font-black uppercase text-white tracking-tight">NGINX CONFIG</h3>
                   </div>
-                  <button onClick={() => setShowSessionDetails(false)} className="text-[9px] font-black uppercase text-orange-500 hover:bg-orange-500/5 px-4 py-2 border border-orange-500/20 rounded-full transition-all">დახურვა</button>
+                  <button onClick={() => setShowSessionDetails(false)} className="text-[9px] font-black uppercase text-brand-primary hover:bg-brand-primary/5 px-4 py-2 border border-brand-primary/20 rounded-full transition-all">დახურვა</button>
                 </div>
 
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">OBS RTMP URL</label>
                     <div className="flex bg-black border border-white/5 rounded-xl overflow-hidden">
-                      <code className="flex-1 p-5 font-mono text-xs text-orange-400 truncate">rtmp://{vdsIp}/live</code>
+                      <code className="flex-1 p-5 font-mono text-xs text-brand-primary truncate">rtmp://{vdsIp}/live</code>
                       <button onClick={() => copyToClipboard(`rtmp://${vdsIp}/live`, 'url')} className="px-6 border-l border-white/5 hover:bg-zinc-900 transition-all text-zinc-500 hover:text-white">
                         {copiedUrl ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                       </button>
@@ -286,15 +285,15 @@ export default function AdminDashboard() {
                      🚀 როგორ დავიწყოთ სტრიმი?
                   </p>
                   <div className="space-y-3">
-                    <div className="p-4 bg-black/40 rounded-xl space-y-3 border border-orange-500/20">
+                    <div className="p-4 bg-black/40 rounded-xl space-y-3 border border-brand-primary/20">
                        <p className="text-[9px] font-bold text-white uppercase flex items-center gap-2">
-                         <Monitor size={12} className="text-orange-500" /> 
-                         1. OBS - SRS (RTMP)
+                         <Monitor size={12} className="text-brand-primary" /> 
+                         1. OBS - NGINX (RTMP)
                        </p>
                        <div className="space-y-1 pl-5">
                           <div>
                             <p className="text-[7px] text-zinc-500 uppercase font-black">Server / URL:</p>
-                            <code className="text-[9px] text-orange-400 font-mono">rtmp://{vdsIp}/live</code>
+                            <code className="text-[9px] text-brand-primary font-mono">rtmp://{vdsIp}/live</code>
                           </div>
                           <div>
                             <p className="text-[7px] text-zinc-500 uppercase font-black">Stream Key:</p>
