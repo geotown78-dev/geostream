@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe, Share2 } from 'lucide-react';
+import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
-import LiveKitStream from '../components/LiveKitStream';
-import BrowserBroadcaster from '../components/BrowserBroadcaster';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -216,11 +214,11 @@ export default function AdminDashboard() {
                     <label className="text-[10px] font-black text-white/60 uppercase tracking-widest">Server Config</label>
                   </div>
                   <div className="space-y-2">
-                    <span className="text-[9px] font-bold text-white/50 uppercase">VDS IP ADDRESS</span>
+                    <span className="text-[9px] font-bold text-white/50 uppercase">VDS IP / DOMAIN NAME</span>
                     <input 
                       type="text" value={vdsIp} onChange={(e) => setVdsIp(e.target.value)} 
                       className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-mono text-white placeholder:text-white/20 outline-none focus:bg-white/20 transition-all"
-                      placeholder="5.83.153.142"
+                      placeholder="მაგ: 5.83.153.142 ან geotown.xyz"
                     />
                   </div>
                 </div>
@@ -240,13 +238,13 @@ export default function AdminDashboard() {
                   <span className="text-[10px] font-black uppercase tracking-widest">Info</span>
                 </div>
                 <p className="text-[11px] text-zinc-500 leading-relaxed font-bold italic">
-                  LiveKit უზრუნველყოფს 1 წამზე ნაკლებ დაყოვნებას. დარწმუნდით, რომ სერვერზე <span className="text-white">port 7880</span> გახსნილია.
+                  HLS უზრუნველყოფს სტაბილურ ტრანსლაციას. დარწმუნდით, რომ სერვერზე <span className="text-white">port 1935</span> და <span className="text-white">80/8080 (HLS)</span> გახსნილია.
                 </p>
                 <div className="pt-2 border-t border-white/5 space-y-2">
                    <p className="text-[9px] text-red-400 font-bold uppercase">🚨 თუ არ ირთვება:</p>
                    <p className="text-[8px] text-zinc-600 leading-relaxed uppercase">
-                      1. .env ფაილში ჩაწერეთ LIVEKIT_API_KEY <br/>
-                      2. გახსენით პორტი: <code className="text-zinc-400">sudo ufw allow 1935,7880,7885/tcp</code> <br/>
+                      1. .env ფაილში ჩაწერეთ SUPABASE URL & KEY <br/>
+                      2. გახსენით პორტი: <code className="text-zinc-400">sudo ufw allow 1935,80,443/tcp</code> <br/>
                       3. PM2-ის რესტარტი: <code className="text-zinc-400">pm2 restart all</code>
                    </p>
                 </div>
@@ -337,39 +335,27 @@ export default function AdminDashboard() {
                             <p className="text-[6px] text-zinc-600 mt-1 italic italic">ეს შექმნის dist პაპკას, რომელსაც PM2 ეძებს.</p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-[8px] text-white font-bold">2. dtls timeout / connection error</p>
-                            <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">მიზეზი: UDP პორტები დაბლოკილია. გაუშვით:</p>
+                            <p className="text-[8px] text-white font-bold">2. HLS 404 (Not Found)</p>
+                            <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">თუ ფლეიერი აჩვენებს 404-ს, შექმენით პაპკა და მიეცით უფლებები:</p>
                             <code className="text-[9px] font-mono text-zinc-300 block bg-black/60 p-2 rounded border border-white/5">
-                               sudo ufw allow 1935,7880,7885/tcp <br/>
-                               sudo ufw allow 443,50000:60000/udp
+                               sudo mkdir -p /var/www/html/hls <br/>
+                               sudo chmod -R 777 /var/www/html/hls
                             </code>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-[8px] text-white font-bold">3. supabaseUrl is required</p>
+                            <p className="text-[8px] text-white font-bold">3. connection refused / IP Block</p>
+                            <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">მიზეზი: Firewall ან Nginx არასწორი კონფიგი. <br/> დარწმუნდით რომ პორტი 80 ან 8080 ღიაა HLS-ისთვის.</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[8px] text-white font-bold">4. supabaseUrl is required</p>
                             <p className="text-[7px] text-zinc-500 uppercase leading-relaxed">მიზეზი: `.env` ფაილი აკლია ან ცარიელია. დაამატეთ:</p>
                             <pre className="text-[7px] font-mono text-zinc-300 bg-black/60 p-2 rounded leading-tight border border-white/5">
 {`VITE_SUPABASE_URL=...
-VITE_SUPABASE_ANON_KEY=...
-LIVEKIT_API_KEY=...
-LIVEKIT_API_SECRET=...`}
+VITE_SUPABASE_ANON_KEY=...`}
                             </pre>
                             <p className="text-[6px] text-red-400 italic font-bold uppercase mt-1">და PM2-ის რესტარტი: pm2 restart all</p>
                           </div>
                        </div>
-                    </div>
-
-                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-3">
-                       <p className="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2">
-                         <Share2 size={12} />
-                         🖥️ BROWSER SCREEN SHARE
-                       </p>
-                       <p className="text-[8px] text-zinc-400 leading-relaxed uppercase mb-2">
-                          თუ არ გსურთ OBS-ის გამოყენება, შეგიძლიათ გააზიაროთ ეკრანი პირდაპირ აქედან:
-                       </p>
-                       <BrowserBroadcaster 
-                        roomName={streamKey} 
-                        vdsIp={vdsIp}
-                       />
                     </div>
 
                     <div className="p-3 bg-zinc-900/50 border border-white/5 rounded-xl space-y-3">
@@ -462,13 +448,13 @@ location /rtc {
                 </div>
               </div>
               <div className="flex-1 relative bg-zinc-950">
-                <LiveKitStream vdsIp={vdsIp} streamKey={streamKey} />
+                <HLSPlayer url={streamUrl} autoPlay={true} className="w-full h-full object-contain" />
               </div>
               <div className="p-4 border-t border-white/5 bg-zinc-900/20">
                  <div className="flex items-center justify-between">
                     <div className="flex flex-col">
                        <span className="text-[10px] font-black text-white uppercase">{team2 ? `${team1} VS ${team2}` : team1}</span>
-                       <span className="text-[8px] text-zinc-500 uppercase font-bold">{sessionSport} • Low Latency Mode</span>
+                       <span className="text-[8px] text-zinc-500 uppercase font-bold">{sessionSport} • NGINX HLS Mode</span>
                     </div>
                     <button className="px-4 py-2 bg-red-600/10 border border-red-600/20 text-red-500 text-[10px] font-black uppercase rounded-lg hover:bg-red-600/20 transition-all">სტრიმის გათიშვა</button>
                  </div>
