@@ -52,12 +52,12 @@ function AppContent() {
         <div className="max-w-[1700px] mx-auto p-4 sm:p-8 overflow-x-hidden">
           <AnimatePresence mode="wait">
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/football" element={<Home />} />
-              <Route path="/ufc" element={<Home />} />
-              <Route path="/watch/:roomId" element={<LiveRoom />} />
-              <Route path="/live" element={<Home />} />
-              <Route path="/stats" element={<Leaderboard />} />
+              <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/football" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/ufc" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/watch/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
+              <Route path="/live" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/stats" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
               <Route path="/login" element={<AuthPage mode="login" />} />
               <Route path="/register" element={<AuthPage mode="register" />} />
               <Route 
