@@ -130,7 +130,7 @@ app.get("/api/chat/:roomId", (req, res) => {
 // Post a chat message
 app.post("/api/chat/:roomId", (req, res) => {
   const { roomId } = req.params;
-  const { user, msg, color } = req.body;
+  const { user, msg, color, id } = req.body;
   if (!user || !msg) {
     return res.status(400).json({ error: "Missing user or msg" });
   }
@@ -140,7 +140,7 @@ app.post("/api/chat/:roomId", (req, res) => {
   }
 
   const newMessage: ChatMessage = {
-    id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    id: id ? String(id) : `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     user: String(user).trim(),
     msg: String(msg).trim(),
     color: color || "text-brand-primary",
