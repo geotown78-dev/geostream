@@ -174,6 +174,10 @@ export default function AdminDashboard() {
 
   const handleEditFileUpload = async (file: File) => {
     try {
+      if (file.size > 4 * 1024 * 1024) {
+        alert('ფაილის ზომა აღემატება 4 MB-ს. გთხოვთ აირჩიოთ უფრო მცირე ზომის ფოტო.');
+        return;
+      }
       setUploadingEdit(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -199,6 +203,10 @@ export default function AdminDashboard() {
 
   const handleSchedFileUpload = async (file: File) => {
     try {
+      if (file.size > 4 * 1024 * 1024) {
+        alert('ფაილის ზომა აღემატება 4 MB-ს. გთხოვთ აირჩიოთ უფრო მცირე ზომის ფოტო.');
+        return;
+      }
       setUploadingSched(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -224,6 +232,10 @@ export default function AdminDashboard() {
 
   const handleEditSchedFileUpload = async (file: File) => {
     try {
+      if (file.size > 4 * 1024 * 1024) {
+        alert('ფაილის ზომა აღემატება 4 MB-ს. გთხოვთ აირჩიოთ უფრო მცირე ზომის ფოტო.');
+        return;
+      }
       setUploadingSchedEdit(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -396,6 +408,10 @@ export default function AdminDashboard() {
 
   const handleFileUpload = async (file: File) => {
     try {
+      if (file.size > 4 * 1024 * 1024) {
+        alert('ფაილის ზომა აღემატება 4 MB-ს. გთხოვთ აირჩიოთ უფრო მცირე ზომის ფოტო.');
+        return;
+      }
       setUploading(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -483,7 +499,7 @@ export default function AdminDashboard() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">თამბნეილი</label>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">თამბნეილი (მაქს. 4 MB)</label>
                       <div className="flex gap-2">
                         <input 
                           type="text" value={sessionThumbnail} onChange={(e) => setSessionThumbnail(e.target.value)}
@@ -711,7 +727,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">თამბნეილის ლინკი</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">თამბნეილის ლინკი (მაქს. 4 MB)</label>
                   <div className="flex gap-2">
                     <input 
                       type="text" value={schedThumbnail} onChange={(e) => setSchedThumbnail(e.target.value)}
@@ -1003,7 +1019,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">თამბნეილის ლინკი</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">თამბნეილის ლინკი (მაქს. 4 MB)</label>
                   <div className="flex gap-2">
                     <input 
                       type="text" 
@@ -1172,7 +1188,7 @@ export default function AdminDashboard() {
 
               <div className="grid sm:grid-cols-2 gap-6">
                 <div className="space-y-2 col-span-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">თამბნეილის ლინკი</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">თამბნეილის ლინკი (მაქს. 4 MB)</label>
                   <div className="flex gap-2">
                     <input 
                       type="text" 
