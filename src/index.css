@@ -16,6 +16,7 @@
 @layer base {
   body {
     @apply bg-brand-black text-white antialiased font-sans;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -28,3 +29,14 @@
     @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
   }
 }
+
+/* Scrollbar Utility for smooth swipe selections */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch;
+}
+
