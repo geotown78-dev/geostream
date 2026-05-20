@@ -4,6 +4,7 @@ import { cn } from '../lib/utils';
 import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX, Trophy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { ADMIN_EMAILS } from '../constants';
 import HLSPlayer from '../components/HLSPlayer';
 
 function ViewerStream({ 
@@ -329,6 +330,7 @@ export default function LiveRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
   
   // Real-time Chat states
   const [messages, setMessages] = useState<{ id: string; user: string; msg: string; color: string; timestamp: string }[]>([]);
@@ -859,32 +861,9 @@ export default function LiveRoom() {
             {messages.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
                 <p className="text-zinc-600 text-[10px] font-black uppercase tracking-wider mb-1">ჩატი ცარიელია</p>
-                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">დაწერეთ პირველი შეტყობინება!</p>
-              </div>
-            ) : (
-              messages.map((chat) => (
-                <div key={chat.id} className="flex gap-3 items-start animate-in fade-in duration-200">
-                  <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 shrink-0 flex items-center justify-center font-black text-[10px] text-zinc-400 uppercase">
-                    {(chat.user || 'G').charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 truncate ${chat.color}`}>
-                      {chat.user}
-                    </p>
-                    <p className="text-xs text-zinc-300 leading-normal font-medium break-words">
-                      {chat.msg}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={chatEndRef} />
-          </div>
-
-          <div className="flex flex-col gap-3 p-4 bg-zinc-950/40 border-t border-brand-border">
-            {/* Nickname Editor */}
+                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">დაწერეთ პირველი შეტყობინ�            {/* Nickname Editor */}
             <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">
-              {isEditingNickname ? (
+              {isEditingNickname && isAdmin ? (
                 <div className="flex items-center gap-2 w-full">
                   <input 
                     type="text"
@@ -913,6 +892,36 @@ export default function LiveRoom() {
                       setIsEditingNickname(false);
                     }}
                     className="text-brand-primary font-black hover:text-white"
+                  >
+                    শენახვა
+                  </button>
+                  <button 
+                    onClick={() => setIsEditingNickname(false)}
+                    className="text-zinc-500 hover:text-white"
+                  >
+                    X
+                  </button>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center w-full">
+                  <div className="flex items-center gap-1.5">
+                    <span>სახელი:</span>
+                    <span className={`font-black ${userChatColor}`}>{nickname || 'GUEST'}</span>
+                  </div>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => {
+                        setNewNicknameInput(nickname);
+                        setIsEditingNickname(true);
+                      }}
+                      className="text-[9px] text-brand-primary font-black hover:text-white transition-colors"
+                    >
+                      (შეცვლა)
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>ver:text-white"
                   >
                     শენახვა
                   </button>
