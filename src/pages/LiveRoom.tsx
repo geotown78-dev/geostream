@@ -159,11 +159,9 @@ function ViewerStream({
 
       <div className={cn(
         "absolute inset-x-0 bottom-0 p-4 sm:p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity z-30",
-        effectivePaused 
+        (effectivePaused || !isFullscreen)
           ? "opacity-100" 
-          : isFullscreen 
-            ? (overlayVisible ? "opacity-100" : "opacity-0 pointer-events-none") 
-            : "opacity-0 group-hover:opacity-100"
+          : (overlayVisible ? "opacity-100" : "opacity-0 pointer-events-none")
       )}>
         <div className="flex items-center gap-3 sm:gap-4">
           <button 
