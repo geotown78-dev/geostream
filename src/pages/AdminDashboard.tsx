@@ -352,6 +352,13 @@ export default function AdminDashboard() {
 
       if (deleteError) throw deleteError;
 
+      // Clear chat history for the scheduled room on the server to start fresh
+      try {
+        await fetch(`/api/chat/sched-${sched.id}`, { method: 'DELETE' });
+      } catch (chatErr) {
+        console.error('Failed to clear chat for scheduled session:', chatErr);
+      }
+
       setShowSessionDetails(true);
       fetchSchedules();
       fetchEvents();
@@ -474,6 +481,14 @@ export default function AdminDashboard() {
         room_name: key,
         start_time: new Date().toISOString()
       }]);
+      
+      // Clear chat history for the manual room on the server to start fresh
+      try {
+        await fetch(`/api/chat/${key}`, { method: 'DELETE' });
+      } catch (chatErr) {
+        console.error('Failed to clear chat for session:', chatErr);
+      }
+
       setShowSessionDetails(true);
       fetchEvents();
     } catch (err: any) {
