@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
-import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX } from 'lucide-react';
+import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX, Trophy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
 
@@ -233,6 +233,97 @@ function ViewerStream({
   );
 }
 
+function ScheduleWaitingScreen({ schedItem }: { schedItem: any }) {
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+
+  useEffect(() => {
+    if (!schedItem?.time) return;
+
+    const calculateTimeLeft = () => {
+      const difference = +new Date(schedItem.time) - +new Date();
+      if (difference <= 0) {
+        setTimeLeft(null);
+        return;
+      }
+
+      setTimeLeft({
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+      });
+    };
+
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(interval);
+  }, [schedItem]);
+
+  return (
+    <div className="h-full w-full flex flex-col items-center justify-center p-6 relative overflow-hidden bg-zinc-950">
+      {/* Background Graphic Accent */}
+      {schedItem?.thumbnail && (
+        <div className="absolute inset-0 opacity-10">
+          <img src={schedItem.thumbnail} className="w-full h-full object-cover blur-sm" alt="" referrerPolicy="no-referrer" />
+        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
+
+      {/* Content wrapper */}
+      <div className="relative z-10 flex flex-col items-center max-w-lg w-full text-center space-y-6 sm:space-y-8 px-4">
+        {/* Preparing label */}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-primary/10 border border-brand-primary/20 rounded-full">
+          <span className="w-2 h-2 bg-brand-primary rounded-full animate-ping" />
+          <span className="text-[9px] sm:text-[10px] font-black uppercase text-brand-primary tracking-widest leading-none">
+            მოლოდინის რეჟიმი • ავტომატური ჩართვა
+          </span>
+        </div>
+
+        {/* Headings / Matchup */}
+        <div className="space-y-3">
+          <div className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-zinc-500">
+            {schedItem?.sport || 'Event'}
+          </div>
+          <h2 className="text-xl sm:text-3xl font-black uppercase italic tracking-tight text-white flex items-center justify-center gap-4">
+            <span>{schedItem?.team1}</span>
+            <span className="text-brand-primary not-italic text-sm sm:text-base font-extrabold px-2 py-0.5 bg-white/5 rounded">VS</span>
+            <span>{schedItem?.team2 || 'TBA'}</span>
+          </h2>
+        </div>
+
+        {/* Countdown display */}
+        {timeLeft ? (
+          <div className="flex justify-center items-center gap-1.5 sm:gap-3">
+            {[
+              { label: 'დღე', value: timeLeft.days },
+              { label: 'სთ', value: timeLeft.hours },
+              { label: 'წთ', value: timeLeft.minutes },
+              { label: 'წმ', value: timeLeft.seconds }
+            ].map((item, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 p-3 sm:p-5 min-w-[55px] sm:min-w-[80px] rounded-2xl backdrop-blur-sm">
+                <div className="text-lg sm:text-3xl font-black text-white leading-none font-mono">
+                  {String(item.value).padStart(2, '0')}
+                </div>
+                <div className="text-[8px] sm:text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1 sm:mt-2">
+                  {item.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs sm:text-sm font-black text-brand-primary animate-pulse tracking-widest uppercase">
+            ტრანსლაცია მალე დაიწყება...
+          </div>
+        )}
+
+        <div className="text-[10px] sm:text-xs text-zinc-400 max-w-sm leading-relaxed font-semibold">
+          დაელოდეთ ეთერში გასვლას. როდესაც ადმინისტრატორი დაიწყებს ტრანსლაციას, გამოსახულება მომენტალურად გამოჩნდება ამ გვერდზე.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LiveRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
@@ -246,6 +337,11 @@ export default function LiveRoom() {
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(true);
   const [viewerCount, setViewerCount] = useState<number>(1);
+
+  // New waiting-room states
+  const [isStreamLive, setIsStreamLive] = useState<boolean>(true);
+  const [schedItem, setSchedItem] = useState<any>(null);
+  const [liveEvent, setLiveEvent] = useState<any>(null);
 
   const formatViewerCount = (num: number) => {
     if (num >= 1000000) {
@@ -279,51 +375,59 @@ export default function LiveRoom() {
     const fetchStreamInfo = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        setError('');
+        
+        // 1. Try to find active live stream
+        const { data: eventData, error: eventErr } = await supabase
           .from('events')
-          .select('stream_url, room_name')
+          .select('*')
           .eq('room_name', roomId)
           .maybeSingle();
-        
-        if (error) throw error;
-        if (data) {
-          let url = data.stream_url;
+
+        if (eventErr) throw eventErr;
+
+        if (eventData) {
+          setLiveEvent(eventData);
+          setIsStreamLive(true);
+          let url = eventData.stream_url;
           if (url) {
-            // Fix URL format if needed
             if (url.includes('/hls/') && !url.endsWith('.m3u8')) {
               url += '.m3u8';
             }
-            
-            // Smart URL translation: if we are on HTTPS and the URL is HTTP/IP, 
-            // try to use the current domain or the saved VDS IP/Domain.
             const isPageHttps = window.location.protocol === 'https:';
             const savedVDS = localStorage.getItem('vds_ip') || vdsIp;
-            
             if (isPageHttps && !url.startsWith('https://')) {
-               const urlPath = url.split('/hls/')[1];
-               if (urlPath) {
-                 // Priority: 1. Current hostname (if not IP) 2. Saved VDS IP/Domain
-                 const currentHost = window.location.hostname;
-                 const bestHost = (currentHost && !currentHost.match(/^[0-9.]+$/)) ? currentHost : savedVDS;
-                 url = `https://${bestHost}/hls/${urlPath}`;
-               }
+              const urlPath = url.split('/hls/')[1];
+              if (urlPath) {
+                const currentHost = window.location.hostname;
+                const bestHost = (currentHost && !currentHost.match(/^[0-9.]+$/)) ? currentHost : savedVDS;
+                url = `https://${bestHost}/hls/${urlPath}`;
+              }
             }
-            
-            console.log("Final Stream URL:", url);
             setStreamUrl(url);
           }
+        } else {
+          // 2. If no active live stream, check if it is a scheduled match we are waiting for
+          const schedId = roomId?.startsWith('sched-') ? roomId.replace('sched-', '') : roomId;
           
-          // Defaults or derived info
-          if (!data.stream_url || !data.stream_url.endsWith('.m3u8')) {
-            // Check for IP config
-            const savedIp = localStorage.getItem('vds_ip') || '5.83.153.142';
-            setVdsIp(savedIp);
+          const { data: schedData, error: schedErr } = await supabase
+            .from('schedule')
+            .select('*')
+            .eq('id', schedId)
+            .maybeSingle();
+
+          if (schedErr) throw schedErr;
+
+          if (schedData) {
+            setSchedItem(schedData);
+            setIsStreamLive(false);
+          } else {
+            setError('სტრიმი ან დაგეგმილი მატჩი ვერ მოიძებნა ბაზაში.');
           }
         }
       } catch (e: any) {
-        console.error('Failed to fetch stream url:', e.message || e);
-        // Default to a placeholder if needed, or error out
-         setError('სტრიმის ინფორმაცია ვერ მოიძებნა ბაზაში.');
+        console.error('Failed to fetch stream details:', e.message || e);
+        setError('სტრიმის ინფორმაცია ვერ მოიძებნა ბაზაში.');
       } finally {
         setLoading(false);
       }
@@ -341,6 +445,67 @@ export default function LiveRoom() {
         filter: `id=eq.global-stream`
       }, (payload) => {
         setIsGlobalPaused(!!payload.new.is_paused);
+      })
+      .subscribe();
+
+    // Live Sync Channel to detect when stream goes live in real time
+    const liveSyncChannel = supabase
+      .channel(`live-sync-${roomId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'events',
+        filter: `room_name=eq.${roomId}`
+      }, (payload) => {
+        console.log("Stream is now live via insert!", payload);
+        const newEvent = payload.new;
+        if (newEvent && newEvent.stream_url) {
+          let url = newEvent.stream_url;
+          if (url.includes('/hls/') && !url.endsWith('.m3u8')) {
+            url += '.m3u8';
+          }
+          const isPageHttps = window.location.protocol === 'https:';
+          const savedVDS = localStorage.getItem('vds_ip') || vdsIp;
+          if (isPageHttps && !url.startsWith('https://')) {
+            const urlPath = url.split('/hls/')[1];
+            if (urlPath) {
+              const currentHost = window.location.hostname;
+              const bestHost = (currentHost && !currentHost.match(/^[0-9.]+$/)) ? currentHost : savedVDS;
+              url = `https://${bestHost}/hls/${urlPath}`;
+            }
+          }
+          setStreamUrl(url);
+          setLiveEvent(newEvent);
+          setIsStreamLive(true);
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'events',
+        filter: `room_name=eq.${roomId}`
+      }, (payload) => {
+        console.log("Stream updated live!", payload);
+        const newEvent = payload.new;
+        if (newEvent && newEvent.stream_url) {
+          let url = newEvent.stream_url;
+          if (url.includes('/hls/') && !url.endsWith('.m3u8')) {
+            url += '.m3u8';
+          }
+          const isPageHttps = window.location.protocol === 'https:';
+          const savedVDS = localStorage.getItem('vds_ip') || vdsIp;
+          if (isPageHttps && !url.startsWith('https://')) {
+            const urlPath = url.split('/hls/')[1];
+            if (urlPath) {
+              const currentHost = window.location.hostname;
+              const bestHost = (currentHost && !currentHost.match(/^[0-9.]+$/)) ? currentHost : savedVDS;
+              url = `https://${bestHost}/hls/${urlPath}`;
+            }
+          }
+          setStreamUrl(url);
+          setLiveEvent(newEvent);
+          setIsStreamLive(true);
+        }
       })
       .subscribe();
 
@@ -372,6 +537,7 @@ export default function LiveRoom() {
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(presenceChannel);
+      supabase.removeChannel(liveSyncChannel);
     };
   }, [roomId]);
 
@@ -445,24 +611,32 @@ export default function LiveRoom() {
         {/* Main Stream Area */}
         <div className="col-span-12 lg:col-span-9 flex flex-col gap-4 sm:gap-6 lg:h-full lg:overflow-y-auto no-scrollbar">
           <div className="aspect-video sm:flex-1 bg-brand-surface rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-brand-border relative group shadow-2xl">
-            <ViewerStream 
-              streamUrl={streamUrl} 
-              isGlobalPaused={isGlobalPaused} 
-              roomId={roomId} 
-              vdsIp={vdsIp}
-              volume={volume}
-              isMuted={isMuted}
-              setVolume={setVolume}
-              setIsMuted={setIsMuted}
-              viewerCount={viewerCount}
-            />
+            {isStreamLive ? (
+              <ViewerStream 
+                streamUrl={streamUrl} 
+                isGlobalPaused={isGlobalPaused} 
+                roomId={roomId} 
+                vdsIp={vdsIp}
+                volume={volume}
+                isMuted={isMuted}
+                setVolume={setVolume}
+                setIsMuted={setIsMuted}
+                viewerCount={viewerCount}
+              />
+            ) : (
+              <ScheduleWaitingScreen schedItem={schedItem} />
+            )}
           </div>
           
           <div className="bento-card p-6 sm:p-8 bg-zinc-900/40">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-6 sm:gap-0">
               <div>
                 <h1 className="text-xl sm:text-4xl font-black mb-2 uppercase tracking-tighter italic">
-                  უყურებთ: <span className="text-brand-primary">{roomId?.replace(/-/g, ' ')}</span>
+                  უყურებთ: <span className="text-brand-primary">
+                    {isStreamLive 
+                      ? (liveEvent?.title || roomId?.replace(/^(sched-)/, '').replace(/-/g, ' ')) 
+                      : (schedItem ? (schedItem.team2 ? `${schedItem.team1} VS ${schedItem.team2}` : schedItem.team1) : roomId?.replace(/^(sched-)/, '').replace(/-/g, ' '))}
+                  </span>
                 </h1>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
