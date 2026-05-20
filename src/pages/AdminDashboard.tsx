@@ -172,30 +172,53 @@ export default function AdminDashboard() {
     }
   };
 
+  const uploadThumbnailFile = async (file: File): Promise<string> => {
+    if (file.size > 4 * 1024 * 1024) {
+      throw new Error('ფაილის ზომა აღემატება 4 MB-ს. გთხოვთ აირჩიოთ უფრო მცირე ზომის ფოტო.');
+    }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `thumbnails/${fileName}`;
+
+    // Auto-create bucket if missing
+    try {
+      await supabase.storage.createBucket('SITE-ASSETS', { public: true });
+    } catch (e) {}
+    try {
+      await supabase.storage.createBucket('site-assets', { public: true });
+    } catch (e) {}
+
+    const buckets = ['SITE-ASSETS', 'site-assets'];
+    let lastError: any = null;
+
+    for (const b of buckets) {
+      try {
+        const { error } = await supabase.storage
+          .from(b)
+          .upload(filePath, file, { cacheControl: '3600', upsert: false });
+        if (!error) {
+          const { data } = supabase.storage.from(b).getPublicUrl(filePath);
+          if (data?.publicUrl) return data.publicUrl;
+        } else {
+          lastError = error;
+        }
+      } catch (err: any) {
+        lastError = err;
+      }
+    }
+
+    const errMsg = lastError?.message || lastError?.error_description || JSON.stringify(lastError) || 'უცნობი შეცდომა';
+    throw new Error(errMsg);
+  };
+
   const handleEditFileUpload = async (file: File) => {
     try {
-      if (file.size > 4 * 1024 * 1024) {
-        alert('ფაილის ზომა აღემატება 4 MB-ს. გთხოვთ აირჩიოთ უფრო მცირე ზომის ფოტო.');
-        return;
-      }
       setUploadingEdit(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `thumbnails/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('SITE-ASSETS')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('SITE-ASSETS')
-        .getPublicUrl(filePath);
-
-      setEditThumbnail(publicUrl);
+      const url = await uploadThumbnailFile(file);
+      setEditThumbnail(url);
     } catch (error: any) {
-      alert('ატვირთვა ვერ მოხერხდა');
+      alert(error.message || 'ატვირთვა ვერ მოხერხდა');
     } finally {
       setUploadingEdit(false);
     }
@@ -203,28 +226,11 @@ export default function AdminDashboard() {
 
   const handleSchedFileUpload = async (file: File) => {
     try {
-      if (file.size > 4 * 1024 * 1024) {
-        alert('ფაილის ზომა აღემატება 4 MB-ს. გთხოვთ აირჩიოთ უფრო მცირე ზომის ფოტო.');
-        return;
-      }
       setUploadingSched(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `thumbnails/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('SITE-ASSETS')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('SITE-ASSETS')
-        .getPublicUrl(filePath);
-
-      setSchedThumbnail(publicUrl);
+      const url = await uploadThumbnailFile(file);
+      setSchedThumbnail(url);
     } catch (error: any) {
-      alert('ატვირთვა ვერ მოხერხდა');
+      alert(error.message || 'ატვირთვა ვერ მოხერხდა');
     } finally {
       setUploadingSched(false);
     }
@@ -232,28 +238,11 @@ export default function AdminDashboard() {
 
   const handleEditSchedFileUpload = async (file: File) => {
     try {
-      if (file.size > 4 * 1024 * 1024) {
-        alert('ფაილის ზომა აღემატება 4 MB-ს. გთხოვთ აირჩიოთ უფრო მცირე ზომის ფოტო.');
-        return;
-      }
       setUploadingSchedEdit(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `thumbnails/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('SITE-ASSETS')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('SITE-ASSETS')
-        .getPublicUrl(filePath);
-
-      setEditSchedThumbnail(publicUrl);
+      const url = await uploadThumbnailFile(file);
+      setEditSchedThumbnail(url);
     } catch (error: any) {
-      alert('ატვირთვა ვერ მოხერხდა');
+      alert(error.message || 'ატვირთვა ვერ მოხერხდა');
     } finally {
       setUploadingSchedEdit(false);
     }
@@ -408,28 +397,11 @@ export default function AdminDashboard() {
 
   const handleFileUpload = async (file: File) => {
     try {
-      if (file.size > 4 * 1024 * 1024) {
-        alert('ფაილის ზომა აღემატება 4 MB-ს. გთხოვთ აირჩიოთ უფრო მცირე ზომის ფოტო.');
-        return;
-      }
       setUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `thumbnails/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('SITE-ASSETS')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('SITE-ASSETS')
-        .getPublicUrl(filePath);
-
-      setSessionThumbnail(publicUrl);
+      const url = await uploadThumbnailFile(file);
+      setSessionThumbnail(url);
     } catch (error: any) {
-      alert('ატვირთვა ვერ მოხერხდა');
+      alert(error.message || 'ატვირთვა ვერ მოხერხდა');
     } finally {
       setUploading(false);
     }
