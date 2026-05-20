@@ -181,9 +181,6 @@ function ViewerStream({
             <span className="text-[8px] sm:text-[10px] font-black text-brand-primary uppercase tracking-widest">
               {effectivePaused ? (isGlobalPaused ? 'დაპაუზებულია ადმინის მიერ' : 'დაპაუზებულია') : 'ლაივი'}
             </span>
-            <span className="text-[10px] sm:text-xs font-bold text-white uppercase tracking-tighter">
-              პირდაპირი სტრიმი VDS-იდან
-            </span>
           </div>
 
           {isMuted && !effectivePaused && (
