@@ -17,9 +17,15 @@ export default function Home() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch Exclusive Event (priority: live event first, then schedule)
-        const { data: exLive } = await supabase.from('events').select('*').eq('is_exclusive', true).eq('is_live', true).order('id', { ascending: false }).limit(1).maybeSingle();
-        
+        // Execute queries concurrently using Promise.all to avoid sequence waterfalls
+        const [exLiveResponse, liveResponse, upcomingResponse, streamResponse] = await Promise.all([
+          supabase.from('events').select('*').eq('is_exclusive', true).eq('is_live', true).order('id', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('events').select('*').eq('is_live', true).order('id', { ascending: false }),
+          supabase.from('schedule').select('*').order('time', { ascending: true }).limit(4),
+          supabase.from('active_streams').select('*').eq('id', 'global-stream').maybeSingle()
+        ]);
+
+        const exLive = exLiveResponse.data;
         if (exLive) {
           setExclusiveEvent(exLive);
         } else {
@@ -28,31 +34,10 @@ export default function Home() {
           else setExclusiveEvent(null);
         }
 
-        // Fetch Live Streams from 'events' table
-        const { data: liveData } = await supabase
-          .from('events')
-          .select('*')
-          .eq('is_live', true)
-          .order('id', { ascending: false });
-        
-        setLiveEvents(liveData || []);
+        setLiveEvents(liveResponse.data || []);
+        setUpcomingEvents(upcomingResponse.data || []);
 
-        // Fetch Upcoming from 'schedule' table
-        const { data: upcomingData } = await supabase
-          .from('schedule')
-          .select('*')
-          .order('time', { ascending: true })
-          .limit(4);
-        
-        setUpcomingEvents(upcomingData || []);
-
-        // Global broadcast status (for Hero section)
-        const { data: streamData } = await supabase
-          .from('active_streams')
-          .select('*')
-          .eq('id', 'global-stream')
-          .maybeSingle();
-        
+        const streamData = streamResponse.data;
         if (streamData?.is_active) setActiveBroadcast(streamData);
         else setActiveBroadcast(null);
 
@@ -215,11 +200,11 @@ export default function Home() {
               {(function() {
                 const saved = localStorage.getItem('laliga_leaderboard');
                 const data = saved ? JSON.parse(saved).slice(0, 5) : [
-                  { name: 'Barcelona', points: 91, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_logo.svg/200px-FC_Barcelona_logo.svg.png' },
-                  { name: 'Real Madrid', points: 80, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/200px-Real_Madrid_CF.svg.png' },
-                  { name: 'Villarreal', points: 69, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Villarreal_CF_logo.svg/200px-Villarreal_CF_logo.svg.png' },
-                  { name: 'Atlético Madrid', points: 66, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Atletico_madrid_2017_logo.svg/200px-Atletico_madrid_2017_logo.svg.png' },
-                  { name: 'Real Betis', points: 57, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Real_Betis_logo.svg/200px-Real_Betis_logo.svg.png' }
+                  { name: 'Barcelona', points: 91, logo: 'https://cdn.worldvectorlogo.com/logos/fc-barcelona.svg' },
+                  { name: 'Real Madrid', points: 80, logo: 'https://cdn.worldvectorlogo.com/logos/real-madrid-cf.svg' },
+                  { name: 'Villarreal', points: 69, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Villarreal_CF_logo.svg/100px-Villarreal_CF_logo.svg.png' },
+                  { name: 'Atlético Madrid', points: 66, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Atletico_madrid_2017_logo.svg/100px-Atletico_madrid_2017_logo.svg.png' },
+                  { name: 'Real Betis', points: 57, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Real_Betis_logo.svg/100px-Real_Betis_logo.svg.png' }
                 ];
                 
                 return data.map((team: any, i: number) => (
