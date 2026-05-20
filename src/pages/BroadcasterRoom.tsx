@@ -14,7 +14,34 @@ export default function BroadcasterRoom() {
   const [error, setError] = useState<string>('');
   const [isPausedGlobal, setIsPausedGlobal] = useState(false);
   const [activeTab, setActiveTab ] = useState<'preview' | 'setup'>('preview');
+  const [viewerCount, setViewerCount] = useState<number>(0);
   const vdsIp = localStorage.getItem('vds_ip') || '';
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    const presenceChannel = supabase
+      .channel(`room-presence-${roomId}`, {
+        config: {
+          presence: {
+            key: 'broadcaster',
+          },
+        },
+      })
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        let total = 0;
+        Object.values(state).forEach((presences: any) => {
+          total += presences.length;
+        });
+        setViewerCount(total);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [roomId]);
 
   const toggleGlobalPause = async () => {
     const nextState = !isPausedGlobal;
@@ -244,14 +271,18 @@ export default function BroadcasterRoom() {
                       <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
                         <Info size={14} className="text-brand-primary" /> Quick Stats
                       </h4>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-1">
                           <p className="text-[8px] text-zinc-500 uppercase font-black">Room ID</p>
-                          <p className="text-xs font-bold text-zinc-300">{roomId}</p>
+                          <p className="text-xs font-bold text-zinc-300 truncate">{roomId}</p>
                         </div>
                         <div className="space-y-1">
                           <p className="text-[8px] text-zinc-500 uppercase font-black">Status</p>
                           <p className="text-xs font-bold text-green-500 uppercase tracking-widest">Active</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[8px] text-zinc-500 uppercase font-black">მაყურებელი</p>
+                          <p className="text-xs font-bold text-brand-primary uppercase tracking-widest">{viewerCount}</p>
                         </div>
                       </div>
                     </div>
