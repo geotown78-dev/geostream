@@ -63,6 +63,13 @@ export default function BroadcasterRoom() {
       const { error } = await supabase.from('active_streams').update({ is_active: false }).eq('id', 'global-stream');
       // Also mark the specific event as not live
       await supabase.from('events').update({ is_live: false }).eq('room_name', roomId);
+      
+      // Clean up chat logs for this room immediately
+      try {
+        await fetch(`/api/chat/${roomId}`, { method: 'DELETE' });
+      } catch (chatErr) {
+        console.error('Failed to clear chat memory on endStream:', chatErr);
+      }
     } catch (e) {
       console.error('Failed to end stream:', e);
     }
