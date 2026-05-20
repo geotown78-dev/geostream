@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe } from 'lucide-react';
+import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe, Edit, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
 import { Volume2, VolumeX, Pause, Play as PlayIcon } from 'lucide-react';
@@ -23,6 +23,116 @@ export default function AdminDashboard() {
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // States for event manager and editing
+  const [events, setEvents] = useState<any[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [editingEvent, setEditingEvent] = useState<any | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editSport, setEditSport] = useState('Football');
+  const [editIsLive, setEditIsLive] = useState(false);
+  const [editIsExclusive, setEditIsExclusive] = useState(false);
+  const [editThumbnail, setEditThumbnail] = useState('');
+  const [editStreamUrl, setEditStreamUrl] = useState('');
+  const [editStreamKey, setEditStreamKey] = useState('');
+  const [editRoomName, setEditRoomName] = useState('');
+  const [uploadingEdit, setUploadingEdit] = useState(false);
+
+  const fetchEvents = async () => {
+    try {
+      setLoadingEvents(true);
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('id', { ascending: false });
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (err) {
+      console.error('Error fetching events:', err);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const startEditing = (event: any) => {
+    setEditingEvent(event);
+    setEditTitle(event.title || '');
+    setEditSport(event.sport || 'Football');
+    setEditIsLive(event.is_live ?? false);
+    setEditIsExclusive(event.is_exclusive ?? false);
+    setEditThumbnail(event.thumbnail || '');
+    setEditStreamUrl(event.stream_url || '');
+    setEditStreamKey(event.stream_key || '');
+    setEditRoomName(event.room_name || '');
+  };
+
+  const saveEvent = async () => {
+    if (!editingEvent) return;
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({
+          title: editTitle,
+          sport: editSport,
+          is_live: editIsLive,
+          is_exclusive: editIsExclusive,
+          thumbnail: editThumbnail,
+          stream_url: editStreamUrl,
+          stream_key: editStreamKey,
+          room_name: editRoomName,
+        })
+        .eq('id', editingEvent.id);
+
+      if (error) throw error;
+      setEditingEvent(null);
+      fetchEvents();
+    } catch (err: any) {
+      alert('განახლება ვერ მოხერხდა: ' + err.message);
+    }
+  };
+
+  const handleEditFileUpload = async (file: File) => {
+    try {
+      setUploadingEdit(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `thumbnails/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('SITE-ASSETS')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('SITE-ASSETS')
+        .getPublicUrl(filePath);
+
+      setEditThumbnail(publicUrl);
+    } catch (error: any) {
+      alert('ატვირთვა ვერ მოხერხდა');
+    } finally {
+      setUploadingEdit(false);
+    }
+  };
+
+  const deleteEvent = async (id: any) => {
+    if (!window.confirm('ნამდვილად გსურთ ამ სტრიმის წაშლა?')) return;
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      fetchEvents();
+    } catch (err: any) {
+      alert('წაშლა ვერ მოხერხდა: ' + err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   useEffect(() => {
     const savedBroadcasting = localStorage.getItem('is_broadcasting') === 'true';
@@ -104,6 +214,7 @@ export default function AdminDashboard() {
         start_time: new Date().toISOString()
       }]);
       setShowSessionDetails(true);
+      fetchEvents();
     } catch (err: any) {
       console.error('Error starting session:', err);
     }
@@ -156,7 +267,8 @@ export default function AdminDashboard() {
         </header>
 
         {!showSessionDetails ? (
-          <div className="grid lg:grid-cols-3 gap-8">
+          <>
+            <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               <div className="bento-card p-10 bg-zinc-900/30 border-white/5 space-y-8">
                 <div className="flex items-center gap-3 mb-2">
@@ -250,6 +362,113 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Existing Streams / Events Manager Section */}
+          <div className="mt-16 space-y-8">
+            <div className="flex justify-between items-center border-b border-white/5 pb-4">
+              <div>
+                <h2 className="text-2xl font-black uppercase text-white tracking-tight flex items-center gap-3">
+                  <span className="p-2 bg-brand-primary/10 rounded-lg text-brand-primary">
+                    <Radio size={20} className="animate-pulse" />
+                  </span>
+                  სტრიმების მართვა
+                </h2>
+                <p className="text-zinc-500 font-bold uppercase text-[9px] tracking-[0.2em] mt-1">
+                  აქტიური და დასრულებული პირდაპირი ეთერების რედაქტირება და წაშლა
+                </p>
+              </div>
+              <button 
+                onClick={fetchEvents}
+                className="text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-white px-4 py-2 bg-zinc-900 border border-white/10 rounded-xl transition-all hover:border-white/20"
+              >
+                განახლება
+              </button>
+            </div>
+
+            {loadingEvents ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-zinc-950/40 rounded-3xl border border-white/5 space-y-4">
+                <Loader2 className="animate-spin text-brand-primary" size={40} />
+                <p className="text-zinc-500 font-bold uppercase text-xs tracking-widest">სტრიმები იტვირთება...</p>
+              </div>
+            ) : events.length === 0 ? (
+              <div className="text-center py-20 bg-zinc-950/40 rounded-3xl border border-white/5 space-y-2">
+                <p className="text-zinc-500 font-bold uppercase text-xs tracking-widest">სტრიმები ვერ მოიძებნა</p>
+                <p className="text-zinc-600 text-[10px] font-bold uppercase">დაიწყეთ ახალი სესია ზემოთ მოცემული ფორმით</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {events.map((event) => (
+                  <div key={event.id} className="bento-card bg-zinc-900/40 border border-white/5 overflow-hidden flex flex-col justify-between group hover:border-blue-500/20 transition-all duration-300">
+                    <div>
+                      {/* Image / Stats Overlay */}
+                      <div className="relative aspect-video bg-zinc-950 overflow-hidden">
+                        <img 
+                          src={event.thumbnail || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1000'} 
+                          alt={event.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+                        
+                        {/* Status Badges */}
+                        <div className="absolute top-3 left-3 flex gap-2">
+                          {event.is_live ? (
+                            <span className="bg-red-600 text-white text-[8px] font-black uppercase px-2 py-1 rounded flex items-center gap-1.5 shadow-lg">
+                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                              ლაივი
+                            </span>
+                          ) : (
+                            <span className="bg-zinc-800 text-zinc-400 text-[8px] font-black uppercase px-2 py-1 rounded">
+                              გათიშული
+                            </span>
+                          )}
+
+                          {event.is_exclusive && (
+                            <span className="bg-brand-primary/20 border border-brand-primary/30 text-brand-primary text-[8px] font-black uppercase px-2 py-1 rounded shadow-lg">
+                              ექსკლუზივი
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="absolute bottom-3 left-3 text-[9px] font-mono text-zinc-400">
+                          {event.sport?.toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* Info Area */}
+                      <div className="p-5 space-y-3">
+                        <h3 className="text-sm font-black uppercase text-white tracking-tight leading-snug line-clamp-2">
+                          {event.title}
+                        </h3>
+                        <div className="space-y-1.5 text-[10px] text-zinc-500 font-bold uppercase">
+                          <p className="truncate"><span className="text-zinc-600">URL:</span> <code className="text-blue-400/80 font-mono text-[9px]">{event.stream_url || 'არ არის'}</code></p>
+                          <p className="truncate"><span className="text-zinc-600">ოთახი / KEY:</span> <code className="text-zinc-400 font-mono text-[9px]">{event.room_name || event.stream_key || 'არ არის'}</code></p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions bar */}
+                    <div className="p-4 bg-zinc-950/40 border-t border-white/5 flex gap-2">
+                      <button 
+                        onClick={() => startEditing(event)}
+                        className="flex-1 py-2.5 px-3 bg-zinc-900 hover:bg-zinc-850 border border-white/5 rounded-xl text-white font-black uppercase text-[10px] tracking-wider transition-all flex items-center justify-center gap-1.5 hover:border-zinc-700"
+                      >
+                        <Edit size={12} className="text-zinc-400" />
+                        რედაქტირება
+                      </button>
+                      <button 
+                        onClick={() => deleteEvent(event.id)}
+                        className="py-2.5 px-3 bg-red-600/10 hover:bg-red-600 border border-red-500/10 hover:border-red-600 rounded-xl text-red-500 hover:text-white transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          </>
         ) : (
           <div className="grid lg:grid-cols-2 gap-10">
             <div className="space-y-8">
@@ -377,6 +596,152 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* Edit Event Modal */}
+      {editingEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-zinc-950 border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-fade-in my-8">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+                  <Edit size={18} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black uppercase text-white tracking-tight">სტრიმის რედაქტირება</h3>
+                  <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">სტრიმის პარამეტრების განახლება</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditingEvent(null)}
+                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+              {/* Event Title */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">ლაივ სტრიმის დასახელება / სათაური</label>
+                <input 
+                  type="text" 
+                  value={editTitle} 
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-white uppercase text-sm"
+                  placeholder="მაგ: Real Madrid VS Barcelona"
+                />
+              </div>
+
+              {/* Category, Status Flags */}
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">კატეგორია</label>
+                  <select 
+                    value={editSport} 
+                    onChange={(e) => setEditSport(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-black text-xs uppercase tracking-widest text-white cursor-pointer"
+                  >
+                    <option value="Football">ფეხბურთი</option>
+                    <option value="UFC">UFC</option>
+                    <option value="Boxing">კრივი</option>
+                    <option value="NBA">NBA</option>
+                    <option value="Live">ლაივი (სხვა)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">თამბნეილის ლინკი</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={editThumbnail} 
+                      onChange={(e) => setEditThumbnail(e.target.value)}
+                      className="flex-1 bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-[10px] text-zinc-400 truncate"
+                      placeholder="https://..."
+                    />
+                    <label className="cursor-pointer bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 flex items-center justify-center hover:bg-blue-500/20 transition-all group">
+                      {uploadingEdit ? <Loader2 className="animate-spin text-blue-500" size={18} /> : <Upload size={18} className="text-blue-500" />}
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleEditFileUpload(e.target.files[0])} />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Streaming URLs & Keys */}
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">სტრიმინგის (HLS) ლინკი</label>
+                  <input 
+                    type="text" 
+                    value={editStreamUrl} 
+                    onChange={(e) => setEditStreamUrl(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-[11px] font-mono text-zinc-300"
+                    placeholder="http://vds-ip/hls/stream.m3u8"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">ოთახი / KEY / Room Name</label>
+                  <input 
+                    type="text" 
+                    value={editRoomName} 
+                    onChange={(e) => setEditRoomName(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-[11px] font-mono text-zinc-300"
+                    placeholder="დასახელება-vs-opponent..."
+                  />
+                </div>
+              </div>
+
+              {/* Status Toggles */}
+              <div className="grid sm:grid-cols-2 gap-6 pt-2">
+                <label className="flex items-center gap-4 p-4 bg-black border border-white/10 rounded-xl cursor-pointer hover:border-blue-500/30 transition-all">
+                  <input 
+                    type="checkbox" 
+                    className="w-5 h-5 rounded accent-blue-600" 
+                    checked={editIsLive} 
+                    onChange={(e) => setEditIsLive(e.target.checked)} 
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-black uppercase text-white tracking-widest">ლაივის სტატუსი</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase italic">პირდაპირ ეთერში გასვლა</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-4 p-4 bg-black border border-white/10 rounded-xl cursor-pointer hover:border-blue-500/30 transition-all">
+                  <input 
+                    type="checkbox" 
+                    className="w-5 h-5 rounded accent-blue-600" 
+                    checked={editIsExclusive} 
+                    onChange={(e) => setEditIsExclusive(e.target.checked)} 
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-black uppercase text-white tracking-widest">ექსკლუზივი</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase italic">გამოჩნდება სალაიდერში</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-white/5 bg-zinc-900/30 flex justify-end gap-3">
+              <button 
+                onClick={() => setEditingEvent(null)}
+                className="py-3 px-6 bg-zinc-900 hover:bg-zinc-850 border border-white/10 text-zinc-400 hover:text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all"
+              >
+                გაუქმება
+              </button>
+              <button 
+                onClick={saveEvent}
+                className="py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all"
+              >
+                შენახვა
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
