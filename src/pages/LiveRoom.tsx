@@ -160,6 +160,17 @@ export default function LiveRoom() {
   const [isGlobalPaused, setIsGlobalPaused] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(true);
+  const [viewerCount, setViewerCount] = useState<number>(1);
+
+  const formatViewerCount = (num: number) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    }
+    return num.toLocaleString();
+  };
 
   useEffect(() => {
     // Try to auto-detect domain
@@ -248,8 +259,34 @@ export default function LiveRoom() {
       })
       .subscribe();
 
+    const presenceChannel = supabase
+      .channel(`room-presence-${roomId}`, {
+        config: {
+          presence: {
+            key: 'viewer',
+          },
+        },
+      })
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        let total = 0;
+        Object.values(state).forEach((presences: any) => {
+          total += presences.length;
+        });
+        setViewerCount(Math.max(1, total));
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            online_at: new Date().toISOString(),
+            session_id: Math.random().toString(36).substring(7),
+          });
+        }
+      });
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(presenceChannel);
     };
   }, [roomId]);
 
@@ -347,8 +384,8 @@ export default function LiveRoom() {
             
             <div className="absolute bottom-16 sm:bottom-8 right-4 sm:right-8 z-20 flex items-center gap-3 sm:gap-4 text-[9px] sm:text-xs font-black bg-black/40 backdrop-blur-md p-1.5 sm:p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/10 pointer-events-none">
               <div className="text-zinc-100 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-brand-primary" />
-                124.5K
+                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-brand-primary animate-pulse" />
+                {formatViewerCount(viewerCount)}
               </div>
               <div className="h-3 sm:h-4 w-[1px] bg-white/20" />
               <div className="text-brand-primary uppercase tracking-widest">LIVE</div>
