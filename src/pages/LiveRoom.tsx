@@ -11,7 +11,8 @@ function ViewerStream({
   volume,
   isMuted,
   setVolume,
-  setIsMuted
+  setIsMuted,
+  viewerCount = 1,
 }: { 
   streamUrl: string;
   isGlobalPaused: boolean;
@@ -21,9 +22,35 @@ function ViewerStream({
   setIsMuted: (m: boolean) => void;
   roomId?: string;
   vdsIp?: string;
+  viewerCount?: number;
 }) {
   const [isPaused, setIsPaused] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [overlayVisible, setOverlayVisible] = useState(true);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const activityTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const formatViewerCount = (num: number) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    }
+    return num.toLocaleString();
+  };
+
+  const resetActivityTimer = () => {
+    setOverlayVisible(true);
+    if (activityTimeoutRef.current) {
+      clearTimeout(activityTimeoutRef.current);
+    }
+    if (isFullscreen) {
+      activityTimeoutRef.current = setTimeout(() => {
+        setOverlayVisible(false);
+      }, 3000); // 3 seconds timeout
+    }
+  };
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
@@ -34,10 +61,42 @@ function ViewerStream({
     }
   };
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isFullscreen) {
+      setOverlayVisible(true);
+      if (activityTimeoutRef.current) {
+        clearTimeout(activityTimeoutRef.current);
+      }
+    } else {
+      resetActivityTimer();
+    }
+    return () => {
+      if (activityTimeoutRef.current) {
+        clearTimeout(activityTimeoutRef.current);
+      }
+    };
+  }, [isFullscreen]);
+
   const effectivePaused = isPaused || isGlobalPaused;
 
   return (
-    <div ref={containerRef} className="relative h-full w-full group overflow-hidden bg-black">
+    <div 
+      ref={containerRef} 
+      onClick={resetActivityTimer}
+      onMouseMove={resetActivityTimer}
+      onTouchStart={resetActivityTimer}
+      className="relative h-full w-full group overflow-hidden bg-black"
+    >
       {streamUrl && streamUrl.endsWith('.m3u8') ? (
         <HLSPlayer 
           url={streamUrl}
@@ -71,9 +130,40 @@ function ViewerStream({
         </div>
       )}
 
+      {/* Top Left: Custom Badge Overlay */}
+      <div className={cn(
+        "absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex gap-2 sm:gap-3 pointer-events-none transition-opacity duration-300",
+        overlayVisible ? "opacity-100" : "opacity-0"
+      )}>
+        <div className="bg-red-600 text-white px-2 sm:px-3 py-1 rounded-md text-[8px] sm:text-[10px] font-black flex items-center gap-1.5 sm:gap-2 uppercase">
+          <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-white rounded-full animate-pulse"></span> 
+          პირდაპირი
+        </div>
+        <div className="bg-black/60 backdrop-blur-md px-2 sm:px-3 py-1 rounded-md text-[8px] sm:text-[10px] font-black uppercase tracking-widest hidden xs:block text-zinc-300">
+          4K • 60 FPS
+        </div>
+      </div>
+
+      {/* Top Right: Real-time Viewer Count Overlay */}
+      <div className={cn(
+        "absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-3 sm:gap-4 text-[9px] sm:text-xs font-black bg-black/40 backdrop-blur-md p-1.5 sm:p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/10 pointer-events-none transition-opacity duration-300",
+        overlayVisible ? "opacity-100" : "opacity-0"
+      )}>
+        <div className="text-zinc-100 flex items-center gap-2">
+          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-brand-primary animate-pulse" />
+          {formatViewerCount(viewerCount)}
+        </div>
+        <div className="h-3 sm:h-4 w-[1px] bg-white/20" />
+        <div className="text-brand-primary uppercase tracking-widest">LIVE</div>
+      </div>
+
       <div className={cn(
         "absolute inset-x-0 bottom-0 p-4 sm:p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity z-30",
-        effectivePaused ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        effectivePaused 
+          ? "opacity-100" 
+          : isFullscreen 
+            ? (overlayVisible ? "opacity-100" : "opacity-0 pointer-events-none") 
+            : "opacity-0 group-hover:opacity-100"
       )}>
         <div className="flex items-center gap-3 sm:gap-4">
           <button 
@@ -369,27 +459,8 @@ export default function LiveRoom() {
               isMuted={isMuted}
               setVolume={setVolume}
               setIsMuted={setIsMuted}
+              viewerCount={viewerCount}
             />
-            
-            {/* Custom Overlay */}
-            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex gap-2 sm:gap-3 pointer-events-none">
-              <div className="bg-red-600 text-white px-2 sm:px-3 py-1 rounded-md text-[8px] sm:text-[10px] font-black flex items-center gap-1.5 sm:gap-2 uppercase">
-                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-white rounded-full animate-pulse"></span> 
-                პირდაპირი
-              </div>
-              <div className="bg-black/60 backdrop-blur-md px-2 sm:px-3 py-1 rounded-md text-[8px] sm:text-[10px] font-black uppercase tracking-widest hidden xs:block text-zinc-300">
-                4K • 60 FPS
-              </div>
-            </div>
-            
-            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-3 sm:gap-4 text-[9px] sm:text-xs font-black bg-black/40 backdrop-blur-md p-1.5 sm:p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/10 pointer-events-none animate-fade-in">
-              <div className="text-zinc-100 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-brand-primary animate-pulse" />
-                {formatViewerCount(viewerCount)}
-              </div>
-              <div className="h-3 sm:h-4 w-[1px] bg-white/20" />
-              <div className="text-brand-primary uppercase tracking-widest">LIVE</div>
-            </div>
           </div>
           
           <div className="bento-card p-6 sm:p-8 bg-zinc-900/40">
