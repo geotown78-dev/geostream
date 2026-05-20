@@ -102,10 +102,10 @@ export default function BroadcasterRoom() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-black pt-32 pb-12 px-6">
-      <div className="max-w-[1600px] mx-auto flex flex-col h-[calc(100vh-10rem)]">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-brand-black pt-24 sm:pt-32 pb-12 px-4 sm:px-6">
+      <div className="max-w-[1600px] mx-auto flex flex-col lg:h-[calc(100vh-10rem)] h-auto">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button 
               onClick={() => navigate('/admin')}
               className="p-3 bg-brand-surface border border-brand-border rounded-xl text-zinc-400 hover:text-white transition-colors"
@@ -120,7 +120,7 @@ export default function BroadcasterRoom() {
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
              <div className="bg-red-600 text-white px-3 py-1.5 rounded-md text-[10px] font-black flex items-center gap-2 uppercase">
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> 
                 VDS სტრიმი
@@ -147,7 +147,7 @@ export default function BroadcasterRoom() {
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-8 flex-1 overflow-hidden">
+        <div className="grid grid-cols-12 gap-6 sm:gap-8 flex-1 lg:overflow-hidden">
           <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
             <div className="flex-1 bento-card relative bg-black shadow-2xl overflow-hidden group">
               <div className="absolute top-4 left-4 z-20 flex gap-2 pointer-events-none">
