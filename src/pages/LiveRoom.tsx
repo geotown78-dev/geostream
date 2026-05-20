@@ -382,7 +382,7 @@ export default function LiveRoom() {
               </div>
             </div>
             
-            <div className="absolute bottom-16 sm:bottom-8 right-4 sm:right-8 z-20 flex items-center gap-3 sm:gap-4 text-[9px] sm:text-xs font-black bg-black/40 backdrop-blur-md p-1.5 sm:p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/10 pointer-events-none">
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-3 sm:gap-4 text-[9px] sm:text-xs font-black bg-black/40 backdrop-blur-md p-1.5 sm:p-2 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-white/10 pointer-events-none animate-fade-in">
               <div className="text-zinc-100 flex items-center gap-2">
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-brand-primary animate-pulse" />
                 {formatViewerCount(viewerCount)}
