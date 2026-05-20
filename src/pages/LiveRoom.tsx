@@ -319,9 +319,9 @@ export default function LiveRoom() {
         }
       `}</style>
 
-      <div className="max-w-[1600px] mx-auto gap-6 sm:grid sm:grid-cols-12 overflow-hidden h-auto sm:h-[calc(100vh-10rem)]">
+      <div className="max-w-[1600px] mx-auto gap-6 flex flex-col lg:grid lg:grid-cols-12 overflow-visible lg:overflow-hidden h-auto lg:h-[calc(100vh-10rem)] pb-12 lg:pb-0">
         {/* Main Stream Area */}
-        <div className="col-span-12 lg:col-span-9 flex flex-col gap-4 sm:gap-6 h-full overflow-hidden">
+        <div className="col-span-12 lg:col-span-9 flex flex-col gap-4 sm:gap-6 lg:h-full lg:overflow-y-auto no-scrollbar">
           <div className="aspect-video sm:flex-1 bg-brand-surface rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-brand-border relative group shadow-2xl">
             <ViewerStream 
               streamUrl={streamUrl} 
@@ -417,7 +417,7 @@ export default function LiveRoom() {
         )}
 
         {/* Chat Side Panel */}
-        <aside className="hidden lg:flex col-span-3 bento-card flex-col overflow-hidden h-full bg-zinc-900/40">
+        <aside className="col-span-12 lg:col-span-3 bento-card flex flex-col overflow-hidden h-[380px] lg:h-full bg-zinc-900/40">
           <div className="p-6 border-b border-brand-border flex justify-between items-center bg-zinc-950/40">
             <h3 className="font-black uppercase text-[10px] tracking-widest text-zinc-400">ლაივ ჩატი</h3>
             <span className="text-[10px] text-brand-primary font-black animate-pulse">● სინქრონიზაცია</span>
