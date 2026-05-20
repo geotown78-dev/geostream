@@ -41,21 +41,21 @@ export function Sidebar() {
             key={item.path}
             to={item.path}
             className={cn(
-              "group relative p-3 rounded-xl transition-all duration-300",
+              "group relative p-2 sm:p-3 rounded-xl transition-all duration-300 flex flex-col items-center justify-center",
               location.pathname === item.path 
                 ? "text-brand-primary sm:bg-brand-primary sm:text-white" 
                 : "text-zinc-500 hover:text-white hover:bg-white/5"
             )}
             title={item.label}
           >
-            <item.icon size={24} strokeWidth={2.5} />
+            <item.icon className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.5} />
             {location.pathname === item.path && (
               <motion.div
                 layoutId="sidebar-active"
                 className="absolute left-[-1.5rem] w-1 h-8 bg-brand-primary rounded-r-full hidden sm:block"
               />
             )}
-            <div className="sm:hidden text-[8px] font-black uppercase tracking-tighter mt-1 text-center">{item.label}</div>
+            <div className="sm:hidden text-[7px] font-black uppercase tracking-tighter mt-0.5 text-center leading-none">{item.label}</div>
           </Link>
         ))}
       </nav>
@@ -76,6 +76,7 @@ export function Navbar() {
     { name: 'მთავარი', path: '/' },
     { name: 'ფეხბურთი', path: '/football' },
     { name: 'UFC', path: '/ufc' },
+    { name: 'სტატისტიკა', path: '/stats' },
   ];
 
   return (
@@ -242,16 +243,16 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
             </div>
 
             {displayMatch.targetDate && (
-              <div className="absolute right-4 top-4 sm:right-12 sm:top-12 flex gap-2 sm:gap-4 scale-75 sm:scale-100 origin-top-right">
+              <div className="absolute right-3 top-3 sm:right-12 sm:top-12 flex gap-1.5 xs:gap-2 sm:gap-4 scale-[0.65] xs:scale-75 sm:scale-100 origin-top-right">
                 {[
                   { label: 'დღე', value: timeLeft.days },
                   { label: 'სთ', value: timeLeft.hours },
                   { label: 'წთ', value: timeLeft.minutes },
                   { label: 'წმ', value: timeLeft.seconds }
                 ].map((item, i) => (
-                  <div key={i} className="glass-card p-3 sm:p-4 min-w-[50px] sm:min-w-[70px] text-center">
-                    <div className="text-base sm:text-xl font-black text-white leading-none whitespace-nowrap">{item.value}</div>
-                    <div className="text-[8px] sm:text-[9px] font-black text-brand-primary uppercase mt-1">{item.label}</div>
+                  <div key={i} className="glass-card p-2 sm:p-4 min-w-[42px] xs:min-w-[50px] sm:min-w-[70px] text-center">
+                    <div className="text-sm xs:text-base sm:text-xl font-black text-white leading-none whitespace-nowrap">{item.value}</div>
+                    <div className="text-[7px] sm:text-[9px] font-black text-brand-primary uppercase mt-0.5 sm:mt-1">{item.label}</div>
                   </div>
                 ))}
               </div>
