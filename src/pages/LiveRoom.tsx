@@ -426,7 +426,8 @@ export default function LiveRoom() {
 
     chatChannelRef.current = chatChannel;
 
-    chatChannel.on('broadcast', { event: 'shout' }, (payload: any) => {
+    chatChannel.on('broadcast', { event: 'shout' }, (envelope: any) => {
+      const payload = envelope?.payload;
       if (payload && payload.id) {
         setMessages(prev => {
           if (prev.some(m => m.id === payload.id)) return prev;
