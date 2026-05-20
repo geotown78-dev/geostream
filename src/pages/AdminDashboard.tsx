@@ -38,6 +38,27 @@ export default function AdminDashboard() {
   const [editRoomName, setEditRoomName] = useState('');
   const [uploadingEdit, setUploadingEdit] = useState(false);
 
+  // States for scheduled events management
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
+  const [editingSchedule, setEditingSchedule] = useState<any | null>(null);
+  const [editSchedTeam1, setEditSchedTeam1] = useState('');
+  const [editSchedTeam2, setEditSchedTeam2] = useState('');
+  const [editSchedSport, setEditSchedSport] = useState('Football');
+  const [editSchedTime, setEditSchedTime] = useState('');
+  const [editSchedThumbnail, setEditSchedThumbnail] = useState('');
+  const [editSchedIsExclusive, setEditSchedIsExclusive] = useState(false);
+  const [uploadingSchedEdit, setUploadingSchedEdit] = useState(false);
+
+  // Creation form states for schedule
+  const [schedTeam1, setSchedTeam1] = useState('');
+  const [schedTeam2, setSchedTeam2] = useState('');
+  const [schedSport, setSchedSport] = useState('Football');
+  const [schedTime, setSchedTime] = useState('');
+  const [schedThumbnail, setSchedThumbnail] = useState('');
+  const [schedIsExclusive, setSchedIsExclusive] = useState(true);
+  const [uploadingSched, setUploadingSched] = useState(false);
+
   const fetchEvents = async () => {
     try {
       setLoadingEvents(true);
@@ -54,6 +75,22 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchSchedules = async () => {
+    try {
+      setLoadingSchedules(true);
+      const { data, error } = await supabase
+        .from('schedule')
+        .select('*')
+        .order('time', { ascending: true });
+      if (error) throw error;
+      setSchedules(data || []);
+    } catch (err) {
+      console.error('Error fetching schedules:', err);
+    } finally {
+      setLoadingSchedules(false);
+    }
+  };
+
   const startEditing = (event: any) => {
     setEditingEvent(event);
     setEditTitle(event.title || '');
@@ -64,6 +101,27 @@ export default function AdminDashboard() {
     setEditStreamUrl(event.stream_url || '');
     setEditStreamKey(event.stream_key || '');
     setEditRoomName(event.room_name || '');
+  };
+
+  const startEditingSchedule = (sched: any) => {
+    setEditingSchedule(sched);
+    setEditSchedTeam1(sched.team1 || '');
+    setEditSchedTeam2(sched.team2 || '');
+    setEditSchedSport(sched.sport || 'Football');
+    if (sched.time) {
+      const d = new Date(sched.time);
+      setIsMonitorPaused(false);
+      try {
+        const iso = d.toISOString();
+        setEditSchedTime(iso.substring(0, 16));
+      } catch (e) {
+        setEditSchedTime('');
+      }
+    } else {
+      setEditSchedTime('');
+    }
+    setEditSchedThumbnail(sched.thumbnail || '');
+    setEditSchedIsExclusive(sched.is_exclusive ?? false);
   };
 
   const saveEvent = async () => {
@@ -86,6 +144,29 @@ export default function AdminDashboard() {
       if (error) throw error;
       setEditingEvent(null);
       fetchEvents();
+    } catch (err: any) {
+      alert('განახლება ვერ მოხერხდა: ' + err.message);
+    }
+  };
+
+  const saveSchedule = async () => {
+    if (!editingSchedule) return;
+    try {
+      const { error } = await supabase
+        .from('schedule')
+        .update({
+          team1: editSchedTeam1,
+          team2: editSchedTeam2,
+          sport: editSchedSport,
+          time: editSchedTime ? new Date(editSchedTime).toISOString() : null,
+          thumbnail: editSchedThumbnail,
+          is_exclusive: editSchedIsExclusive,
+        })
+        .eq('id', editingSchedule.id);
+
+      if (error) throw error;
+      setEditingSchedule(null);
+      fetchSchedules();
     } catch (err: any) {
       alert('განახლება ვერ მოხერხდა: ' + err.message);
     }
@@ -116,6 +197,56 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSchedFileUpload = async (file: File) => {
+    try {
+      setUploadingSched(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `thumbnails/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('SITE-ASSETS')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('SITE-ASSETS')
+        .getPublicUrl(filePath);
+
+      setSchedThumbnail(publicUrl);
+    } catch (error: any) {
+      alert('ატვირთვა ვერ მოხერხდა');
+    } finally {
+      setUploadingSched(false);
+    }
+  };
+
+  const handleEditSchedFileUpload = async (file: File) => {
+    try {
+      setUploadingSchedEdit(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `thumbnails/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('SITE-ASSETS')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('SITE-ASSETS')
+        .getPublicUrl(filePath);
+
+      setEditSchedThumbnail(publicUrl);
+    } catch (error: any) {
+      alert('ატვირთვა ვერ მოხერხდა');
+    } finally {
+      setUploadingSchedEdit(false);
+    }
+  };
+
   const deleteEvent = async (id: any) => {
     if (!window.confirm('ნამდვილად გსურთ ამ სტრიმის წაშლა?')) return;
     try {
@@ -130,8 +261,51 @@ export default function AdminDashboard() {
     }
   };
 
+  const deleteSchedule = async (id: any) => {
+    if (!window.confirm('ნამდვილად გსურთ ამ დაგეგმილი ღონისძიების წაშლა?')) return;
+    try {
+      const { error } = await supabase
+        .from('schedule')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      fetchSchedules();
+    } catch (err: any) {
+      alert('წაშლა ვერ მოხერხდა: ' + err.message);
+    }
+  };
+
+  const createSchedule = async () => {
+    if (!schedTeam1) {
+      alert('გთხოვთ შეიყვანოთ დასახელება / პირველი გუნდი');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('schedule')
+        .insert([{
+          team1: schedTeam1,
+          team2: schedTeam2,
+          sport: schedSport,
+          time: schedTime ? new Date(schedTime).toISOString() : new Date().toISOString(),
+          thumbnail: schedThumbnail || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1000',
+          is_exclusive: schedIsExclusive,
+        }]);
+
+      if (error) throw error;
+      setSchedTeam1('');
+      setSchedTeam2('');
+      setSchedTime('');
+      setSchedThumbnail('');
+      fetchSchedules();
+    } catch (err: any) {
+      alert('შექმნა ვერ მოხერხდა: ' + err.message);
+    }
+  };
+
   useEffect(() => {
     fetchEvents();
+    fetchSchedules();
   }, []);
 
   useEffect(() => {
@@ -468,6 +642,183 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+
+          {/* Schedule / Upcoming Exclusives Manager Section */}
+          <div className="mt-16 pt-16 border-t border-white/5 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+              <div>
+                <h2 className="text-2xl font-black uppercase text-white tracking-tight flex items-center gap-3">
+                  <span className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+                    <Calendar size={20} />
+                  </span>
+                  დაგეგმილი ექსკლუზივების / ღონისძიებების მართვა
+                </h2>
+                <p className="text-zinc-500 font-bold uppercase text-[9px] tracking-[0.2em] mt-1">
+                  უახლოესი თამაშების ან ექსკლუზივების დამატება, რედაქტირება და წაშლა
+                </p>
+              </div>
+              <button 
+                onClick={fetchSchedules}
+                className="self-start md:self-auto text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-white px-4 py-2 bg-zinc-900 border border-white/10 rounded-xl transition-all hover:border-white/20"
+              >
+                განახლება
+              </button>
+            </div>
+
+            {/* Creation Form for Scheduled Items */}
+            <div className="bento-card p-8 bg-zinc-900/10 border border-white/5 space-y-6">
+              <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+                <Plus size={14} className="text-blue-500" /> ახალი დაგეგმილი ღონისძიება
+              </h3>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">გუნდი ან დასახელება 1</label>
+                  <input 
+                    type="text" placeholder="მაგ: Real Madrid" value={schedTeam1} onChange={(e) => setSchedTeam1(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-3.5 focus:border-blue-500 outline-none transition-all font-bold text-white uppercase text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">ოპონენტი ან დასახელება 2</label>
+                  <input 
+                    type="text" placeholder="მაგ: Barcelona" value={schedTeam2} onChange={(e) => setSchedTeam2(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-3.5 focus:border-blue-500 outline-none transition-all font-bold text-white uppercase text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">მოვლენის დრო</label>
+                  <input 
+                    type="datetime-local" value={schedTime} onChange={(e) => setSchedTime(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-3.5 focus:border-blue-500 outline-none transition-all font-bold text-white text-xs cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6 items-end">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">კატეგორია</label>
+                  <select 
+                    value={schedSport} onChange={(e) => setSchedSport(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-3.5 focus:border-blue-500 outline-none transition-all font-black text-xs uppercase tracking-widest text-white cursor-pointer"
+                  >
+                    <option value="Football">ფეხბურთი</option>
+                    <option value="UFC">UFC</option>
+                    <option value="Boxing">კრივი</option>
+                    <option value="NBA">NBA</option>
+                    <option value="Live">ლაივი (სხვა)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">თამბნეილის ლინკი</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" value={schedThumbnail} onChange={(e) => setSchedThumbnail(e.target.value)}
+                      className="flex-1 bg-black border border-white/10 rounded-xl p-3.5 focus:border-blue-500 outline-none transition-all font-bold text-[10px] text-zinc-400"
+                      placeholder="https://..."
+                    />
+                    <label className="cursor-pointer bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 flex items-center justify-center hover:bg-blue-500/20 transition-all group shrink-0">
+                      {uploadingSched ? <Loader2 className="animate-spin text-blue-500" size={16} /> : <Upload size={16} className="text-blue-500" />}
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleSchedFileUpload(e.target.files[0])} />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <label className="flex-1 flex items-center gap-3 p-3.5 bg-black border border-white/10 rounded-xl cursor-pointer hover:border-blue-500/30 transition-all shadow-inner">
+                    <input type="checkbox" className="w-5 h-5 rounded accent-blue-600 cursor-pointer" checked={schedIsExclusive} onChange={(e) => setSchedIsExclusive(e.target.checked)} />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black uppercase text-white tracking-widest">ექსკლუზივი</span>
+                      <span className="text-[8px] font-bold text-zinc-600 uppercase">სლაიდერში გამოჩენა</span>
+                    </div>
+                  </label>
+
+                  <button 
+                    onClick={createSchedule}
+                    className="py-3.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all flex items-center gap-2 justify-center"
+                  >
+                    <Plus size={14} /> დამატება
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* List of Schedules */}
+            {loadingSchedules ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-zinc-950/40 rounded-3xl border border-white/5 space-y-4">
+                <Loader2 className="animate-spin text-blue-500" size={40} />
+                <p className="text-zinc-500 font-bold uppercase text-xs tracking-widest">დაგეგმილი მატჩები იტვირთება...</p>
+              </div>
+            ) : schedules.length === 0 ? (
+              <div className="text-center py-16 bg-zinc-950/40 rounded-3xl border border-white/5 space-y-2">
+                <p className="text-zinc-500 font-bold uppercase text-xs tracking-widest font-black">დაგეგმილი მატჩები არ არის</p>
+                <p className="text-zinc-600 text-[10px] font-bold uppercase">დაამატეთ ახალი თამაში ზემოთ მოცემული ფორმით</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {schedules.map((sched) => (
+                  <div key={sched.id} className="bento-card bg-zinc-900/40 border border-white/5 overflow-hidden flex flex-col justify-between group hover:border-blue-500/20 transition-all duration-300">
+                    <div>
+                      {/* Image Preview / Exclusive tag */}
+                      <div className="relative aspect-video bg-zinc-950 overflow-hidden">
+                        <img 
+                          src={sched.thumbnail || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1000'} 
+                          alt={sched.team1}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+                        
+                        {/* Exclusiveness Badge */}
+                        <div className="absolute top-3 left-3 flex gap-2">
+                          <span className="bg-zinc-850 border border-white/10 text-zinc-300 text-[8px] font-black uppercase px-2 py-1 rounded">
+                            დაგეგმილი
+                          </span>
+                          {sched.is_exclusive && (
+                            <span className="bg-brand-primary/20 border border-brand-primary/30 text-brand-primary text-[8px] font-black uppercase px-2 py-1 rounded shadow-lg">
+                              ექსკლუზივი
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="absolute bottom-3 left-3 text-[9px] font-mono text-zinc-400">
+                          {sched.sport?.toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* Detail text */}
+                      <div className="p-5 space-y-3">
+                        <h3 className="text-sm font-black uppercase text-white tracking-tight leading-snug line-clamp-2">
+                          {sched.team2 ? `${sched.team1} VS ${sched.team2}` : sched.team1}
+                        </h3>
+                        <div className="space-y-1 text-[10px] text-zinc-500 font-bold uppercase">
+                          <p><span className="text-zinc-600">დრო:</span> <span className="text-blue-400 font-mono text-[9px]">{sched.time ? new Date(sched.time).toLocaleString('ka-GE') : 'არ არის'}</span></p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions bar */}
+                    <div className="p-4 bg-zinc-950/40 border-t border-white/5 flex gap-2">
+                      <button 
+                        onClick={() => startEditingSchedule(sched)}
+                        className="flex-1 py-2.5 px-3 bg-zinc-900 hover:bg-zinc-850 border border-white/5 rounded-xl text-white font-black uppercase text-[10px] tracking-wider transition-all flex items-center justify-center gap-1.5 hover:border-zinc-700"
+                      >
+                        <Edit size={12} className="text-zinc-400" />
+                        რედაქტირება
+                      </button>
+                      <button 
+                        onClick={() => deleteSchedule(sched.id)}
+                        className="py-2.5 px-3 bg-red-600/10 hover:bg-red-600 border border-red-500/10 hover:border-red-600 rounded-xl text-red-500 hover:text-white transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           </>
         ) : (
           <div className="grid lg:grid-cols-2 gap-10">
@@ -734,6 +1085,137 @@ export default function AdminDashboard() {
               </button>
               <button 
                 onClick={saveEvent}
+                className="py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all"
+              >
+                შენახვა
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Schedule Modal */}
+      {editingSchedule && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-zinc-950 border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-fade-in my-8">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+                  <Edit size={18} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black uppercase text-white tracking-tight">დაგეგმილი ღონისძიების რედაქტირება</h3>
+                  <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">პარამეტრების განახლება</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditingSchedule(null)}
+                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">პირველი გუნდი / სათაური</label>
+                  <input 
+                    type="text" 
+                    value={editSchedTeam1} 
+                    onChange={(e) => setEditSchedTeam1(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-white uppercase text-sm"
+                    placeholder="მაგ: Real Madrid"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">მოწინააღმდეგე გუნდი</label>
+                  <input 
+                    type="text" 
+                    value={editSchedTeam2} 
+                    onChange={(e) => setEditSchedTeam2(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-white uppercase text-sm"
+                    placeholder="მაგ: Barcelona"
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">კატეგორია</label>
+                  <select 
+                    value={editSchedSport} 
+                    onChange={(e) => setEditSchedSport(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-black text-xs uppercase tracking-widest text-white cursor-pointer"
+                  >
+                    <option value="Football">ფეხბურთი</option>
+                    <option value="UFC">UFC</option>
+                    <option value="Boxing">კრივი</option>
+                    <option value="NBA">NBA</option>
+                    <option value="Live">ლაივი (სხვა)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">მოვლენის დრო</label>
+                  <input 
+                    type="datetime-local" 
+                    value={editSchedTime} 
+                    onChange={(e) => setEditSchedTime(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-white text-sm cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div className="space-y-2 col-span-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">თამბნეილის ლინკი</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={editSchedThumbnail} 
+                      onChange={(e) => setEditSchedThumbnail(e.target.value)}
+                      className="flex-1 bg-black border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all font-bold text-[10px] text-zinc-400 truncate"
+                      placeholder="https://..."
+                    />
+                    <label className="cursor-pointer bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 flex items-center justify-center hover:bg-blue-500/20 transition-all group">
+                      {uploadingSchedEdit ? <Loader2 className="animate-spin text-blue-500" size={18} /> : <Upload size={18} className="text-blue-500" />}
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleEditSchedFileUpload(e.target.files[0])} />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Toggles */}
+              <div className="grid sm:grid-cols-2 gap-6 pt-2">
+                <label className="flex items-center gap-4 p-4 bg-black border border-white/10 rounded-xl cursor-pointer hover:border-blue-500/30 transition-all">
+                  <input 
+                    type="checkbox" 
+                    className="w-5 h-5 rounded accent-blue-600 cursor-pointer" 
+                    checked={editSchedIsExclusive} 
+                    onChange={(e) => setEditSchedIsExclusive(e.target.checked)} 
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-black uppercase text-white tracking-widest">ექსკლუზივი</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase italic">გამოჩნდება მთავარ სლაიდერში</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-white/5 bg-zinc-900/30 flex justify-end gap-3">
+              <button 
+                onClick={() => setEditingSchedule(null)}
+                className="py-3 px-6 bg-zinc-900 hover:bg-zinc-850 border border-white/10 text-zinc-400 hover:text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all"
+              >
+                გაუქმება
+              </button>
+              <button 
+                onClick={saveSchedule}
                 className="py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all"
               >
                 შენახვა
