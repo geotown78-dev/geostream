@@ -538,6 +538,10 @@ export default function AdminDashboard() {
                       type="text" value={vdsIp} onChange={(e) => setVdsIp(e.target.value)} 
                       className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-mono text-white outline-none focus:bg-white/20 transition-all"
                     />
+                    <p className="text-[10px] text-white/60 leading-normal mt-1">
+                      💡 <b>მნიშვნელოვანია:</b> ვინაიდან საიტი მუშაობს უსაფრთხო <b>HTTPS</b>-ზე, IP-ის ნაცვლად ჩაწერეთ თქვენი დომენი: <code className="text-brand-primary bg-black/20 px-1 rounded">geotown.xyz</code>.
+                      წინააღმდეგ შემთხვევაში ბრაუზერი დაბლოკავს მედიას SSL-ის შეუსაბამობის გამო (<b>ERR_CERT_COMMON_NAME_INVALID</b>).
+                    </p>
                   </div>
                 </div>
                 
