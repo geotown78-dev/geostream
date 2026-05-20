@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX, Trophy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import HLSPlayer from '../components/HLSPlayer';
 
 function ViewerStream({ 
@@ -327,6 +328,17 @@ function ScheduleWaitingScreen({ schedItem }: { schedItem: any }) {
 export default function LiveRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Real-time Chat states
+  const [messages, setMessages] = useState<{ id: string; user: string; msg: string; color: string; timestamp: string }[]>([]);
+  const [inputText, setInputText] = useState<string>('');
+  const [nickname, setNickname] = useState<string>('');
+  const [isEditingNickname, setIsEditingNickname] = useState<boolean>(false);
+  const [newNicknameInput, setNewNicknameInput] = useState<string>('');
+  const [userChatColor, setUserChatColor] = useState<string>('text-brand-primary');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
   const [streamUrl, setStreamUrl] = useState<string>('');
   const [vdsIp, setVdsIp] = useState<string>('5.83.153.142');
   const [showSettings, setShowSettings] = useState(false);
@@ -359,6 +371,124 @@ export default function LiveRoom() {
       setVdsIp(window.location.hostname);
     }
   }, []);
+
+  // Initialize Nickname and Chat Color
+  useEffect(() => {
+    const colors = [
+      'text-brand-primary', 
+      'text-yellow-400', 
+      'text-green-400', 
+      'text-blue-400', 
+      'text-purple-400', 
+      'text-pink-400', 
+      'text-cyan-400', 
+      'text-emerald-400'
+    ];
+    const savedColor = localStorage.getItem('chat_color') || colors[Math.floor(Math.random() * colors.length)];
+    localStorage.setItem('chat_color', savedColor);
+    setUserChatColor(savedColor);
+
+    let resolvedNick = localStorage.getItem('chat_nickname') || '';
+    if (!resolvedNick) {
+      if (user && user.email) {
+        resolvedNick = user.email.split('@')[0].toUpperCase();
+      } else {
+        resolvedNick = `GUEST_${Math.floor(100 + Math.random() * 900)}`;
+      }
+      localStorage.setItem('chat_nickname', resolvedNick);
+    }
+    setNickname(resolvedNick);
+  }, [user]);
+
+  // Fetch chat history & Subscribe to live-chat
+  useEffect(() => {
+    if (!roomId) return;
+
+    const fetchChat = async () => {
+      try {
+        const res = await fetch(`/api/chat/${roomId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setMessages(data.messages || []);
+        }
+      } catch (err) {
+        console.error('Error fetching chat history:', err);
+      }
+    };
+    fetchChat();
+
+    const chatChannel = supabase.channel(`live-chat-${roomId}`, {
+      config: {
+        broadcast: { self: true }
+      }
+    });
+
+    chatChannel.on('broadcast', { event: 'shout' }, (payload: any) => {
+      if (payload && payload.id) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === payload.id)) return prev;
+          return [...prev, payload];
+        });
+      }
+    });
+
+    chatChannel.subscribe();
+
+    return () => {
+      supabase.removeChannel(chatChannel);
+    };
+  }, [roomId]);
+
+  // Scroll to bottom when messages update
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const sendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!inputText.trim()) return;
+
+    const chatMsg = inputText.trim();
+    setInputText('');
+
+    const msgId = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const payload = {
+      id: msgId,
+      user: nickname || 'GUEST',
+      msg: chatMsg,
+      color: userChatColor,
+      timestamp: new Date().toISOString()
+    };
+
+    // 1. Post to Express Memory DB (saves for refreshes and newcomers)
+    try {
+      fetch(`/api/chat/${roomId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user: payload.user,
+          msg: payload.msg,
+          color: payload.color
+        })
+      });
+    } catch (err) {
+      console.error('Failed to post chat message:', err);
+    }
+
+    // 2. Broadcast to other browsers in the same room
+    try {
+      const channel = supabase.channel(`live-chat-${roomId}`);
+      await channel.send({
+        type: 'broadcast',
+        event: 'shout',
+        payload
+      });
+    } catch (err) {
+      console.error('Broadcast send error:', err);
+    }
+  };
 
   useEffect(() => {
     if (!roomId) return;
@@ -489,6 +619,7 @@ export default function LiveRoom() {
           }
           setLiveEvent(newEvent);
           setIsStreamLive(true);
+          setMessages([]);
         }
       })
       .subscribe();
@@ -678,34 +809,112 @@ export default function LiveRoom() {
         )}
 
         {/* Chat Side Panel */}
-        <aside className="col-span-12 lg:col-span-3 bento-card flex flex-col overflow-hidden h-[380px] lg:h-full bg-zinc-900/40">
+        <aside className="col-span-12 lg:col-span-3 bento-card flex flex-col overflow-hidden h-[450px] lg:h-full bg-zinc-900/40">
           <div className="p-6 border-b border-brand-border flex justify-between items-center bg-zinc-950/40">
             <h3 className="font-black uppercase text-[10px] tracking-widest text-zinc-400">ლაივ ჩატი</h3>
             <span className="text-[10px] text-brand-primary font-black animate-pulse">● სინქრონიზაცია</span>
           </div>
           
           <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
-            {[
-              { user: 'GEORGI', msg: 'What a golazo! 🔥', color: 'text-brand-primary' },
-              { user: 'NINO', msg: 'Apex is carrying the stream tonight', color: 'text-brand-secondary' },
-              { user: 'SANDRO', msg: 'Lakers looking strong in the warmup', color: 'text-orange-400' },
-              { user: 'DAVID', msg: 'Is the 4K feed working for everyone?', color: 'text-blue-400' },
-            ].map((chat, i) => (
-              <div key={i} className="flex gap-4">
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 shrink-0" />
-                <div>
-                  <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${chat.color}`}>{chat.user}</p>
-                  <p className="text-xs text-zinc-300 leading-relaxed font-medium">{chat.msg}</p>
-                </div>
+            {messages.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+                <p className="text-zinc-600 text-[10px] font-black uppercase tracking-wider mb-1">ჩატი ცარიელია</p>
+                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">დაწერეთ პირველი შეტყობინება!</p>
               </div>
-            ))}
+            ) : (
+              messages.map((chat) => (
+                <div key={chat.id} className="flex gap-3 items-start animate-in fade-in duration-200">
+                  <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 shrink-0 flex items-center justify-center font-black text-[10px] text-zinc-400 uppercase">
+                    {(chat.user || 'G').charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 truncate ${chat.color}`}>
+                      {chat.user}
+                    </p>
+                    <p className="text-xs text-zinc-300 leading-normal font-medium break-words">
+                      {chat.msg}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={chatEndRef} />
           </div>
 
-          <div className="p-6 bg-zinc-950/40 border-t border-brand-border">
-            <div className="bg-brand-surface p-4 rounded-2xl text-[10px] text-zinc-500 flex justify-between items-center font-bold uppercase tracking-widest border border-brand-border cursor-text hover:border-brand-primary/50 transition-colors">
-              დაწერეთ შეტყობინება...
-              <Play size={12} className="rotate-[-45deg] text-brand-primary" fill="currentColor" />
+          <div className="flex flex-col gap-3 p-4 bg-zinc-950/40 border-t border-brand-border">
+            {/* Nickname Editor */}
+            <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">
+              {isEditingNickname ? (
+                <div className="flex items-center gap-2 w-full">
+                  <input 
+                    type="text"
+                    value={newNicknameInput}
+                    onChange={(e) => setNewNicknameInput(e.target.value.substring(0, 15))}
+                    placeholder="შეიყვანეთ სახელი..."
+                    className="bg-black/60 border border-brand-border rounded px-2 py-1 text-[10px] text-white focus:border-brand-primary outline-none flex-1 font-bold uppercase"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = newNicknameInput.trim();
+                        if (val) {
+                          setNickname(val);
+                          localStorage.setItem('chat_nickname', val);
+                        }
+                        setIsEditingNickname(false);
+                      }
+                    }}
+                  />
+                  <button 
+                    onClick={() => {
+                      const val = newNicknameInput.trim();
+                      if (val) {
+                        setNickname(val);
+                        localStorage.setItem('chat_nickname', val);
+                      }
+                      setIsEditingNickname(false);
+                    }}
+                    className="text-brand-primary font-black hover:text-white"
+                  >
+                    শენახვა
+                  </button>
+                  <button 
+                    onClick={() => setIsEditingNickname(false)}
+                    className="text-zinc-500 hover:text-white"
+                  >
+                    X
+                  </button>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center w-full">
+                  <div className="flex items-center gap-1.5">
+                    <span>სახელი:</span>
+                    <span className={`font-black ${userChatColor}`}>{nickname || 'GUEST'}</span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setNewNicknameInput(nickname);
+                      setIsEditingNickname(true);
+                    }}
+                    className="text-[9px] text-brand-primary font-black hover:text-white transition-colors"
+                  >
+                    (შეცვლა)
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Input Form */}
+            <form onSubmit={sendMessage} className="relative flex items-center bg-brand-surface border border-brand-border rounded-xl focus-within:border-brand-primary/50 transition-colors">
+              <input 
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="დაწერეთ შეტყობინება..."
+                className="flex-1 bg-transparent px-4 py-3 text-xs text-white outline-none placeholder-zinc-600 font-medium"
+              />
+              <button type="submit" className="p-3 pr-4 text-brand-primary hover:text-white transition-colors">
+                <Play size={12} className="rotate-[-45deg]" fill="currentColor" />
+              </button>
+            </form>
           </div>
         </aside>
       </div>
