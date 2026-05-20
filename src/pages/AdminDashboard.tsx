@@ -303,6 +303,65 @@ export default function AdminDashboard() {
     }
   };
 
+  const startScheduledSession = async (sched: any) => {
+    if (!window.confirm(`ნამდვილად გსურთ მატჩის "${sched.team2 ? `${sched.team1} VS ${sched.team2}` : sched.team1}" ეთერში გაშვება?`)) return;
+    
+    localStorage.setItem('vds_ip', vdsIp);
+    const slug = `${sched.team1.toLowerCase().trim().replace(/\s+/g, '-')}${sched.team2 ? `-vs-${sched.team2.toLowerCase().trim().replace(/\s+/g, '-')}` : ''}`;
+    const key = `${slug}-${sched.id}`;
+    
+    const isHttps = window.location.protocol === 'https:';
+    const protocol = isHttps ? 'https' : 'http';
+    const hostname = vdsIp || window.location.hostname;
+    const url = `${protocol}://${hostname}/hls/${key}.m3u8`;
+    
+    setStreamKey(key);
+    setStreamUrl(url);
+    setTeam1(sched.team1);
+    setTeam2(sched.team2 || '');
+    setSessionSport(sched.sport || 'Football');
+    setSessionIsExclusive(sched.is_exclusive ?? false);
+    setSessionThumbnail(sched.thumbnail || '');
+
+    localStorage.setItem('is_broadcasting', 'true');
+    localStorage.setItem('current_stream_key', key);
+    localStorage.setItem('current_stream_url', url);
+    localStorage.setItem('current_team1', sched.team1);
+    localStorage.setItem('current_team2', sched.team2 || '');
+    localStorage.setItem('current_sport', sched.sport || 'Football');
+
+    try {
+      const { error: eventError } = await supabase.from('events').insert([{
+        title: sched.team2 ? `${sched.team1} VS ${sched.team2}` : sched.team1,
+        sport: sched.sport || 'Football',
+        is_live: true,
+        is_exclusive: sched.is_exclusive ?? false,
+        thumbnail: sched.thumbnail || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1000',
+        stream_url: url,
+        stream_key: key,
+        room_name: `sched-${sched.id}`,
+        start_time: new Date().toISOString()
+      }]);
+
+      if (eventError) throw eventError;
+
+      const { error: deleteError } = await supabase
+        .from('schedule')
+        .delete()
+        .eq('id', sched.id);
+
+      if (deleteError) throw deleteError;
+
+      setShowSessionDetails(true);
+      fetchSchedules();
+      fetchEvents();
+      alert(`ლაივი წარმატებით გაეშვა! OBS-ში შეიყვანეთ სტრიმის Key: ${key}`);
+    } catch (err: any) {
+      console.error('Error starting scheduled session:', err);
+      alert('ლაივის დაწყება ვერ მოხერხდა: ' + err.message);
+    }
+  };
+
   const createSchedule = async () => {
     if (!schedTeam1) {
       alert('გთხოვთ შეიყვანოთ დასახელება / პირველი გუნდი');
@@ -820,15 +879,23 @@ export default function AdminDashboard() {
                     {/* Actions bar */}
                     <div className="p-4 bg-zinc-950/40 border-t border-white/5 flex gap-2">
                       <button 
+                        onClick={() => startScheduledSession(sched)}
+                        className="flex-1 py-2.5 px-3 bg-brand-primary/10 hover:bg-brand-primary border border-brand-primary/20 text-brand-primary hover:text-black rounded-xl font-black uppercase text-[10px] tracking-wider transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Radio size={12} className="animate-pulse" />
+                        ეთერში გასვლა
+                      </button>
+                      <button 
                         onClick={() => startEditingSchedule(sched)}
-                        className="flex-1 py-2.5 px-3 bg-zinc-900 hover:bg-zinc-850 border border-white/5 rounded-xl text-white font-black uppercase text-[10px] tracking-wider transition-all flex items-center justify-center gap-1.5 hover:border-zinc-700"
+                        className="py-2.5 px-3 bg-zinc-900 hover:bg-zinc-850 border border-white/5 rounded-xl text-white transition-all flex items-center justify-center gap-1.5 hover:border-zinc-750"
+                        title="რედაქტირება"
                       >
                         <Edit size={12} className="text-zinc-400" />
-                        რედაქტირება
                       </button>
                       <button 
                         onClick={() => deleteSchedule(sched.id)}
                         className="py-2.5 px-3 bg-red-600/10 hover:bg-red-600 border border-red-500/10 hover:border-red-600 rounded-xl text-red-500 hover:text-white transition-all flex items-center justify-center gap-1.5"
+                        title="წაშლა"
                       >
                         <Trash2 size={12} />
                       </button>
