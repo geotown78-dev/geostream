@@ -174,21 +174,8 @@ export default function Home() {
         </section>
 
         {/* Info Banner Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12 sm:pb-0">
-          <div className="lg:col-span-8 glass-card p-6 sm:p-10 relative overflow-hidden group">
-            <div className="absolute -right-8 -bottom-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
-              <TrendingUp size={300} />
-            </div>
-            <div className="relative z-10 max-w-lg">
-              <h3 className="text-2xl sm:text-3xl font-black italic uppercase italic mb-4">გახდი <span className="text-brand-primary">გეოსტრიმერი</span></h3>
-              <p className="text-zinc-400 font-bold leading-relaxed mb-8 text-xs sm:text-sm">
-                შემოუერთდი პირველ ქართულ სტრიმინგ პლატფორმას. გაუზიარე შენი თამაში ათასობით მაყურებელს და გახდი სპორტული სამყაროს ნაწილი.
-              </p>
-              <button className="w-full sm:w-auto px-8 py-4 bg-brand-primary text-white text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-lg hover:shadow-[0_0_30px_-5px_rgba(255,0,51,0.5)] transition-all">დაიწყე ახლა</button>
-            </div>
-          </div>
-          
-          <div className="lg:col-span-4 bg-brand-surface border border-brand-border rounded-xl p-6 flex flex-col justify-start">
+        <div className="flex justify-center pb-12 sm:pb-0">
+          <div className="w-full max-w-md bg-brand-surface border border-brand-border rounded-xl p-6 flex flex-col justify-start">
             <div className="flex items-center justify-between mb-6">
               <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
                 <Trophy size={14} className="text-brand-primary" /> LA LIGA TOP 5
