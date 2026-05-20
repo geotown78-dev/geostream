@@ -401,7 +401,7 @@ export default function LiveRoom() {
     setNickname(resolvedNick);
   }, [user]);
 
-  // Fetch chat history & Subscribe to live-chat
+  // Fetch chat history & Subscribe to live-chat with robust real-time polling
   useEffect(() => {
     if (!roomId) return;
 
@@ -410,13 +410,32 @@ export default function LiveRoom() {
         const res = await fetch(`/api/chat/${roomId}`);
         if (res.ok) {
           const data = await res.json();
-          setMessages(data.messages || []);
+          const serverMsgs = data.messages || [];
+          setMessages(prev => {
+            const combined = [...prev];
+            let changed = false;
+            for (const sm of serverMsgs) {
+              if (!combined.some(m => m.id === sm.id)) {
+                combined.push(sm);
+                changed = true;
+              }
+            }
+            if (changed) {
+              return combined.sort((a, b) => a.id.localeCompare(b.id));
+            }
+            return prev;
+          });
         }
       } catch (err) {
         console.error('Error fetching chat history:', err);
       }
     };
+    
+    // Initial fetch
     fetchChat();
+
+    // Fast 1.5 second fallback polling interval for perfect, reliable sync of other users' messages
+    const pollInterval = setInterval(fetchChat, 1500);
 
     const chatChannel = supabase.channel(`live-chat-${roomId}`, {
       config: {
@@ -431,7 +450,7 @@ export default function LiveRoom() {
       if (payload && payload.id) {
         setMessages(prev => {
           if (prev.some(m => m.id === payload.id)) return prev;
-          return [...prev, payload];
+          return [...prev, payload].sort((a, b) => a.id.localeCompare(b.id));
         });
       }
     });
@@ -439,6 +458,7 @@ export default function LiveRoom() {
     chatChannel.subscribe();
 
     return () => {
+      clearInterval(pollInterval);
       chatChannelRef.current = null;
       supabase.removeChannel(chatChannel);
     };
