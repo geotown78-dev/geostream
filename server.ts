@@ -95,6 +95,8 @@ app.post("/api/webhooks/rtmp", async (req, res) => {
         .update({ is_live: false })
         .eq('room_name', name);
       console.log(`Stream ended: ${name}`);
+      delete chats[name];
+      console.log(`🧹 Chat messages cleared on publish_done for stream: ${name}`);
     } catch (err) {
       console.error('Error ending stream:', err);
     }
@@ -106,6 +108,61 @@ app.post("/api/webhooks/rtmp", async (req, res) => {
 // API: Health Check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
+});
+
+// Chat Storage in RAM
+interface ChatMessage {
+  id: string;
+  user: string;
+  msg: string;
+  color: string;
+  timestamp: string;
+}
+
+const chats: Record<string, ChatMessage[]> = {};
+
+// Get chat history
+app.get("/api/chat/:roomId", (req, res) => {
+  const { roomId } = req.params;
+  res.json({ messages: chats[roomId] || [] });
+});
+
+// Post a chat message
+app.post("/api/chat/:roomId", (req, res) => {
+  const { roomId } = req.params;
+  const { user, msg, color } = req.body;
+  if (!user || !msg) {
+    return res.status(400).json({ error: "Missing user or msg" });
+  }
+
+  if (!chats[roomId]) {
+    chats[roomId] = [];
+  }
+
+  const newMessage: ChatMessage = {
+    id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    user: String(user).trim(),
+    msg: String(msg).trim(),
+    color: color || "text-brand-primary",
+    timestamp: new Date().toISOString()
+  };
+
+  chats[roomId].push(newMessage);
+
+  // Keep max 250 messages per room to optimize memory
+  if (chats[roomId].length > 250) {
+    chats[roomId].shift();
+  }
+
+  res.status(200).json({ success: true, message: newMessage });
+});
+
+// Delete chat history for a room
+app.delete("/api/chat/:roomId", (req, res) => {
+  const { roomId } = req.params;
+  delete chats[roomId];
+  console.log(`🧹 Chat messages cleared/deleted for room: ${roomId}`);
+  res.json({ success: true });
 });
 
 // Mock stats
