@@ -333,10 +333,13 @@ export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: 
   const time = date.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   return (
-    <div className="group relative block bg-brand-surface border border-brand-border rounded-xl p-5 hover:border-brand-primary/30 transition-all overflow-hidden">
+    <Link 
+      to={`/watch/sched-${event.id}`}
+      className="group relative block bg-brand-surface border border-brand-border rounded-xl p-5 hover:border-brand-primary/30 hover:scale-[1.02] shadow-md hover:shadow-brand-primary/5 transition-all overflow-hidden cursor-pointer"
+    >
       {event.thumbnail && (
         <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity">
-          <img src={event.thumbnail} className="w-full h-full object-cover" alt="" />
+          <img src={event.thumbnail} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
         </div>
       )}
       
@@ -350,8 +353,12 @@ export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: 
             <div className="text-[10px] font-black text-zinc-400">{time}</div>
             {isAdmin && onDelete && (
               <button 
-                onClick={() => onDelete(event.id)}
-                className="p-1.5 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(event.id);
+                }}
+                className="p-1.5 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded transition-all relative z-25"
               >
                 <Trash2 size={12} />
               </button>
@@ -375,8 +382,13 @@ export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: 
           </div>
         </div>
 
-        <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{event.sport || event.league || 'Event'}</div>
+        <div className="flex justify-between items-center">
+          <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{event.sport || event.league || 'Event'}</div>
+          <span className="text-[8px] font-black uppercase text-brand-primary tracking-widest bg-brand-primary/10 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+            მოლოდინი
+          </span>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
