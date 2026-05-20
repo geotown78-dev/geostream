@@ -452,57 +452,41 @@ export default function LiveRoom() {
     const liveSyncChannel = supabase
       .channel(`live-sync-${roomId}`)
       .on('postgres_changes', {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
-        table: 'events',
-        filter: `room_name=eq.${roomId}`
+        table: 'events'
       }, (payload) => {
-        console.log("Stream is now live via insert!", payload);
-        const newEvent = payload.new;
-        if (newEvent && newEvent.stream_url) {
+        const newEvent = payload.new as any;
+        const oldEvent = payload.old as any;
+        const targetRoomName = newEvent?.room_name || oldEvent?.room_name;
+
+        if (targetRoomName === roomId) {
+          console.log("Real-time stream event transition matched!", payload.eventType, payload);
+          
+          if (payload.eventType === 'DELETE') {
+            setIsStreamLive(false);
+            setLiveEvent(null);
+            setStreamUrl('');
+            return;
+          }
+
           let url = newEvent.stream_url;
-          if (url.includes('/hls/') && !url.endsWith('.m3u8')) {
-            url += '.m3u8';
-          }
-          const isPageHttps = window.location.protocol === 'https:';
-          const savedVDS = localStorage.getItem('vds_ip') || vdsIp;
-          if (isPageHttps && !url.startsWith('https://')) {
-            const urlPath = url.split('/hls/')[1];
-            if (urlPath) {
-              const currentHost = window.location.hostname;
-              const bestHost = (currentHost && !currentHost.match(/^[0-9.]+$/)) ? currentHost : savedVDS;
-              url = `https://${bestHost}/hls/${urlPath}`;
+          if (url) {
+            if (url.includes('/hls/') && !url.endsWith('.m3u8')) {
+              url += '.m3u8';
             }
-          }
-          setStreamUrl(url);
-          setLiveEvent(newEvent);
-          setIsStreamLive(true);
-        }
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'events',
-        filter: `room_name=eq.${roomId}`
-      }, (payload) => {
-        console.log("Stream updated live!", payload);
-        const newEvent = payload.new;
-        if (newEvent && newEvent.stream_url) {
-          let url = newEvent.stream_url;
-          if (url.includes('/hls/') && !url.endsWith('.m3u8')) {
-            url += '.m3u8';
-          }
-          const isPageHttps = window.location.protocol === 'https:';
-          const savedVDS = localStorage.getItem('vds_ip') || vdsIp;
-          if (isPageHttps && !url.startsWith('https://')) {
-            const urlPath = url.split('/hls/')[1];
-            if (urlPath) {
-              const currentHost = window.location.hostname;
-              const bestHost = (currentHost && !currentHost.match(/^[0-9.]+$/)) ? currentHost : savedVDS;
-              url = `https://${bestHost}/hls/${urlPath}`;
+            const isPageHttps = window.location.protocol === 'https:';
+            const savedVDS = localStorage.getItem('vds_ip') || vdsIp;
+            if (isPageHttps && !url.startsWith('https://')) {
+              const urlPath = url.split('/hls/')[1];
+              if (urlPath) {
+                const currentHost = window.location.hostname;
+                const bestHost = (currentHost && !currentHost.match(/^[0-9.]+$/)) ? currentHost : savedVDS;
+                url = `https://${bestHost}/hls/${urlPath}`;
+              }
             }
+            setStreamUrl(url);
           }
-          setStreamUrl(url);
           setLiveEvent(newEvent);
           setIsStreamLive(true);
         }
