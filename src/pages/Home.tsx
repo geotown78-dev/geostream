@@ -73,7 +73,17 @@ export default function Home() {
         alert('წაშლა ვერ მოხერხდა: ' + error.message);
       } else {
         // Local refresh
-        if (table === 'events') setLiveEvents(prev => prev.filter(e => e.id !== id));
+        if (table === 'events') {
+          const targetEvent = liveEvents.find(e => e.id === id);
+          if (targetEvent?.room_name) {
+            try {
+              await fetch(`/api/chat/${targetEvent.room_name}`, { method: 'DELETE' });
+            } catch (chatErr) {
+              console.error('Failed to delete chat history on stream delete:', chatErr);
+            }
+          }
+          setLiveEvents(prev => prev.filter(e => e.id !== id));
+        }
         if (table === 'schedule') setUpcomingEvents(prev => prev.filter(e => e.id !== id));
       }
     } catch (e) {
