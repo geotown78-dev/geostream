@@ -181,18 +181,38 @@ export default function AdminDashboard() {
     const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `thumbnails/${fileName}`;
 
-    // Auto-create bucket if missing
+    // 1. Try to list existing buckets to find a valid target
+    let activeBuckets: string[] = [];
     try {
-      await supabase.storage.createBucket('SITE-ASSETS', { public: true });
-    } catch (e) {}
-    try {
-      await supabase.storage.createBucket('site-assets', { public: true });
-    } catch (e) {}
+      const { data: listedBuckets, error: listError } = await supabase.storage.listBuckets();
+      if (!listError && listedBuckets) {
+        activeBuckets = listedBuckets.map(b => b.name);
+      }
+    } catch (e) {
+      console.error('Error listing buckets:', e);
+    }
 
-    const buckets = ['SITE-ASSETS', 'site-assets'];
+    // 2. If default buckets don't exist, try to create them
+    const defaultBuckets = ['GEOSTREAM', 'geostream', 'SITE-ASSETS', 'site-assets'];
+    for (const b of defaultBuckets) {
+      if (!activeBuckets.includes(b)) {
+        try {
+          const { error: createErr } = await supabase.storage.createBucket(b, { public: true });
+          if (!createErr) {
+            activeBuckets.push(b);
+          }
+        } catch (e) {
+          console.error(`Error creating ${b} bucket:`, e);
+        }
+      }
+    }
+
+    // 3. Define target buckets to try
+    const targetBuckets = ['GEOSTREAM', 'geostream', 'SITE-ASSETS', 'site-assets', ...activeBuckets];
+    const uniqueBuckets = Array.from(new Set(targetBuckets)).filter(Boolean);
+
     let lastError: any = null;
-
-    for (const b of buckets) {
+    for (const b of uniqueBuckets) {
       try {
         const { error } = await supabase.storage
           .from(b)
@@ -208,8 +228,15 @@ export default function AdminDashboard() {
       }
     }
 
+    // If we failed and list of buckets is empty, give a clear instruction
+    if (activeBuckets.length === 0) {
+      throw new Error(
+        "სუპაბეისში ბაკეტი ვერ მოიძებნა. გთხოვთ თქვენს Supabase Dashboard-ზე (სექცია Storage) შექმნათ ახალი საჯარო ბაკეტი სახელით 'GEOSTREAM' ან 'SITE-ASSETS' (მონიშნეთ Make bucket public) და დაამატოთ ჩაწერისა და წაკითხვის უფლება (Policies)."
+      );
+    }
+
     const errMsg = lastError?.message || lastError?.error_description || JSON.stringify(lastError) || 'უცნობი შეცდომა';
-    throw new Error(errMsg);
+    throw new Error(`ატვირთვა ვერ მოხერხდა (აქტიური ბაკეტები: ${uniqueBuckets.join(', ')}). შეცდომა: ${errMsg}`);
   };
 
   const handleEditFileUpload = async (file: File) => {
