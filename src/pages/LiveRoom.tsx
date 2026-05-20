@@ -338,6 +338,7 @@ export default function LiveRoom() {
   const [newNicknameInput, setNewNicknameInput] = useState<string>('');
   const [userChatColor, setUserChatColor] = useState<string>('text-brand-primary');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatChannelRef = useRef<any>(null);
 
   const [streamUrl, setStreamUrl] = useState<string>('');
   const [vdsIp, setVdsIp] = useState<string>('5.83.153.142');
@@ -423,6 +424,8 @@ export default function LiveRoom() {
       }
     });
 
+    chatChannelRef.current = chatChannel;
+
     chatChannel.on('broadcast', { event: 'shout' }, (payload: any) => {
       if (payload && payload.id) {
         setMessages(prev => {
@@ -435,6 +438,7 @@ export default function LiveRoom() {
     chatChannel.subscribe();
 
     return () => {
+      chatChannelRef.current = null;
       supabase.removeChannel(chatChannel);
     };
   }, [roomId]);
@@ -460,7 +464,13 @@ export default function LiveRoom() {
       timestamp: new Date().toISOString()
     };
 
-    // 1. Post to Express Memory DB (saves for refreshes and newcomers)
+    // 1. Instantly display in local client state for immediate feedback
+    setMessages(prev => {
+      if (prev.some(m => m.id === payload.id)) return prev;
+      return [...prev, payload];
+    });
+
+    // 2. Post to Express Memory DB (saves for refreshes and newcomers)
     try {
       fetch(`/api/chat/${roomId}`, {
         method: 'POST',
@@ -477,14 +487,22 @@ export default function LiveRoom() {
       console.error('Failed to post chat message:', err);
     }
 
-    // 2. Broadcast to other browsers in the same room
+    // 3. Broadcast to other browsers in the same room using the active channel
     try {
-      const channel = supabase.channel(`live-chat-${roomId}`);
-      await channel.send({
-        type: 'broadcast',
-        event: 'shout',
-        payload
-      });
+      if (chatChannelRef.current) {
+        await chatChannelRef.current.send({
+          type: 'broadcast',
+          event: 'shout',
+          payload
+        });
+      } else {
+        const channel = supabase.channel(`live-chat-${roomId}`);
+        await channel.send({
+          type: 'broadcast',
+          event: 'shout',
+          payload
+        });
+      }
     } catch (err) {
       console.error('Broadcast send error:', err);
     }
