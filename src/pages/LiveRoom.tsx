@@ -825,32 +825,7 @@ export default function LiveRoom() {
                   onChange={(e) => setTempIp(e.target.value)}
                   placeholder="მაგ: 5.83.153.142"
                   className="w-full bg-black/50 border border-brand-border rounded-xl px-4 py-3 text-sm font-bold focus:border-brand-primary outline-none transition-colors"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button 
-                  onClick={() => setShowSettings(false)}
-                  className="flex-1 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-zinc-900 hover:bg-zinc-800 transition-colors"
-                >
-                  გაუქმება
-                </button>
-                <button 
-                  onClick={() => {
-                    setVdsIp(tempIp);
-                    localStorage.setItem('vds_ip', tempIp);
-                    setShowSettings(false);
-                  }}
-                  className="flex-1 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-brand-primary text-black hover:opacity-90 transition-opacity"
-                >
-                  შენახვა
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Chat Side Panel */}
+                        {/* Chat Side Panel */}
         <aside className="col-span-12 lg:col-span-3 bento-card flex flex-col overflow-hidden h-[450px] lg:h-full bg-zinc-900/40">
           <div className="p-6 border-b border-brand-border flex justify-between items-center bg-zinc-950/40">
             <h3 className="font-black uppercase text-[10px] tracking-widest text-zinc-400">ლაივ ჩატი</h3>
@@ -861,7 +836,30 @@ export default function LiveRoom() {
             {messages.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
                 <p className="text-zinc-600 text-[10px] font-black uppercase tracking-wider mb-1">ჩატი ცარიელია</p>
-                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">დაწერეთ პირველი შეტყობინ�            {/* Nickname Editor */}
+                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">დაწერეთ პირველი შეტყობინება!</p>
+              </div>
+            ) : (
+              messages.map((chat) => (
+                <div key={chat.id} className="flex gap-3 items-start animate-in fade-in duration-200">
+                  <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 shrink-0 flex items-center justify-center font-black text-[10px] text-zinc-400 uppercase">
+                    {(chat.user || 'G').charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 truncate ${chat.color}`}>
+                      {chat.user}
+                    </p>
+                    <p className="text-xs text-zinc-300 leading-normal font-medium break-words">
+                      {chat.msg}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          <div className="flex flex-col gap-3 p-4 bg-zinc-950/40 border-t border-brand-border">
+            {/* Nickname Editor */}
             <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">
               {isEditingNickname && isAdmin ? (
                 <div className="flex items-center gap-2 w-full">
@@ -893,7 +891,7 @@ export default function LiveRoom() {
                     }}
                     className="text-brand-primary font-black hover:text-white"
                   >
-                    শენახვა
+                    შენახვა
                   </button>
                   <button 
                     onClick={() => setIsEditingNickname(false)}
@@ -919,34 +917,6 @@ export default function LiveRoom() {
                       (შეცვლა)
                     </button>
                   )}
-                </div>
-              )}
-            </div>ver:text-white"
-                  >
-                    শენახვა
-                  </button>
-                  <button 
-                    onClick={() => setIsEditingNickname(false)}
-                    className="text-zinc-500 hover:text-white"
-                  >
-                    X
-                  </button>
-                </div>
-              ) : (
-                <div className="flex justify-between items-center w-full">
-                  <div className="flex items-center gap-1.5">
-                    <span>სახელი:</span>
-                    <span className={`font-black ${userChatColor}`}>{nickname || 'GUEST'}</span>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      setNewNicknameInput(nickname);
-                      setIsEditingNickname(true);
-                    }}
-                    className="text-[9px] text-brand-primary font-black hover:text-white transition-colors"
-                  >
-                    (შეცვლა)
-                  </button>
                 </div>
               )}
             </div>
