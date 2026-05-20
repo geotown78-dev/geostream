@@ -187,6 +187,8 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
     return () => clearInterval(timer);
   }, [displayMatch?.targetDate]);
 
+  const isLive = exclusiveEvent ? !!exclusiveEvent.is_live : !!activeBroadcast;
+
   return (
     <section className="relative h-[400px] sm:h-[500px] rounded-2xl overflow-hidden mb-8 sm:mb-12 group bg-brand-surface border border-brand-border">
       {displayMatch ? (
@@ -196,6 +198,7 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
               src={displayMatch.image} 
               className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-[2s]"
               alt=""
+              referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/60 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-t from-brand-black to-transparent" />
@@ -229,13 +232,15 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
               </div>
 
               <div className="flex items-center gap-3 sm:gap-4 pt-2 sm:pt-4">
-                <Link 
-                  to={`/watch/${displayMatch.room_id}`}
-                  className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 bg-brand-primary text-white font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-lg hover:bg-brand-primary-dark transition-all transform hover:scale-105 shadow-2xl shadow-brand-primary/40"
-                >
-                  <Play fill="currentColor" size={16} />
-                  {displayMatch.targetDate && new Date() < displayMatch.targetDate ? 'დაგეგმილია' : 'ლაივ სტრიმი'}
-                </Link>
+                {isLive && (
+                  <Link 
+                    to={`/watch/${displayMatch.room_id}`}
+                    className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 bg-brand-primary text-white font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-lg hover:bg-brand-primary-dark transition-all transform hover:scale-105 shadow-2xl shadow-brand-primary/40 animate-pulse"
+                  >
+                    <Play fill="currentColor" size={16} />
+                    ლაივის ყურება
+                  </Link>
+                )}
                 <button className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 bg-white/10 hover:bg-white/20 text-white font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-lg transition-all backdrop-blur-md border border-white/10">
                   დეტალები
                 </button>
