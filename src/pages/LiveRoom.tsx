@@ -499,6 +499,7 @@ export default function LiveRoom() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          id: payload.id,
           user: payload.user,
           msg: payload.msg,
           color: payload.color
