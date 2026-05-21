@@ -151,6 +151,12 @@ export default function Leaderboard() {
           </div>
         </header>
 
+        {/* Scroll helper on mobile */}
+        <div className="lg:hidden flex items-center justify-end text-[9px] font-black uppercase tracking-widest text-zinc-500 gap-1.5 px-2 select-none">
+          <span>გაასრიალეთ სრულად სანახავად</span>
+          <span className="inline-block animate-pulse">→</span>
+        </div>
+
         {/* Table */}
         <div className="bg-brand-surface border border-brand-border rounded-3xl overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
