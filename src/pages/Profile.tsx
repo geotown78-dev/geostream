@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, Shield, CheckCircle, Calendar, ArrowLeft } from 'lucide-react';
+import { User, Mail, Shield, CheckCircle, Calendar, ArrowLeft, Edit, Check, X, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { ADMIN_EMAILS } from '../constants';
 
 // Simple stable deterministic hash to generate a unique 6-digit ID based on user UUID
 function getDeterministic6DigitId(userId: string): string {
@@ -22,6 +24,20 @@ export default function Profile() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // Sync state with user metadata full_name when user changes
+  useEffect(() => {
+    if (user) {
+      const currentName = user.user_metadata?.full_name || user.user_metadata?.name || (user.email || '').split('@')[0];
+      setNewName(currentName);
+    }
+  }, [user]);
+
   if (!user) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
@@ -35,6 +51,41 @@ export default function Profile() {
   const userEmail = user.email || '';
   const userName = user.user_metadata?.full_name || user.user_metadata?.name || userEmail.split('@')[0];
   const uniqueId = getDeterministic6DigitId(userId);
+  const isAdmin = ADMIN_EMAILS.includes(userEmail);
+
+  const handleSaveName = async () => {
+    if (!isAdmin) {
+      setErrorMsg('სახელის შეცვლა მხოლოდ ადმინისტრატორს შეუძლია');
+      return;
+    }
+
+    if (!newName.trim()) {
+      setErrorMsg('სახელი არ შეიძლება იყოს ცარიელი');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setErrorMsg('');
+      setSuccessMsg('');
+
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: newName.trim() }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setSuccessMsg('სახელი წარმატებით განახლდა!');
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error('Error updating name:', err);
+      setErrorMsg(err.message || 'სახელის განახლება ვერ მოხერხდა');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Generate a premium gradient based on user ID for their default avatar background
   const colors = [
@@ -90,10 +141,17 @@ export default function Profile() {
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white uppercase">
               {userName}
             </h1>
-            <span className="inline-flex self-center sm:self-auto items-center gap-1.5 px-3 py-1 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-full text-[9px] font-black uppercase tracking-widest">
-              <Shield size={10} />
-              მომხმარებელი
-            </span>
+            {isAdmin ? (
+              <span className="inline-flex self-center sm:self-auto items-center gap-1.5 px-3 py-1 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">
+                <Shield size={10} />
+                ადმინისტრატორი
+              </span>
+            ) : (
+              <span className="inline-flex self-center sm:self-auto items-center gap-1.5 px-3 py-1 bg-white/5 text-zinc-400 border border-white/5 rounded-full text-[9px] font-black uppercase tracking-widest">
+                <User size={10} />
+                მომხმარებელი
+              </span>
+            )}
           </div>
           <p className="text-zinc-400 text-sm font-semibold">{userEmail}</p>
           <div className="flex items-center gap-1.5 justify-center sm:justify-start text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
@@ -126,16 +184,80 @@ export default function Profile() {
           <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-6 flex items-center gap-2 border-b border-white/5 pb-3">
             პროფილის მონაცემები
           </h2>
+
+          {successMsg && (
+            <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-bold uppercase tracking-wider text-center py-2.5">
+              {successMsg}
+            </div>
+          )}
+
+          {errorMsg && (
+            <div className="mb-4 p-3 bg-brand-primary/10 border border-brand-primary/20 text-brand-primary rounded-xl text-xs font-bold uppercase tracking-wider text-center py-2.5">
+              {errorMsg}
+            </div>
+          )}
           
           <div className="divide-y divide-white/5 space-y-4">
             <div className="flex items-center justify-between py-2">
-              <div className="flex items-center gap-3">
-                <span className="p-2 bg-zinc-950/40 rounded-lg text-zinc-400">
+              <div className="flex items-center gap-3 w-full">
+                <span className="p-2 bg-zinc-950/40 rounded-lg text-zinc-400 flex-shrink-0">
                   <User size={16} />
                 </span>
-                <div>
-                  <p className="text-zinc-500 text-[9px] font-black uppercase tracking-wider">მომხმარებლის სახელი</p>
-                  <p className="text-sm font-bold text-white uppercase">{userName}</p>
+                <div className="flex-grow flex items-center justify-between">
+                  <div>
+                    <p className="text-zinc-500 text-[9px] font-black uppercase tracking-wider">მომხმარებლის სახელი</p>
+                    {isEditing ? (
+                      <div className="flex items-center gap-2 mt-1">
+                        <input
+                          type="text"
+                          value={newName}
+                          onChange={(e) => setNewName(e.target.value)}
+                          className="bg-zinc-950/80 border border-brand-primary/40 rounded-lg px-2.5 py-1 text-xs text-white uppercase font-bold focus:border-brand-primary focus:outline-none w-full max-w-[200px]"
+                          placeholder="შეიყვანეთ სახელი"
+                          disabled={isSaving}
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleSaveName}
+                          disabled={isSaving}
+                          className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all"
+                          title="შენახვა"
+                        >
+                          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsEditing(false);
+                            setNewName(userName);
+                            setErrorMsg('');
+                            setSuccessMsg('');
+                          }}
+                          disabled={isSaving}
+                          className="p-1.5 text-zinc-500 hover:bg-white/5 rounded-lg transition-all"
+                          title="გაუქმება"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-bold text-white uppercase">{userName}</p>
+                    )}
+                  </div>
+
+                  {!isEditing && isAdmin && (
+                    <button
+                      onClick={() => {
+                        setIsEditing(true);
+                        setErrorMsg('');
+                        setSuccessMsg('');
+                      }}
+                      className="px-3 py-1.5 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 hover:bg-brand-primary hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5"
+                      title="სახელის შეცვლა"
+                    >
+                      <Edit size={11} />
+                      შეცვლა
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
