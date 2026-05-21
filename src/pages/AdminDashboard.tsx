@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe, Edit, X } from 'lucide-react';
+import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe, Edit, X, Users, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
 import { Volume2, VolumeX, Pause, Play as PlayIcon } from 'lucide-react';
@@ -9,6 +9,11 @@ import ImageCropperModal from '../components/ImageCropperModal';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'lives' | 'users'>('lives');
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState<boolean>(false);
+  const [usersSearchQuery, setUsersSearchQuery] = useState<string>('');
+  
   const [team1, setTeam1] = useState('');
   const [team2, setTeam2] = useState('');
   const [sessionSport, setSessionSport] = useState('Football');
@@ -423,9 +428,25 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const res = await fetch('/api/admin/users');
+      const data = await res.json();
+      if (data && data.success) {
+        setUsers(data.users || []);
+      }
+    } catch (err) {
+      console.error('Error fetching registered users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
   useEffect(() => {
     fetchEvents();
     fetchSchedules();
+    fetchUsers();
   }, []);
 
   useEffect(() => {
@@ -555,9 +576,169 @@ export default function AdminDashboard() {
           </div>
         </header>
 
+        {/* TAB SWITCHER */}
+        {!showSessionDetails && (
+          <div className="flex border-b border-white/10 mb-8 gap-6">
+            <button
+              id="admin-lives-tab-btn"
+              onClick={() => setActiveTab('lives')}
+              className={cn(
+                "pb-4 font-black text-xs uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border-b-2 outline-none",
+                activeTab === 'lives'
+                  ? "border-brand-primary text-white"
+                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+              )}
+            >
+              <Radio size={14} className={activeTab === 'lives' ? "animate-pulse text-brand-primary" : ""} />
+              ლაივების პარამეტრები
+            </button>
+            <button
+              id="admin-users-tab-btn"
+              onClick={() => setActiveTab('users')}
+              className={cn(
+                "pb-4 font-black text-xs uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border-b-2 outline-none",
+                activeTab === 'users'
+                  ? "border-brand-primary text-white"
+                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+              )}
+            >
+              <Users size={14} className={activeTab === 'users' ? "text-brand-primary" : ""} />
+              მომხმარებლები
+            </button>
+          </div>
+        )}
+
         {!showSessionDetails ? (
           <>
-            <div className="grid lg:grid-cols-3 gap-8">
+            {activeTab === 'users' ? (
+              <div className="space-y-8 animate-in fade-in duration-300" id="admin-users-tab-content">
+                {/* Registered Users Section */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                  <div>
+                    <h2 className="text-2xl font-black uppercase text-white tracking-tight flex items-center gap-3">
+                      <span className="p-2 bg-brand-primary/10 rounded-lg text-brand-primary">
+                        <Users size={20} />
+                      </span>
+                      ყველა რეგისტრირებული მომხმარებელი
+                    </h2>
+                    <p className="text-zinc-500 font-bold uppercase text-[9px] tracking-[0.2em] mt-1">
+                      სისტემაში რეგისტრირებული მომხმარებლების სია, ელ. ფოსტა და სახელი
+                    </p>
+                  </div>
+                  <button 
+                    id="btn-refresh-users"
+                    onClick={fetchUsers}
+                    className="self-start md:self-auto text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-white px-4 py-2 bg-zinc-900 border border-white/10 rounded-xl transition-all hover:border-white/20 animate-pulse"
+                  >
+                    განახლება
+                  </button>
+                </div>
+
+                {/* Search and Stats Grid */}
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="md:col-span-2 relative">
+                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+                    <input
+                      id="input-search-users"
+                      type="text"
+                      placeholder="მოძებნე მომხმარებელი სახელით ან ელ. ფოსტით..."
+                      value={usersSearchQuery}
+                      onChange={(e) => setUsersSearchQuery(e.target.value)}
+                      className="w-full bg-zinc-900/40 border border-white/10 rounded-xl p-4 pl-12 focus:border-brand-primary outline-none transition-all font-bold text-sm text-white placeholder:text-zinc-600 uppercase"
+                    />
+                  </div>
+                  <div className="bg-zinc-900/30 border border-white/5 rounded-xl p-4 flex items-center justify-between shadow-lg">
+                    <div>
+                      <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest leading-none mb-1">სულ მომხმარებელი</p>
+                      <p className="text-2xl font-black text-white">{users.length} რეგისტრირებული</p>
+                    </div>
+                    <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary">
+                      <Users size={20} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* List Table / Cards */}
+                {loadingUsers ? (
+                  <div className="flex flex-col items-center justify-center py-20 bg-zinc-950/40 rounded-3xl border border-white/5 space-y-4">
+                    <Loader2 className="animate-spin text-brand-primary" size={40} />
+                    <p className="text-zinc-500 font-bold uppercase text-xs tracking-widest">მომხმარებლები იტვირთება...</p>
+                  </div>
+                ) : (() => {
+                  const filtered = users.filter(u => {
+                    const mail = (u.email || '').toLowerCase();
+                    const name = (u.user_metadata?.full_name || u.user_metadata?.name || 'მომხმარებელი').toLowerCase();
+                    const q = usersSearchQuery.toLowerCase();
+                    return mail.includes(q) || name.includes(q);
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="text-center py-20 bg-zinc-950/40 rounded-3xl border border-white/5 space-y-2">
+                        <p className="text-zinc-500 font-bold uppercase text-xs tracking-widest">მომხმარებლები ვერ მოიძებნა</p>
+                        <p className="text-zinc-600 text-[10px] font-bold uppercase">სცადეთ სხვა საძიებო სიტყვა</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="bento-card bg-zinc-90 w-20 border border-white/5 overflow-hidden rounded-2xl">
+                      {/* Table Header for desktop */}
+                      <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-4 bg-zinc-900/60 border-b border-white/5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                        <div className="col-span-1">ID</div>
+                        <div className="col-span-5">სახელი / ნიკნეიმი</div>
+                        <div className="col-span-4">ელ. ფოსტა</div>
+                        <div className="col-span-2 text-right">თარიღი</div>
+                      </div>
+
+                      {/* List Items */}
+                      <div className="divide-y divide-white/5">
+                        {filtered.map((u, idx) => (
+                          <div 
+                            id={`user-row-${u.id}`}
+                            key={u.id} 
+                            className="grid sm:grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-white/[0.02] transition-colors"
+                          >
+                            <div className="col-span-1 text-[11px] font-mono text-zinc-500 font-bold">
+                              #{idx + 1}
+                            </div>
+                            <div className="col-span-5 flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-primary/30 to-brand-primary/10 border border-brand-primary/20 flex items-center justify-center font-black text-xs text-white">
+                                {(u.user_metadata?.full_name || u.user_metadata?.name || u.email || 'U')[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-white uppercase">
+                                  {u.user_metadata?.full_name || u.user_metadata?.name || 'მომხმარებელი'}
+                                </p>
+                                <p className="text-[9px] text-zinc-600 font-black tracking-wider uppercase sm:hidden">
+                                  ID: {u.id.substring(0, 8)}...
+                                </p>
+                              </div>
+                            </div>
+                            <div className="col-span-4">
+                              <p className="text-xs font-mono text-zinc-300 font-medium">
+                                {u.email}
+                              </p>
+                            </div>
+                            <div className="col-span-2 sm:text-right">
+                              <p className="text-xs text-zinc-500 font-semibold gap-1">
+                                {u.created_at ? new Date(u.created_at).toLocaleDateString('ka-GE', {
+                                  year: 'numeric',
+                                  month: 'numeric',
+                                  day: 'numeric'
+                                }) : 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : (
+              <>
+                <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               <div className="bento-card p-5 sm:p-10 bg-zinc-900/30 border-white/5 space-y-6 sm:space-y-8">
                 <div className="flex items-center gap-3 mb-2">
@@ -958,6 +1139,8 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+              </>
+            )}
           </>
         ) : (
           <div className="grid lg:grid-cols-2 gap-10">
