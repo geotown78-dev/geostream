@@ -7,6 +7,21 @@ import { Volume2, VolumeX, Pause, Play as PlayIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import ImageCropperModal from '../components/ImageCropperModal';
 
+// Simple stable deterministic hash to generate a unique 6-digit ID based on user UUID
+function getDeterministic6DigitId(userId: string): string {
+  if (!userId) return '100000';
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    const char = userId.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0; // Convert to 32bit integer
+  }
+  const positiveHash = Math.abs(hash);
+  // Ensure it is strictly 6 digits: between 100000 and 999999 inclusive
+  const sixDigits = (positiveHash % 900000) + 100000;
+  return sixDigits.toString();
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'lives' | 'users'>('lives');
@@ -668,8 +683,9 @@ export default function AdminDashboard() {
                   const filtered = users.filter(u => {
                     const mail = (u.email || '').toLowerCase();
                     const name = (u.user_metadata?.full_name || u.user_metadata?.name || 'მომხმარებელი').toLowerCase();
+                    const uniqueId = getDeterministic6DigitId(u.id);
                     const q = usersSearchQuery.toLowerCase();
-                    return mail.includes(q) || name.includes(q);
+                    return mail.includes(q) || name.includes(q) || uniqueId.includes(q);
                   });
 
                   if (filtered.length === 0) {
@@ -686,51 +702,60 @@ export default function AdminDashboard() {
                       {/* Table Header for desktop */}
                       <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-4 bg-zinc-900/60 border-b border-white/5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                         <div className="col-span-1">ID</div>
-                        <div className="col-span-5">სახელი / ნიკნეიმი</div>
-                        <div className="col-span-4">ელ. ფოსტა</div>
+                        <div className="col-span-4">სახელი / ნიკნეიმი</div>
+                        <div className="col-span-3">ელ. ფოსტა</div>
+                        <div className="col-span-2">კოდი</div>
                         <div className="col-span-2 text-right">თარიღი</div>
                       </div>
 
                       {/* List Items */}
                       <div className="divide-y divide-white/5">
-                        {filtered.map((u, idx) => (
-                          <div 
-                            id={`user-row-${u.id}`}
-                            key={u.id} 
-                            className="grid sm:grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-white/[0.02] transition-colors"
-                          >
-                            <div className="col-span-1 text-[11px] font-mono text-zinc-500 font-bold">
-                              #{idx + 1}
-                            </div>
-                            <div className="col-span-5 flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-primary/30 to-brand-primary/10 border border-brand-primary/20 flex items-center justify-center font-black text-xs text-white">
-                                {(u.user_metadata?.full_name || u.user_metadata?.name || u.email || 'U')[0].toUpperCase()}
+                        {filtered.map((u, idx) => {
+                          const uniqueCode = getDeterministic6DigitId(u.id);
+                          return (
+                            <div 
+                              id={`user-row-${u.id}`}
+                              key={u.id} 
+                              className="grid sm:grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-white/[0.02] transition-colors"
+                            >
+                              <div className="col-span-1 text-[11px] font-mono text-zinc-500 font-bold">
+                                #{idx + 1}
                               </div>
-                              <div>
-                                <p className="text-sm font-bold text-white uppercase">
-                                  {u.user_metadata?.full_name || u.user_metadata?.name || 'მომხმარებელი'}
+                              <div className="col-span-4 flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-primary/30 to-brand-primary/10 border border-brand-primary/20 flex items-center justify-center font-black text-xs text-white">
+                                  {(u.user_metadata?.full_name || u.user_metadata?.name || u.email || 'U')[0].toUpperCase()}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold text-white uppercase">
+                                    {u.user_metadata?.full_name || u.user_metadata?.name || 'მომხმარებელი'}
+                                  </p>
+                                  <p className="text-[9px] text-zinc-600 font-black tracking-wider uppercase sm:hidden">
+                                    კოდი: #{uniqueCode}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="col-span-3">
+                                <p className="text-xs font-mono text-zinc-300 font-medium">
+                                  {u.email}
                                 </p>
-                                <p className="text-[9px] text-zinc-600 font-black tracking-wider uppercase sm:hidden">
-                                  ID: {u.id.substring(0, 8)}...
+                              </div>
+                              <div className="col-span-2">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-lg text-xs font-mono font-black tracking-widest">
+                                  #{uniqueCode}
+                                </span>
+                              </div>
+                              <div className="col-span-2 sm:text-right">
+                                <p className="text-xs text-zinc-500 font-semibold gap-1">
+                                  {u.created_at ? new Date(u.created_at).toLocaleDateString('ka-GE', {
+                                    year: 'numeric',
+                                    month: 'numeric',
+                                    day: 'numeric'
+                                  }) : 'N/A'}
                                 </p>
                               </div>
                             </div>
-                            <div className="col-span-4">
-                              <p className="text-xs font-mono text-zinc-300 font-medium">
-                                {u.email}
-                              </p>
-                            </div>
-                            <div className="col-span-2 sm:text-right">
-                              <p className="text-xs text-zinc-500 font-semibold gap-1">
-                                {u.created_at ? new Date(u.created_at).toLocaleDateString('ka-GE', {
-                                  year: 'numeric',
-                                  month: 'numeric',
-                                  day: 'numeric'
-                                }) : 'N/A'}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
