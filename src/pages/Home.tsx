@@ -5,6 +5,7 @@ import { Hero, LiveCard, UpcomingCard } from '../components/UI';
 import { Calendar, Trophy, ChevronRight, TrendingUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { TeamLogo } from '../components/TeamLogo';
 
 export default function Home() {
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
@@ -228,12 +229,9 @@ export default function Home() {
                   <div key={team.name} className="flex items-center justify-between p-2 rounded-lg bg-black/20 border border-white/5 hover:border-brand-primary/30 transition-all group">
                     <div className="flex items-center gap-3">
                       <span className="text-[10px] font-black italic text-zinc-600 w-4">{i + 1}</span>
-                      <img 
-                        src={team.logo || 'https://via.placeholder.com/40'} 
-                        className="w-5 h-5 object-contain" 
-                        alt="" 
-                        referrerPolicy="no-referrer"
-                      />
+                      <div className="w-5 h-5 flex items-center justify-center overflow-hidden shrink-0">
+                        <TeamLogo name={team.name} logoUrl={team.logo} className="w-full h-full" />
+                      </div>
                       <span className="text-[10px] font-black uppercase italic group-hover:text-brand-primary transition-colors truncate max-w-[80px]">{team.name}</span>
                     </div>
                     <span className="text-[10px] font-black text-brand-primary">{team.points || team.pts}</span>
