@@ -43,12 +43,15 @@ function ProtectedRoute({ children, adminOnly }: ProtectedRouteProps) {
 }
 
 function AppContent() {
+  const { user } = useAuth();
+  const showNav = !!user;
+
   return (
     <div className="min-h-screen bg-brand-black text-white font-sans selection:bg-brand-primary selection:text-white transition-colors duration-500">
-      <Sidebar />
-      <Navbar />
+      {showNav && <Sidebar />}
+      {showNav && <Navbar />}
       
-      <main className="sm:pl-20 pt-20 pb-20 sm:pb-0">
+      <main className={`pb-20 sm:pb-0 ${showNav ? 'sm:pl-20 pt-20' : 'pt-4'}`}>
         <div className="max-w-[1700px] mx-auto p-4 sm:p-8 overflow-x-hidden">
           <AnimatePresence mode="wait">
             <Routes>
@@ -83,7 +86,7 @@ function AppContent() {
         </div>
       </main>
       
-      <footer className="sm:pl-20 border-t border-brand-border py-12 pb-32 sm:pb-12 text-center sm:text-left">
+      <footer className={`${showNav ? 'sm:pl-20' : ''} border-t border-brand-border py-12 pb-32 sm:pb-12 text-center sm:text-left`}>
         <div className="max-w-[1700px] mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-xl font-bold tracking-tight uppercase italic text-brand-primary">
             GEO <span className="text-white">STREAM</span>
