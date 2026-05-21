@@ -3,13 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   User, Play, LogOut, Settings, 
   Home as HomeIcon, Trophy, Radio, LayoutList, Users, Newspaper,
-  Facebook, Instagram, Youtube, Calendar, Clock, Trash2
+  Facebook, Instagram, Youtube, Calendar, Clock, Trash2,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '../contexts/AuthContext';
 import { ADMIN_EMAILS } from '../constants';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -138,32 +139,73 @@ export function Navbar() {
   );
 }
 
-export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: any, exclusiveEvent?: any }) {
+export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: { activeBroadcast?: any, exclusiveEvent?: any, exclusiveEvents?: any[] }) {
   const [timeLeft, setTimeLeft] = React.useState({ days: '00', hours: '00', minutes: '00', seconds: '00' });
 
-  // Only render match info if exclusiveEvent or activeBroadcast is present
-  const displayMatch = exclusiveEvent ? {
-    title: exclusiveEvent.team1 ? `${exclusiveEvent.team1} VS ${exclusiveEvent.team2}` : exclusiveEvent.title,
-    event: exclusiveEvent.sport || exclusiveEvent.league || "FEATURED EVENT",
-    date: exclusiveEvent.time ? new Date(exclusiveEvent.time).toLocaleString('ka-GE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : "ახლა პირდაპირ ეთერში",
-    image: exclusiveEvent.thumbnail || "https://images.unsplash.com/photo-1504450758481-7338ef7535af?auto=format&fit=crop&q=80&w=2000",
-    room_id: exclusiveEvent.room_name || exclusiveEvent.id,
-    targetDate: exclusiveEvent.time ? new Date(exclusiveEvent.time) : null
-  } : activeBroadcast ? {
-    title: activeBroadcast.room_id.replace(/-/g, ' ').toUpperCase(),
-    event: "LIVE BROADCAST",
-    date: "მიმდინარეობს პირდაპირი ეთერი",
-    image: "https://images.unsplash.com/photo-1541252260730-0412e3e2108e?auto=format&fit=crop&q=80&w=2000",
-    room_id: activeBroadcast.room_id,
-    targetDate: null
-  } : null;
+  const slides = React.useMemo(() => {
+    const list: any[] = [];
+    if (exclusiveEvents && exclusiveEvents.length > 0) {
+      exclusiveEvents.forEach((ev, idx) => {
+        list.push({
+          id: ev.id || `exclusive-${idx}`,
+          title: ev.team1 ? `${ev.team1} VS ${ev.team2}` : ev.title,
+          event: ev.sport || ev.league || "FEATURED EVENT",
+          date: ev.time ? new Date(ev.time).toLocaleString('ka-GE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : "ახლა პირდაპირ ეთერში",
+          image: ev.thumbnail || "https://images.unsplash.com/photo-1504450758481-7338ef7535af?auto=format&fit=crop&q=80&w=2000",
+          room_id: ev.room_name || ev.id,
+          targetDate: ev.time ? new Date(ev.time) : null,
+          isLive: !!ev.is_live,
+          original: ev
+        });
+      });
+    } else if (exclusiveEvent) {
+      list.push({
+        id: exclusiveEvent.id || 'exclusive-event',
+        title: exclusiveEvent.team1 ? `${exclusiveEvent.team1} VS ${exclusiveEvent.team2}` : exclusiveEvent.title,
+        event: exclusiveEvent.sport || exclusiveEvent.league || "FEATURED EVENT",
+        date: exclusiveEvent.time ? new Date(exclusiveEvent.time).toLocaleString('ka-GE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : "ახლა პირდაპირ ეთერში",
+        image: exclusiveEvent.thumbnail || "https://images.unsplash.com/photo-1504450758481-7338ef7535af?auto=format&fit=crop&q=80&w=2000",
+        room_id: exclusiveEvent.room_name || exclusiveEvent.id,
+        targetDate: exclusiveEvent.time ? new Date(exclusiveEvent.time) : null,
+        isLive: !!exclusiveEvent.is_live,
+        original: exclusiveEvent
+      });
+    } else if (activeBroadcast) {
+      list.push({
+        id: 'active-broadcast',
+        title: activeBroadcast.room_id.replace(/-/g, ' ').toUpperCase(),
+        event: "LIVE BROADCAST",
+        date: "მიმდინარეობს პირდაპირი ეთერი",
+        image: "https://images.unsplash.com/photo-1541252260730-0412e3e2108e?auto=format&fit=crop&q=80&w=2000",
+        room_id: activeBroadcast.room_id,
+        targetDate: null,
+        isLive: true,
+        original: activeBroadcast
+      });
+    }
+    return list;
+  }, [exclusiveEvents, exclusiveEvent, activeBroadcast]);
+
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+
+  // If slide count decreases, clamp currentIndex to avoid out-of-bound errors
+  React.useEffect(() => {
+    if (currentIndex >= slides.length) {
+      setCurrentIndex(0);
+    }
+  }, [slides, currentIndex]);
+
+  const activeSlide = slides[currentIndex];
 
   React.useEffect(() => {
-    if (!displayMatch?.targetDate) return;
+    if (!activeSlide?.targetDate) {
+      setTimeLeft({ days: '00', hours: '00', minutes: '00', seconds: '00' });
+      return;
+    }
 
     const timer = setInterval(() => {
       const now = new Date().getTime();
-      const distance = displayMatch.targetDate!.getTime() - now;
+      const distance = activeSlide.targetDate!.getTime() - now;
 
       if (distance < 0) {
         clearInterval(timer);
@@ -185,69 +227,115 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [displayMatch?.targetDate]);
+  }, [activeSlide?.targetDate]);
 
-  const isLive = exclusiveEvent ? !!exclusiveEvent.is_live : !!activeBroadcast;
+  // Handle Automatic Slide
+  const [isHovered, setIsHovered] = React.useState(false);
+
+  React.useEffect(() => {
+    if (slides.length <= 1 || isHovered) return;
+
+    const autoSlideInterval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % slides.length);
+    }, 7000);
+
+    return () => clearInterval(autoSlideInterval);
+  }, [slides.length, isHovered]);
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % slides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
+  };
 
   return (
-    <section className="relative w-full aspect-[16/10] xs:aspect-[16/9] sm:aspect-auto h-auto sm:h-[500px] rounded-2xl overflow-hidden mb-6 sm:mb-12 group bg-brand-surface border border-brand-border">
-      {displayMatch ? (
+    <section 
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="relative w-full aspect-[16/10] xs:aspect-[16/9] sm:aspect-auto h-auto sm:h-[500px] rounded-2xl overflow-hidden mb-6 sm:mb-12 group/hero bg-brand-surface border border-brand-border"
+    >
+      {activeSlide ? (
         <>
           <div className="absolute inset-0">
-            <img 
-              src={displayMatch.image} 
-              className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-[2s]"
-              alt=""
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent sm:via-brand-black/25" />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentIndex}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0"
+              >
+                <img 
+                  src={activeSlide.image} 
+                  className="w-full h-full object-cover scale-105 transition-transform duration-[2s]"
+                  alt=""
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent sm:via-brand-black/25" />
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          <div className="relative h-full flex flex-col justify-end p-4 xs:p-6 sm:p-12 z-10">
-            <div className="max-w-2xl space-y-1.5 xs:space-y-3 sm:space-y-6">
-              <div className="flex items-center gap-1.5 sm:gap-3">
-                <span className="bg-brand-primary text-white text-[7px] sm:text-[10px] font-black px-1.5 py-0.5 rounded italic whitespace-nowrap">ექსკლუზივი</span>
-                <span className="text-brand-primary text-[7px] sm:text-[10px] font-black tracking-[0.2em] uppercase text-shadow-sm truncate">{displayMatch.event}</span>
-              </div>
-              
-              <h1 className="text-base xs:text-xl sm:text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-[0.9]">
-                {displayMatch.title.includes('VS') ? displayMatch.title.split('VS').map((part: string, i: number) => (
-                  <React.Fragment key={i}>
-                    {i > 0 && <span className="text-brand-primary mx-1 sm:mx-4 text-shadow-glow drop-shadow-[0_0_15px_rgba(255,0,51,0.8)]">VS</span>}
-                    {part.trim()}
-                  </React.Fragment>
-                )) : displayMatch.title}
-              </h1>
-
-              <div className="flex flex-row items-center gap-3 sm:gap-6 text-zinc-400 font-bold uppercase tracking-widest text-[7px] xs:text-[9px] sm:text-[11px]">
-                <div className="flex items-center gap-1">
-                  <Calendar className="text-brand-primary min-w-[10px]" size={10} />
-                  <span className="truncate">{displayMatch.date}</span>
+          <div className="relative h-full flex flex-col justify-end p-4 xs:p-6 sm:p-12 z-10 pb-12 sm:pb-16 select-none">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentIndex}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.4 }}
+                className="max-w-2xl space-y-1.5 xs:space-y-3 sm:space-y-6"
+              >
+                <div className="flex items-center gap-1.5 sm:gap-3">
+                  <span className="bg-brand-primary text-white text-[7px] sm:text-[10px] font-black px-1.5 py-0.5 rounded italic whitespace-nowrap">ექსკლუზივი</span>
+                  <span className="text-brand-primary text-[7px] sm:text-[10px] font-black tracking-[0.2em] uppercase text-shadow-sm truncate">{activeSlide.event}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="text-brand-primary min-w-[10px]" size={10} />
-                  <span className="truncate">სრული ტრანსლაცია</span>
-                </div>
-              </div>
+                
+                <h1 className="text-base xs:text-xl sm:text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-[0.9]">
+                  {activeSlide.title.includes('VS') ? activeSlide.title.split('VS').map((part: string, i: number) => (
+                    <React.Fragment key={i}>
+                      {i > 0 && <span className="text-brand-primary mx-1 sm:mx-4 text-shadow-glow drop-shadow-[0_0_15px_rgba(255,0,51,0.8)]">VS</span>}
+                      {part.trim()}
+                    </React.Fragment>
+                  )) : activeSlide.title}
+                </h1>
 
-              <div className="flex items-center gap-2 sm:gap-4 pt-1 sm:pt-4">
-                {isLive && (
-                  <Link 
-                    to={`/watch/${displayMatch.room_id}`}
-                    className="flex items-center gap-1 text-center justify-center sm:gap-3 px-3 sm:px-8 py-2 sm:py-4 bg-brand-primary text-white font-black uppercase tracking-widest text-[8px] sm:text-xs rounded-lg hover:bg-brand-primary-dark transition-all transform hover:scale-105 shadow-2xl shadow-brand-primary/40 animate-pulse whitespace-nowrap"
+                <div className="flex flex-row items-center gap-3 sm:gap-6 text-zinc-400 font-bold uppercase tracking-widest text-[7px] xs:text-[9px] sm:text-[11px]">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="text-brand-primary min-w-[10px]" size={10} />
+                    <span className="truncate">{activeSlide.date}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="text-brand-primary min-w-[10px]" size={10} />
+                    <span className="truncate">სრული ტრანსლაცია</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 sm:gap-4 pt-1 sm:pt-4">
+                  {activeSlide.isLive && (
+                    <Link 
+                      to={`/watch/${activeSlide.room_id}`}
+                      className="flex items-center gap-1 text-center justify-center sm:gap-3 px-3 sm:px-8 py-2 sm:py-4 bg-brand-primary text-white font-black uppercase tracking-widest text-[8px] sm:text-xs rounded-lg hover:bg-brand-primary-dark transition-all transform hover:scale-105 shadow-2xl shadow-brand-primary/40 animate-pulse whitespace-nowrap"
+                    >
+                      <Play fill="currentColor" size={10} className="sm:w-4 sm:h-4" />
+                      ლაივის ყურება
+                    </Link>
+                  )}
+                  <Link
+                    to={activeSlide.isLive ? `/watch/${activeSlide.room_id}` : `/watch/sched-${activeSlide.id}`}
+                    className="flex items-center gap-1 text-center justify-center sm:gap-3 px-3 sm:px-8 py-2 sm:py-4 bg-white/10 hover:bg-white/20 text-white font-black uppercase tracking-widest text-[8px] sm:text-xs rounded-lg transition-all backdrop-blur-md border border-white/10 whitespace-nowrap"
                   >
-                    <Play fill="currentColor" size={10} className="sm:w-4 sm:h-4" />
-                    ლაივის ყურება
+                    დეტალები
                   </Link>
-                )}
-                <button className="flex items-center gap-1 text-center justify-center sm:gap-3 px-3 sm:px-8 py-2 sm:py-4 bg-white/10 hover:bg-white/20 text-white font-black uppercase tracking-widest text-[8px] sm:text-xs rounded-lg transition-all backdrop-blur-md border border-white/10 whitespace-nowrap">
-                  დეტალები
-                </button>
-              </div>
-            </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
 
-            {displayMatch.targetDate && (
+            {activeSlide.targetDate && (
               <div className="absolute right-2 top-2 sm:right-12 sm:top-12 flex gap-1 sm:gap-4 scale-[0.55] min-[380px]:scale-[0.65] xs:scale-75 sm:scale-100 origin-top-right">
                 {[
                   { label: 'დღე', value: timeLeft.days },
@@ -263,6 +351,44 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
               </div>
             )}
           </div>
+
+          {/* Nav arrows */}
+          {slides.length > 1 && (
+            <>
+              <button 
+                onClick={(e) => { e.preventDefault(); prevSlide(); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-brand-primary text-white border border-white/10 flex items-center justify-center transition-all opacity-0 group-hover/hero:opacity-100 backdrop-blur-sm cursor-pointer hover:scale-105"
+                title="წინა"
+              >
+                <ChevronLeft size={18} className="sm:w-6 sm:h-6" />
+              </button>
+              <button 
+                onClick={(e) => { e.preventDefault(); nextSlide(); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-brand-primary text-white border border-white/10 flex items-center justify-center transition-all opacity-0 group-hover/hero:opacity-100 backdrop-blur-sm cursor-pointer hover:scale-105"
+                title="შემდეგი"
+              >
+                <ChevronRight size={18} className="sm:w-6 sm:h-6" />
+              </button>
+            </>
+          )}
+
+          {/* Dot indicators */}
+          {slides.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+              {slides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => { e.preventDefault(); setCurrentIndex(idx); }}
+                  className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                    currentIndex === idx 
+                      ? 'bg-brand-primary w-6' 
+                      : 'bg-white/30 hover:bg-white/65'
+                  }`}
+                  title={`${idx + 1}-ე სლაიდი`}
+                />
+              ))}
+            </div>
+          )}
         </>
       ) : (
         <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border-brand-border bg-[radial-gradient(circle_at_center,_var(--color-brand-primary)_0%,_transparent_100%)] opacity-20">
