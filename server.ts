@@ -110,6 +110,14 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
 });
 
+// Favicon redirects to custom user icon to bypass any cached / missing public file issues
+app.get("/favicon.ico", (req, res) => {
+  res.redirect("https://zhtllxbbexcwvgrmxdux.supabase.co/storage/v1/object/public/GEOSTREAM/f23282a4-c96c-4da4-8ebb-b298708c9a6f.png");
+});
+app.get("/favicon.png", (req, res) => {
+  res.redirect("https://zhtllxbbexcwvgrmxdux.supabase.co/storage/v1/object/public/GEOSTREAM/f23282a4-c96c-4da4-8ebb-b298708c9a6f.png");
+});
+
 // Chat Storage in RAM
 interface ChatMessage {
   id: string;
