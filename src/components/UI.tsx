@@ -87,7 +87,7 @@ export function Navbar() {
             <Play fill="white" size={16} className="ml-0.5" />
           </div>
         </Link>
-        <nav className="flex items-center gap-4 sm:gap-8 overflow-x-auto no-scrollbar py-2">
+        <nav className="flex items-center gap-3 sm:gap-8 overflow-x-auto no-scrollbar py-2 max-w-[125px] min-[370px]:max-w-[170px] min-[450px]:max-w-[240px] sm:max-w-none">
           {tabs.map((tab) => (
             <Link
               key={tab.path}
@@ -109,19 +109,19 @@ export function Navbar() {
             {ADMIN_EMAILS.includes(user.email || '') && (
               <Link 
                 to="/admin" 
-                className="flex items-center gap-2 px-2 sm:px-3 py-1.5 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-brand-primary hover:text-white transition-all"
+                className="flex items-center gap-2 px-2 sm:px-3 py-1.5 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-brand-primary hover:text-white transition-all animate-fade-in"
               >
                 <Settings size={12} className="sm:w-[14px] sm:h-[14px]" />
-                <span className="hidden xs:inline">ადმინ</span>
+                <span className="hidden sm:inline">ადმინ</span>
               </Link>
             )}
-            <div className="flex items-center gap-2 sm:gap-3 bg-brand-surface border border-brand-border rounded-lg px-2 sm:px-3 py-1.5">
+            <div className="flex items-center gap-2 bg-brand-surface border border-brand-border rounded-lg p-1.5 sm:px-3 sm:py-1.5">
               <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-brand-primary flex items-center justify-center text-[9px] sm:text-[10px] font-black">
                 {user.email?.[0].toUpperCase()}
               </div>
-              <span className="text-[10px] sm:text-xs font-bold text-zinc-300 truncate max-w-[60px] sm:max-w-[100px]">{user.email?.split('@')[0]}</span>
+              <span className="text-[10px] sm:text-xs font-bold text-zinc-300 truncate max-w-[60px] sm:max-w-[100px] hidden sm:inline">{user.email?.split('@')[0]}</span>
             </div>
-            <button onClick={signOut} className="text-zinc-500 hover:text-brand-primary transition-colors">
+            <button onClick={signOut} className="text-zinc-500 hover:text-brand-primary transition-colors p-1">
               <LogOut size={18} className="sm:w-[20px] sm:h-[20px]" />
             </button>
           </div>
