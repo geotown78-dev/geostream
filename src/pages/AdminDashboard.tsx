@@ -533,7 +533,7 @@ export default function AdminDashboard() {
           <>
             <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
-              <div className="bento-card p-10 bg-zinc-900/30 border-white/5 space-y-8">
+              <div className="bento-card p-5 sm:p-10 bg-zinc-900/30 border-white/5 space-y-6 sm:space-y-8">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 bg-blue-500/10 rounded-lg"><Monitor size={20} className="text-blue-500" /></div>
                   <h2 className="text-xl font-black uppercase text-white tracking-tight">ახალი სესია</h2>
