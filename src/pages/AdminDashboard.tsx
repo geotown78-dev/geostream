@@ -682,7 +682,7 @@ export default function AdminDashboard() {
                   }
 
                   return (
-                    <div className="bento-card bg-zinc-90 w-20 border border-white/5 overflow-hidden rounded-2xl">
+                    <div className="bento-card bg-zinc-950/20 w-full border border-white/5 overflow-hidden rounded-2xl">
                       {/* Table Header for desktop */}
                       <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-4 bg-zinc-900/60 border-b border-white/5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                         <div className="col-span-1">ID</div>
