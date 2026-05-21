@@ -92,6 +92,10 @@ export function Navbar() {
   const { user, signOut } = useAuth();
   const location = useLocation();
 
+  const userEmail = user?.email || '';
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || userEmail.split('@')[0];
+  const userInitial = userName ? userName[0].toUpperCase() : '';
+
   const tabs = [
     { name: 'მთავარი', path: '/' },
     { name: 'ფეხბურთი', path: '/football' },
@@ -149,10 +153,10 @@ export function Navbar() {
               onClick={handleSamePageClick('/profile')}
               className="flex items-center gap-2 bg-brand-surface border border-brand-border rounded-lg p-1.5 sm:px-3 sm:py-1.5 hover:border-brand-primary/30 transition-all cursor-pointer"
             >
-              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-brand-primary flex items-center justify-center text-[9px] sm:text-[10px] font-black text-white">
-                {user.email?.[0].toUpperCase()}
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-brand-primary flex items-center justify-center text-[9px] sm:text-[10px] font-black text-white uppercase">
+                {userInitial}
               </div>
-              <span className="text-[10px] sm:text-xs font-bold text-zinc-300 truncate max-w-[60px] sm:max-w-[100px] hidden sm:inline">{user.email?.split('@')[0]}</span>
+              <span className="text-[10px] sm:text-xs font-bold text-zinc-300 truncate max-w-[60px] sm:max-w-[100px] hidden sm:inline uppercase">{userName}</span>
             </Link>
             <button onClick={signOut} className="text-zinc-500 hover:text-brand-primary transition-colors p-1">
               <LogOut size={18} className="sm:w-[20px] sm:h-[20px]" />
