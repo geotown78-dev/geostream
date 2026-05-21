@@ -274,8 +274,7 @@ export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: 
                   alt=""
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/60 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent sm:via-brand-black/25" />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/20 to-transparent" />
               </motion.div>
             </AnimatePresence>
           </div>
