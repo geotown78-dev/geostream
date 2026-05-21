@@ -825,7 +825,32 @@ export default function LiveRoom() {
                   onChange={(e) => setTempIp(e.target.value)}
                   placeholder="მაგ: 5.83.153.142"
                   className="w-full bg-black/50 border border-brand-border rounded-xl px-4 py-3 text-sm font-bold focus:border-brand-primary outline-none transition-colors"
-                        {/* Chat Side Panel */}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => setShowSettings(false)}
+                  className="flex-1 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-zinc-900 hover:bg-zinc-800 transition-colors"
+                >
+                  გაუქმება
+                </button>
+                <button 
+                  onClick={() => {
+                    setVdsIp(tempIp);
+                    localStorage.setItem('vds_ip', tempIp);
+                    setShowSettings(false);
+                  }}
+                  className="flex-1 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-brand-primary text-black hover:opacity-90 transition-opacity"
+                >
+                  შენახვა
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Chat Side Panel */}
         <aside className="col-span-12 lg:col-span-3 bento-card flex flex-col overflow-hidden h-[450px] lg:h-full bg-zinc-900/40">
           <div className="p-6 border-b border-brand-border flex justify-between items-center bg-zinc-950/40">
             <h3 className="font-black uppercase text-[10px] tracking-widest text-zinc-400">ლაივ ჩატი</h3>
