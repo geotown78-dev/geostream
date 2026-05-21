@@ -30,6 +30,8 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
 
   // Interactive Resizing States
   const [isResizing, setIsResizing] = useState<boolean>(false);
+  const [activeHandle, setActiveHandle] = useState<string | null>(null);
+  const activeHandleRef = useRef<string | null>(null);
   const resizeStart = useRef({ x: 0, y: 0 });
   const dimsStart = useRef({ width: 1280, height: 720 });
   
@@ -115,18 +117,105 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
       maxH = containerH;
       maxW = containerH * aspectRatio;
     }
-    
-    // User is dragging the bottom-right corner.
-    // Calculate distance from center to the cursor along each axis
-    const dx = clientX - centerX;
-    const dy = clientY - centerY;
-    
-    // Set scale based on the average/maximum tracking to keep design ratio perfectly aligned
-    const scaleX = (2 * dx) / maxW;
-    const scaleY = (2 * dy) / maxH;
-    
-    const newScale = Math.max(0.15, Math.min(1.0, (scaleX + scaleY) / 2));
-    setCropBoxScale(newScale);
+
+    const handle = activeHandleRef.current;
+    if (!handle) return;
+
+    if (!keepAspect) {
+      const progressX = clientX - resizeStart.current.x;
+      const progressY = clientY - resizeStart.current.y;
+      
+      const pixelScale = dimsStart.current.width / container.clientWidth;
+      
+      let newWidth = dimsStart.current.width;
+      let newHeight = dimsStart.current.height;
+      
+      switch (handle) {
+        case 'r':
+          newWidth = dimsStart.current.width + Math.round(progressX * pixelScale * 2);
+          break;
+        case 'l':
+          newWidth = dimsStart.current.width - Math.round(progressX * pixelScale * 2);
+          break;
+        case 'b':
+          newHeight = dimsStart.current.height + Math.round(progressY * pixelScale * 2);
+          break;
+        case 't':
+          newHeight = dimsStart.current.height - Math.round(progressY * pixelScale * 2);
+          break;
+        case 'br':
+          newWidth = dimsStart.current.width + Math.round(progressX * pixelScale * 2);
+          newHeight = dimsStart.current.height + Math.round(progressY * pixelScale * 2);
+          break;
+        case 'tl':
+          newWidth = dimsStart.current.width - Math.round(progressX * pixelScale * 2);
+          newHeight = dimsStart.current.height - Math.round(progressY * pixelScale * 2);
+          break;
+        case 'tr':
+          newWidth = dimsStart.current.width + Math.round(progressX * pixelScale * 2);
+          newHeight = dimsStart.current.height - Math.round(progressY * pixelScale * 2);
+          break;
+        case 'bl':
+          newWidth = dimsStart.current.width - Math.round(progressX * pixelScale * 2);
+          newHeight = dimsStart.current.height + Math.round(progressY * pixelScale * 2);
+          break;
+      }
+      
+      newWidth = Math.max(160, Math.min(3840, newWidth));
+      newHeight = Math.max(90, Math.min(2160, newHeight));
+      
+      setTargetWidth(newWidth);
+      setTargetHeight(newHeight);
+      
+      const newAspect = newWidth / newHeight;
+      setAspectRatio(newAspect);
+      setAspectLabel(`${newWidth}x${newHeight}`);
+    } else {
+      // Locked aspect ratio mode
+      const dx = clientX - centerX;
+      const dy = clientY - centerY;
+      
+      let scaleX = 1;
+      let scaleY = 1;
+      
+      switch (handle) {
+        case 'br':
+          scaleX = (2 * dx) / maxW;
+          scaleY = (2 * dy) / maxH;
+          break;
+        case 'tl':
+          scaleX = (2 * -dx) / maxW;
+          scaleY = (2 * -dy) / maxH;
+          break;
+        case 'tr':
+          scaleX = (2 * dx) / maxW;
+          scaleY = (2 * -dy) / maxH;
+          break;
+        case 'bl':
+          scaleX = (2 * -dx) / maxW;
+          scaleY = (2 * dy) / maxH;
+          break;
+        case 't':
+          scaleY = (2 * -dy) / maxH;
+          scaleX = scaleY;
+          break;
+        case 'b':
+          scaleY = (2 * dy) / maxH;
+          scaleX = scaleY;
+          break;
+        case 'l':
+          scaleX = (2 * -dx) / maxW;
+          scaleY = scaleX;
+          break;
+        case 'r':
+          scaleX = (2 * dx) / maxW;
+          scaleY = scaleX;
+          break;
+      }
+      
+      const newScale = Math.max(0.15, Math.min(1.0, (scaleX + scaleY) / 2));
+      setCropBoxScale(newScale);
+    }
   };
 
   // Interactive Resizing handlers via corner/edge mouse drag
@@ -134,6 +223,10 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
     e.stopPropagation();
     e.preventDefault();
     setIsResizing(true);
+    setActiveHandle(direction);
+    activeHandleRef.current = direction;
+    resizeStart.current = { x: e.clientX, y: e.clientY };
+    dimsStart.current = { width: targetWidth, height: targetHeight };
   };
 
   const handleResizeMove = (e: MouseEvent) => {
@@ -143,6 +236,8 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
 
   const handleResizeEnd = () => {
     setIsResizing(false);
+    setActiveHandle(null);
+    activeHandleRef.current = null;
   };
 
   // Touch Support for resizing
@@ -150,6 +245,10 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
     e.stopPropagation();
     if (e.touches.length !== 1) return;
     setIsResizing(true);
+    setActiveHandle(direction);
+    activeHandleRef.current = direction;
+    resizeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    dimsStart.current = { width: targetWidth, height: targetHeight };
   };
 
   const handleResizeTouchMove = (e: React.TouchEvent) => {
@@ -414,41 +513,95 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
                       <div></div>
                     </div>
 
-                    {/* INTERACTIVE MOUSE RESIZING GRAB CORNERS OR EDGES WITH POINTER-EVENTS-AUTO */}
-                    {/* Bottom-Right primary corner handle */}
+                    {/* INTERACTIVE MOUSE RESIZING GRAB CORNERS OR EDGES */}
+                    {/* Top-Left Corner */}
                     <div 
-                      className="absolute -bottom-2 -right-2 w-5 h-5 bg-brand-primary border-2 border-white rounded-full flex items-center justify-center cursor-se-resize shadow-lg shadow-brand-primary/40 pointer-events-auto active:scale-125 hover:scale-110 transition-transform z-30 flex items-center justify-center"
+                      className="absolute -top-2.5 -left-2.5 w-5 h-5 bg-brand-primary border-2 border-white rounded-full flex items-center justify-center cursor-nwse-resize pointer-events-auto active:scale-125 hover:scale-110 transition-transform z-30"
+                      title="ზომის შეცვლა"
+                      onMouseDown={(e) => handleResizeStart(e, 'tl')}
+                      onTouchStart={(e) => handleResizeTouchStart(e, 'tl')}
+                      onTouchMove={handleResizeTouchMove}
+                      onTouchEnd={handleResizeEnd}
+                    >
+                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                    </div>
+
+                    {/* Top-Right Corner */}
+                    <div 
+                      className="absolute -top-2.5 -right-2.5 w-5 h-5 bg-brand-primary border-2 border-white rounded-full flex items-center justify-center cursor-nesw-resize pointer-events-auto active:scale-125 hover:scale-110 transition-transform z-30"
+                      title="ზომის შეცვლა"
+                      onMouseDown={(e) => handleResizeStart(e, 'tr')}
+                      onTouchStart={(e) => handleResizeTouchStart(e, 'tr')}
+                      onTouchMove={handleResizeTouchMove}
+                      onTouchEnd={handleResizeEnd}
+                    >
+                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                    </div>
+
+                    {/* Bottom-Left Corner */}
+                    <div 
+                      className="absolute -bottom-2.5 -left-2.5 w-5 h-5 bg-brand-primary border-2 border-white rounded-full flex items-center justify-center cursor-nesw-resize pointer-events-auto active:scale-125 hover:scale-110 transition-transform z-30"
+                      title="ზომის შეცვლა"
+                      onMouseDown={(e) => handleResizeStart(e, 'bl')}
+                      onTouchStart={(e) => handleResizeTouchStart(e, 'bl')}
+                      onTouchMove={handleResizeTouchMove}
+                      onTouchEnd={handleResizeEnd}
+                    >
+                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                    </div>
+
+                    {/* Bottom-Right Corner */}
+                    <div 
+                      className="absolute -bottom-2.5 -right-2.5 w-5 h-5 bg-brand-primary border-2 border-white rounded-full flex items-center justify-center cursor-se-resize pointer-events-auto active:scale-125 hover:scale-110 transition-transform z-30"
+                      title="ზომის შეცვლა"
                       onMouseDown={(e) => handleResizeStart(e, 'br')}
                       onTouchStart={(e) => handleResizeTouchStart(e, 'br')}
                       onTouchMove={handleResizeTouchMove}
                       onTouchEnd={handleResizeEnd}
                     >
-                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                     </div>
 
-                    {/* Right-edge handle (only visible when keeper is deactivated for free-form scaling) */}
-                    {!keepAspect && (
-                      <div 
-                        className="absolute top-2 bottom-2 right-0 w-2.5 bg-brand-primary/10 hover:bg-brand-primary/40 border-r-2 border-dashed border-brand-primary/70 cursor-e-resize pointer-events-auto z-20 transition-all"
-                        title="გადასათრევად ზომის ცვლილებისთვის"
-                        onMouseDown={(e) => handleResizeStart(e, 'r')}
-                        onTouchStart={(e) => handleResizeTouchStart(e, 'r')}
-                        onTouchMove={handleResizeTouchMove}
-                        onTouchEnd={handleResizeEnd}
-                      />
-                    )}
+                    {/* Edges */}
+                    {/* Top Edge */}
+                    <div 
+                      className="absolute -top-1.5 left-3 right-3 h-3 bg-brand-primary/10 hover:bg-brand-primary/40 cursor-n-resize pointer-events-auto z-20 transition-all border-t-2 border-dashed border-brand-primary/70"
+                      title="სიმაღლის შეცვლა"
+                      onMouseDown={(e) => handleResizeStart(e, 't')}
+                      onTouchStart={(e) => handleResizeTouchStart(e, 't')}
+                      onTouchMove={handleResizeTouchMove}
+                      onTouchEnd={handleResizeEnd}
+                    />
 
-                    {/* Bottom-edge handle */}
-                    {!keepAspect && (
-                      <div 
-                        className="absolute left-2 right-2 bottom-0 h-2.5 bg-brand-primary/10 hover:bg-brand-primary/40 border-b-2 border-dashed border-brand-primary/70 cursor-s-resize pointer-events-auto z-20 transition-all"
-                        title="ქვემოთ ჩამოსათრევად სიმაღლის ცვლილებისთვის"
-                        onMouseDown={(e) => handleResizeStart(e, 'b')}
-                        onTouchStart={(e) => handleResizeTouchStart(e, 'b')}
-                        onTouchMove={handleResizeTouchMove}
-                        onTouchEnd={handleResizeEnd}
-                      />
-                    )}
+                    {/* Bottom Edge */}
+                    <div 
+                      className="absolute -bottom-1.5 left-3 right-3 h-3 bg-brand-primary/10 hover:bg-brand-primary/40 cursor-s-resize pointer-events-auto z-20 transition-all border-b-2 border-dashed border-brand-primary/70"
+                      title="სიმაღლის შეცვლა"
+                      onMouseDown={(e) => handleResizeStart(e, 'b')}
+                      onTouchStart={(e) => handleResizeTouchStart(e, 'b')}
+                      onTouchMove={handleResizeTouchMove}
+                      onTouchEnd={handleResizeEnd}
+                    />
+
+                    {/* Left Edge */}
+                    <div 
+                      className="absolute -left-1.5 top-3 bottom-3 w-3 bg-brand-primary/10 hover:bg-brand-primary/40 cursor-w-resize pointer-events-auto z-20 transition-all border-l-2 border-dashed border-brand-primary/70"
+                      title="სიგანის შეცვლა"
+                      onMouseDown={(e) => handleResizeStart(e, 'l')}
+                      onTouchStart={(e) => handleResizeTouchStart(e, 'l')}
+                      onTouchMove={handleResizeTouchMove}
+                      onTouchEnd={handleResizeEnd}
+                    />
+
+                    {/* Right Edge */}
+                    <div 
+                      className="absolute -right-1.5 top-3 bottom-3 w-3 bg-brand-primary/10 hover:bg-brand-primary/40 cursor-e-resize pointer-events-auto z-20 transition-all border-r-2 border-dashed border-brand-primary/70"
+                      title="სიგანის შეცვლა"
+                      onMouseDown={(e) => handleResizeStart(e, 'r')}
+                      onTouchStart={(e) => handleResizeTouchStart(e, 'r')}
+                      onTouchMove={handleResizeTouchMove}
+                      onTouchEnd={handleResizeEnd}
+                    />
                   </div>
                 </div>
 
