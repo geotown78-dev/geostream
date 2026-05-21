@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Hero, LiveCard, UpcomingCard } from '../components/UI';
 import { Calendar, Trophy, ChevronRight, TrendingUp } from 'lucide-react';
@@ -13,6 +13,18 @@ export default function Home() {
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/football') {
+      setActiveTab('Football');
+    } else if (path === '/ufc' || path === '/fighters') {
+      setActiveTab('UFC');
+    } else if (path === '/sports') {
+      setActiveTab('All');
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     async function fetchData() {
@@ -91,6 +103,14 @@ export default function Home() {
     }
   };
 
+  const filteredLive = activeTab === 'All' 
+    ? liveEvents 
+    : liveEvents.filter(e => e.sport?.toLowerCase() === activeTab.toLowerCase());
+
+  const filteredUpcoming = activeTab === 'All' 
+    ? upcomingEvents 
+    : upcomingEvents.filter(e => e.sport?.toLowerCase() === activeTab.toLowerCase());
+
   return (
     <div className="min-h-screen">
       <Hero activeBroadcast={activeBroadcast} exclusiveEvent={exclusiveEvent} />
@@ -113,8 +133,8 @@ export default function Home() {
                   <div className="text-[10px] font-black tracking-widest uppercase">იტვირთება...</div>
                 </div>
               ))
-            ) : liveEvents.length > 0 ? (
-              liveEvents.map((event, i) => (
+            ) : filteredLive.length > 0 ? (
+              filteredLive.map((event, i) => (
                 <motion.div
                   key={event.id || i}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -163,8 +183,8 @@ export default function Home() {
                   </div>
                 </div>
               ))
-            ) : upcomingEvents.length > 0 ? (
-              upcomingEvents.map((event, i) => (
+            ) : filteredUpcoming.length > 0 ? (
+              filteredUpcoming.map((event, i) => (
                 <motion.div
                   key={event.id || i}
                   initial={{ opacity: 0, y: 10 }}
