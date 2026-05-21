@@ -201,48 +201,6 @@ export default function Home() {
             )}
           </div>
         </section>
-
-        {/* Info Banner Section */}
-        <div className="flex justify-center pb-12 sm:pb-0">
-          <div className="w-full max-w-md bg-brand-surface border border-brand-border rounded-xl p-6 flex flex-col justify-start">
-            <div className="flex items-center justify-between mb-6">
-              <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                <Trophy size={14} className="text-brand-primary" /> LA LIGA TOP 5
-              </h4>
-              <Link to="/stats" className="text-[9px] font-black uppercase text-zinc-500 hover:text-brand-primary transition-colors">სრული</Link>
-            </div>
-            
-            <div className="space-y-3">
-              {(function() {
-                const saved = localStorage.getItem('laliga_leaderboard');
-                const data = saved ? JSON.parse(saved).slice(0, 5) : [
-                  { name: 'Barcelona', points: 91, logo: 'https://cdn.worldvectorlogo.com/logos/fc-barcelona.svg' },
-                  { name: 'Real Madrid', points: 80, logo: 'https://cdn.worldvectorlogo.com/logos/real-madrid-cf.svg' },
-                  { name: 'Villarreal', points: 69, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Villarreal_CF_logo.svg/100px-Villarreal_CF_logo.svg.png' },
-                  { name: 'Atlético Madrid', points: 66, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Atletico_madrid_2017_logo.svg/100px-Atletico_madrid_2017_logo.svg.png' },
-                  { name: 'Real Betis', points: 57, logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Real_Betis_logo.svg/100px-Real_Betis_logo.svg.png' }
-                ];
-                
-                return data.map((team: any, i: number) => (
-                  <div key={team.name} className="flex items-center justify-between p-2 rounded-lg bg-black/20 border border-white/5 hover:border-brand-primary/30 transition-all group">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-black italic text-zinc-600 w-4">{i + 1}</span>
-                      <div className="w-5 h-5 flex items-center justify-center overflow-hidden shrink-0">
-                        <TeamLogo name={team.name} logoUrl={team.logo} className="w-full h-full" />
-                      </div>
-                      <span className="text-[10px] font-black uppercase italic group-hover:text-brand-primary transition-colors truncate max-w-[80px]">{team.name}</span>
-                    </div>
-                    <span className="text-[10px] font-black text-brand-primary">{team.points || team.pts}</span>
-                  </div>
-                ));
-              })()}
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-brand-border text-center">
-              <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-[0.2em]">სპექტაკლი მუდამ გრძელდება</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
