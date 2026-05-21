@@ -324,12 +324,6 @@ export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: 
                       ლაივის ყურება
                     </Link>
                   )}
-                  <Link
-                    to={activeSlide.isLive ? `/watch/${activeSlide.room_id}` : `/watch/sched-${activeSlide.id}`}
-                    className="flex items-center gap-1 text-center justify-center sm:gap-3 px-3 sm:px-8 py-2 sm:py-4 bg-white/10 hover:bg-white/20 text-white font-black uppercase tracking-widest text-[8px] sm:text-xs rounded-lg transition-all backdrop-blur-md border border-white/10 whitespace-nowrap"
-                  >
-                    დეტალები
-                  </Link>
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -463,12 +457,11 @@ export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: 
   const time = date.toLocaleString('ka-GE', { hour: '2-digit', minute: '2-digit', hour12: false });
 
   return (
-    <Link 
-      to={`/watch/sched-${event.id}`}
-      className="group relative block bg-brand-surface border border-brand-border rounded-xl p-5 hover:border-brand-primary/30 hover:scale-[1.02] shadow-md hover:shadow-brand-primary/5 transition-all overflow-hidden cursor-pointer"
+    <div 
+      className="relative block bg-brand-surface border border-brand-border rounded-xl p-5 shadow-lg overflow-hidden select-none"
     >
       {event.thumbnail && (
-        <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity">
+        <div className="absolute inset-0 opacity-15">
           <img src={event.thumbnail} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
         </div>
       )}
@@ -488,7 +481,7 @@ export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: 
                   e.stopPropagation();
                   onDelete(event.id);
                 }}
-                className="p-1.5 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded transition-all relative z-25"
+                className="p-1.5 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded transition-all relative z-25 cursor-pointer"
               >
                 <Trash2 size={12} />
               </button>
@@ -498,15 +491,15 @@ export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: 
 
         <div className="flex items-center justify-center gap-6 mb-6">
           <div className="text-center flex-1">
-            <div className="w-10 h-10 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm group-hover:border-brand-primary/50 transition-all">
-              <Trophy size={16} className="text-zinc-400 group-hover:text-brand-primary transition-colors" />
+            <div className="w-10 h-10 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm">
+              <Trophy size={16} className="text-zinc-400" />
             </div>
             <div className="text-[10px] font-black text-zinc-300 uppercase truncate">{event.team1 || 'გუნდი ა'}</div>
           </div>
           <div className="text-[10px] font-black italic text-brand-primary text-shadow-glow">VS</div>
           <div className="text-center flex-1">
-            <div className="w-10 h-10 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm group-hover:border-brand-primary/50 transition-all">
-              <Trophy size={16} className="text-zinc-400 group-hover:text-brand-primary transition-colors" />
+            <div className="w-10 h-10 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm">
+              <Trophy size={16} className="text-zinc-400" />
             </div>
             <div className="text-[10px] font-black text-zinc-300 uppercase truncate">{event.team2 || 'გუნდი ბ'}</div>
           </div>
@@ -514,11 +507,11 @@ export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: 
 
         <div className="flex justify-between items-center">
           <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{event.sport || event.league || 'ღონისძიება'}</div>
-          <span className="text-[8px] font-black uppercase text-brand-primary tracking-widest bg-brand-primary/10 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[8px] font-black uppercase text-brand-primary tracking-widest bg-brand-primary/10 px-2 py-0.5 rounded">
             მოლოდინი
           </span>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
