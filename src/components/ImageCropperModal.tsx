@@ -26,6 +26,11 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
   const [targetHeight, setTargetHeight] = useState<number>(720);
   const [keepAspect, setKeepAspect] = useState<boolean>(true);
   const [quality, setQuality] = useState<number>(0.85); // Compress to keep under 4MB
+
+  // Interactive Resizing States
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+  const resizeStart = useRef({ x: 0, y: 0 });
+  const dimsStart = useRef({ width: 1280, height: 720 });
   
   const imgRef = useRef<HTMLImageElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -38,6 +43,25 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
       URL.revokeObjectURL(objectUrl);
     };
   }, [file]);
+
+  // Hook for mouse wheel scroll zooming inside the viewport for maximum user convenience
+  useEffect(() => {
+    const container = viewportRef.current;
+    if (!container) return;
+
+    const onWheelEvent = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const zoomFactor = 0.08;
+      const direction = e.deltaY < 0 ? 1 : -1;
+      setZoom((prevZoom) => Math.min(4, Math.max(0.4, prevZoom + direction * zoomFactor)));
+    };
+
+    container.addEventListener('wheel', onWheelEvent, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', onWheelEvent);
+    };
+  }, []);
 
   // Handle aspect ratio preset change
   const handleAspectChange = (ratio: number, label: string) => {
@@ -68,6 +92,103 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
       setTargetWidth(Math.round(val * aspectRatio));
     }
   };
+
+  // Interactive Resizing handlers via corner/edge mouse drag
+  const handleResizeStart = (e: React.MouseEvent, direction: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsResizing(true);
+    resizeStart.current = { x: e.clientX, y: e.clientY };
+    dimsStart.current = { width: targetWidth, height: targetHeight };
+  };
+
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!isResizing) return;
+    const dx = e.clientX - resizeStart.current.x;
+    const dy = e.clientY - resizeStart.current.y;
+    
+    const container = viewportRef.current;
+    if (!container) return;
+    
+    // Scale user drag to target canvas dimensions mapping
+    const pixelScale = targetWidth / container.clientWidth;
+    
+    let newWidth = dimsStart.current.width + Math.round(dx * pixelScale);
+    let newHeight = dimsStart.current.height + Math.round(dy * pixelScale);
+    
+    // Boundaries
+    newWidth = Math.max(160, Math.min(3840, newWidth));
+    newHeight = Math.max(90, Math.min(2160, newHeight));
+    
+    if (keepAspect) {
+      const ratio = aspectRatio;
+      if (ratio && ratio > 0) {
+        newHeight = Math.round(newWidth / ratio);
+      }
+    } else {
+      const newAspect = newWidth / newHeight;
+      setAspectRatio(newAspect);
+      setAspectLabel(`${newWidth}x${newHeight}`);
+    }
+    
+    setTargetWidth(newWidth);
+    setTargetHeight(newHeight);
+  };
+
+  const handleResizeEnd = () => {
+    setIsResizing(false);
+  };
+
+  // Touch Support for resizing
+  const handleResizeTouchStart = (e: React.TouchEvent, direction: string) => {
+    e.stopPropagation();
+    if (e.touches.length !== 1) return;
+    setIsResizing(true);
+    resizeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    dimsStart.current = { width: targetWidth, height: targetHeight };
+  };
+
+  const handleResizeTouchMove = (e: React.TouchEvent) => {
+    if (!isResizing || e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - resizeStart.current.x;
+    const dy = e.touches[0].clientY - resizeStart.current.y;
+    
+    const container = viewportRef.current;
+    if (!container) return;
+    const pixelScale = targetWidth / container.clientWidth;
+    
+    let newWidth = dimsStart.current.width + Math.round(dx * pixelScale);
+    let newHeight = dimsStart.current.height + Math.round(dy * pixelScale);
+    
+    newWidth = Math.max(160, Math.min(3840, newWidth));
+    newHeight = Math.max(90, Math.min(2160, newHeight));
+    
+    if (keepAspect) {
+      const ratio = aspectRatio;
+      if (ratio && ratio > 0) {
+        newHeight = Math.round(newWidth / ratio);
+      }
+    } else {
+      const newAspect = newWidth / newHeight;
+      setAspectRatio(newAspect);
+      setAspectLabel(`${newWidth}x${newHeight}`);
+    }
+    
+    setTargetWidth(newWidth);
+    setTargetHeight(newHeight);
+  };
+
+  // Bind resize listeners
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', handleResizeMove);
+      window.addEventListener('mouseup', handleResizeEnd);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleResizeMove);
+      window.removeEventListener('mouseup', handleResizeEnd);
+    };
+  }, [isResizing, aspectRatio, keepAspect, targetWidth]);
 
   // Start image drag/pan
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -254,7 +375,7 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
             
             {/* Viewport and Preview Container */}
             <div className="md:col-span-3 space-y-4">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">მორგება (drag-and-drop გადაადგილება და ზუმი)</label>
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">მორგება (გადაადგილება, მაუსის სკროლი ან კუთხის მოქაჩვა)</label>
               
               <div 
                 ref={viewportRef}
@@ -270,7 +391,7 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
                   
                   {/* Highlight mask area based on aspect ratio */}
                   <div 
-                    className="border border-white/40 shadow-[0_0_0_9999px_rgba(15,15,17,0.7)] flex items-center justify-center"
+                    className="relative border border-white/40 shadow-[0_0_0_9999px_rgba(15,15,17,0.7)] flex items-center justify-center"
                     style={{
                       width: '100%',
                       height: '100%',
@@ -280,7 +401,7 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
                     }}
                   >
                     <div className="absolute top-2 left-2 text-[8px] bg-black/60 border border-white/10 px-2 py-0.5 rounded text-white tracking-widest uppercase font-black">
-                      მდებარეობა: {aspectLabel}
+                      ზომა: {targetWidth}x{targetHeight} ({aspectLabel})
                     </div>
                     {/* Visual guidelines */}
                     <div className="grid grid-cols-3 grid-rows-3 w-full h-full opacity-20 pointer-events-none">
@@ -294,6 +415,42 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
                       <div className="border-r border-dashed border-white"></div>
                       <div></div>
                     </div>
+
+                    {/* INTERACTIVE MOUSE RESIZING GRAB CORNERS OR EDGES WITH POINTER-EVENTS-AUTO */}
+                    {/* Bottom-Right primary corner handle */}
+                    <div 
+                      className="absolute -bottom-2 -right-2 w-5 h-5 bg-brand-primary border-2 border-white rounded-full flex items-center justify-center cursor-se-resize shadow-lg shadow-brand-primary/40 pointer-events-auto active:scale-125 hover:scale-110 transition-transform z-30 flex items-center justify-center"
+                      onMouseDown={(e) => handleResizeStart(e, 'br')}
+                      onTouchStart={(e) => handleResizeTouchStart(e, 'br')}
+                      onTouchMove={handleResizeTouchMove}
+                      onTouchEnd={handleResizeEnd}
+                    >
+                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                    </div>
+
+                    {/* Right-edge handle (only visible when keeper is deactivated for free-form scaling) */}
+                    {!keepAspect && (
+                      <div 
+                        className="absolute top-2 bottom-2 right-0 w-2.5 bg-brand-primary/10 hover:bg-brand-primary/40 border-r-2 border-dashed border-brand-primary/70 cursor-e-resize pointer-events-auto z-20 transition-all"
+                        title="გადასათრევად ზომის ცვლილებისთვის"
+                        onMouseDown={(e) => handleResizeStart(e, 'r')}
+                        onTouchStart={(e) => handleResizeTouchStart(e, 'r')}
+                        onTouchMove={handleResizeTouchMove}
+                        onTouchEnd={handleResizeEnd}
+                      />
+                    )}
+
+                    {/* Bottom-edge handle */}
+                    {!keepAspect && (
+                      <div 
+                        className="absolute left-2 right-2 bottom-0 h-2.5 bg-brand-primary/10 hover:bg-brand-primary/40 border-b-2 border-dashed border-brand-primary/70 cursor-s-resize pointer-events-auto z-20 transition-all"
+                        title="ქვემოთ ჩამოსათრევად სიმაღლის ცვლილებისთვის"
+                        onMouseDown={(e) => handleResizeStart(e, 'b')}
+                        onTouchStart={(e) => handleResizeTouchStart(e, 'b')}
+                        onTouchMove={handleResizeTouchMove}
+                        onTouchEnd={handleResizeEnd}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -305,7 +462,7 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
                     className="max-h-full max-w-full object-contain select-none pointer-events-none"
                     style={{
                       transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom}) rotate(${rotation}deg)`,
-                      transition: isDragging ? 'none' : 'transform 0.1s ease',
+                      transition: isDragging || isResizing ? 'none' : 'transform 0.1s ease',
                     }}
                     referrerPolicy="no-referrer"
                     onLoad={() => {
@@ -314,9 +471,9 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
                   />
                 )}
 
-                <div className="absolute bottom-3 right-3 z-20 bg-black/80 backdrop-blur-md text-[8px] font-black px-2 py-1 border border-white/5 rounded flex items-center gap-1.5 text-zinc-400">
-                  <Move size={10} className="text-zinc-500" />
-                  გამოიყენეთ მაუსი / თაჩი
+                <div className="absolute bottom-3 right-3 z-20 bg-black/80 backdrop-blur-md text-[8px] font-black px-2.5 py-1 border border-white/5 rounded-xl flex items-center gap-1.5 text-zinc-300">
+                  <Move size={10} className="text-brand-primary animate-bounce" />
+                  drag-and-drop / მაუსის სკროლი გასადიდებლად
                 </div>
               </div>
 
