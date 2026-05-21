@@ -182,6 +182,48 @@ app.get("/api/stats", async (req, res) => {
   });
 });
 
+// Admin Users List with Service Role Admin SDK or clean mock fallback
+app.get("/api/admin/users", async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.json({
+      success: true,
+      users: [
+        { id: "u-1", email: "georgetchedia74@gmail.com", user_metadata: { full_name: "გიორგი ჭედია" }, created_at: "2026-05-18T12:00:00Z" },
+        { id: "u-2", email: "admin@geostream.ge", user_metadata: { full_name: "ადმინისტრატორი" }, created_at: "2026-05-19T08:30:00Z" },
+        { id: "u-3", email: "sandro99@gmail.com", user_metadata: { full_name: "სანდრო მელაძე" }, created_at: "2026-05-20T14:15:00Z" },
+        { id: "u-4", email: "luka.k@yahoo.com", user_metadata: { full_name: "ლუკა კაპანაძე" }, created_at: "2026-05-21T10:05:00Z" },
+        { id: "u-5", email: "nini_baramidze@gmail.com", user_metadata: { full_name: "ნინი ბარამიძე" }, created_at: "2026-05-21T18:22:00Z" }
+      ],
+      is_mock: true
+    });
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    if (error) {
+      console.warn("Error fetching users from Supabase admin, using database/mock fallback:", error);
+      return res.json({
+        success: true,
+        users: [
+          { id: "u-1", email: "georgetchedia74@gmail.com", user_metadata: { full_name: "გიორგი ჭედია" }, created_at: "2026-05-18T12:00:00Z" },
+          { id: "u-2", email: "admin@geostream.ge", user_metadata: { full_name: "ადმინისტრატორი" }, created_at: "2026-05-19T08:30:00Z" },
+          { id: "u-3", email: "sandro99@gmail.com", user_metadata: { full_name: "სანდრო მელაძე" }, created_at: "2026-05-20T14:15:00Z" }
+        ],
+        is_mock: true
+      });
+    }
+
+    res.json({
+      success: true,
+      users: data.users || [],
+      is_mock: false
+    });
+  } catch (err: any) {
+    console.error("Exception in fetch users endpoint:", err);
+    res.status(500).json({ error: err.message || "Failed to fetch users" });
+  }
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
