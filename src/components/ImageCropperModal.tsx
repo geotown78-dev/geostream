@@ -26,6 +26,7 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
   const [targetHeight, setTargetHeight] = useState<number>(720);
   const [keepAspect, setKeepAspect] = useState<boolean>(true);
   const [quality, setQuality] = useState<number>(0.85); // Compress to keep under 4MB
+  const [cropBoxScale, setCropBoxScale] = useState<number>(0.9); // default to 90% of max fit
 
   // Interactive Resizing States
   const [isResizing, setIsResizing] = useState<boolean>(false);
@@ -76,6 +77,7 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
     // Centering reset
     setOffset({ x: 0, y: 0 });
     setZoom(1);
+    setCropBoxScale(0.9);
   };
 
   // Dimensions change handlers
@@ -93,46 +95,50 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
     }
   };
 
+  // Helper to calculate and perform resizing of the crop box so it physically tracks the mouse cursor
+  const performResize = (clientX: number, clientY: number) => {
+    const container = viewportRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    
+    // Find the center of the viewport container
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const containerW = rect.width;
+    const containerH = rect.height;
+    
+    // Find maximum fitting crop box dimensions inside this viewport
+    let maxW = containerW;
+    let maxH = containerW / aspectRatio;
+    if (maxH > containerH) {
+      maxH = containerH;
+      maxW = containerH * aspectRatio;
+    }
+    
+    // User is dragging the bottom-right corner.
+    // Calculate distance from center to the cursor along each axis
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
+    
+    // Set scale based on the average/maximum tracking to keep design ratio perfectly aligned
+    const scaleX = (2 * dx) / maxW;
+    const scaleY = (2 * dy) / maxH;
+    
+    const newScale = Math.max(0.15, Math.min(1.0, (scaleX + scaleY) / 2));
+    setCropBoxScale(newScale);
+  };
+
   // Interactive Resizing handlers via corner/edge mouse drag
   const handleResizeStart = (e: React.MouseEvent, direction: string) => {
     e.stopPropagation();
     e.preventDefault();
     setIsResizing(true);
-    resizeStart.current = { x: e.clientX, y: e.clientY };
-    dimsStart.current = { width: targetWidth, height: targetHeight };
   };
 
   const handleResizeMove = (e: MouseEvent) => {
     if (!isResizing) return;
-    const dx = e.clientX - resizeStart.current.x;
-    const dy = e.clientY - resizeStart.current.y;
-    
-    const container = viewportRef.current;
-    if (!container) return;
-    
-    // Scale user drag to target canvas dimensions mapping
-    const pixelScale = targetWidth / container.clientWidth;
-    
-    let newWidth = dimsStart.current.width + Math.round(dx * pixelScale);
-    let newHeight = dimsStart.current.height + Math.round(dy * pixelScale);
-    
-    // Boundaries
-    newWidth = Math.max(160, Math.min(3840, newWidth));
-    newHeight = Math.max(90, Math.min(2160, newHeight));
-    
-    if (keepAspect) {
-      const ratio = aspectRatio;
-      if (ratio && ratio > 0) {
-        newHeight = Math.round(newWidth / ratio);
-      }
-    } else {
-      const newAspect = newWidth / newHeight;
-      setAspectRatio(newAspect);
-      setAspectLabel(`${newWidth}x${newHeight}`);
-    }
-    
-    setTargetWidth(newWidth);
-    setTargetHeight(newHeight);
+    performResize(e.clientX, e.clientY);
   };
 
   const handleResizeEnd = () => {
@@ -144,38 +150,11 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
     e.stopPropagation();
     if (e.touches.length !== 1) return;
     setIsResizing(true);
-    resizeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    dimsStart.current = { width: targetWidth, height: targetHeight };
   };
 
   const handleResizeTouchMove = (e: React.TouchEvent) => {
     if (!isResizing || e.touches.length !== 1) return;
-    const dx = e.touches[0].clientX - resizeStart.current.x;
-    const dy = e.touches[0].clientY - resizeStart.current.y;
-    
-    const container = viewportRef.current;
-    if (!container) return;
-    const pixelScale = targetWidth / container.clientWidth;
-    
-    let newWidth = dimsStart.current.width + Math.round(dx * pixelScale);
-    let newHeight = dimsStart.current.height + Math.round(dy * pixelScale);
-    
-    newWidth = Math.max(160, Math.min(3840, newWidth));
-    newHeight = Math.max(90, Math.min(2160, newHeight));
-    
-    if (keepAspect) {
-      const ratio = aspectRatio;
-      if (ratio && ratio > 0) {
-        newHeight = Math.round(newWidth / ratio);
-      }
-    } else {
-      const newAspect = newWidth / newHeight;
-      setAspectRatio(newAspect);
-      setAspectLabel(`${newWidth}x${newHeight}`);
-    }
-    
-    setTargetWidth(newWidth);
-    setTargetHeight(newHeight);
+    performResize(e.touches[0].clientX, e.touches[0].clientY);
   };
 
   // Bind resize listeners
@@ -188,7 +167,7 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
       window.removeEventListener('mousemove', handleResizeMove);
       window.removeEventListener('mouseup', handleResizeEnd);
     };
-  }, [isResizing, aspectRatio, keepAspect, targetWidth]);
+  }, [isResizing, aspectRatio, keepAspect]);
 
   // Start image drag/pan
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -302,7 +281,8 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
       // UI aspect ratios are mapped to output size. Let's compute scale ratio.
       const scaleX = targetWidth / containerWidth;
       const scaleY = targetHeight / containerHeight;
-      const scaleMultiplier = Math.max(scaleX, scaleY); // projection scale multiplier
+      const baseScale = Math.max(scaleX, scaleY);
+      const scaleMultiplier = baseScale / cropBoxScale; // projection scale adjusted for resizable crop box
 
       // Apply zoom & position matching the viewport state
       const drawWidth = displayWidth * zoom * scaleMultiplier;
@@ -343,6 +323,30 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
       'image/png',
       quality
     );
+  };
+
+  // Calculates the correct centered dimensions of the crop box in percentage of the 16:9 viewport
+  const getCropBoxStyle = () => {
+    const containerW = 1600;
+    const containerH = 900;
+    
+    let maxW = containerW;
+    let maxH = containerW / aspectRatio;
+    if (maxH > containerH) {
+      maxH = containerH;
+      maxW = containerH * aspectRatio;
+    }
+    
+    const boxW = maxW * cropBoxScale;
+    const boxH = maxH * cropBoxScale;
+    
+    const widthPercent = (boxW / containerW) * 100;
+    const heightPercent = (boxH / containerH) * 100;
+    
+    return {
+      width: `${widthPercent}%`,
+      height: `${heightPercent}%`,
+    };
   };
 
   return (
@@ -386,19 +390,13 @@ export default function ImageCropperModal({ file, onCropComplete, onClose }: Ima
                 onTouchEnd={handleMouseUp}
               >
                 {/* Crop overlay highlight matching selected ratio */}
-                <div className="absolute inset-0 z-10 pointer-events-none border-2 border-brand-primary/50 flex items-center justify-center">
+                <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
                   <div className="absolute inset-0 bg-black/40" />
                   
-                  {/* Highlight mask area based on aspect ratio */}
+                  {/* Highlight mask area based on aspect ratio and dynamic tracking scale */}
                   <div 
                     className="relative border border-white/40 shadow-[0_0_0_9999px_rgba(15,15,17,0.7)] flex items-center justify-center"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      maxWidth: '100%',
-                      maxHeight: '100%',
-                      aspectRatio: aspectRatio || undefined,
-                    }}
+                    style={getCropBoxStyle()}
                   >
                     <div className="absolute top-2 left-2 text-[8px] bg-black/60 border border-white/10 px-2 py-0.5 rounded text-white tracking-widest uppercase font-black">
                       ზომა: {targetWidth}x{targetHeight} ({aspectLabel})
