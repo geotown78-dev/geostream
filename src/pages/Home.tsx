@@ -9,7 +9,7 @@ import { TeamLogo } from '../components/TeamLogo';
 
 export default function Home() {
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
-  const [exclusiveEvent, setExclusiveEvent] = useState<any>(null);
+  const [exclusiveEvents, setExclusiveEvents] = useState<any[]>([]);
   const [liveEvents, setLiveEvents] = useState<any[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,21 +31,19 @@ export default function Home() {
     async function fetchData() {
       try {
         // Execute queries concurrently using Promise.all to avoid sequence waterfalls
-        const [exLiveResponse, liveResponse, upcomingResponse, streamResponse] = await Promise.all([
-          supabase.from('events').select('*').eq('is_exclusive', true).eq('is_live', true).order('id', { ascending: false }).limit(1).maybeSingle(),
+        const [exLiveResponse, exSchedResponse, liveResponse, upcomingResponse, streamResponse] = await Promise.all([
+          supabase.from('events').select('*').eq('is_exclusive', true).eq('is_live', true).order('id', { ascending: false }),
+          supabase.from('schedule').select('*').eq('is_exclusive', true).order('time', { ascending: true }),
           supabase.from('events').select('*').eq('is_live', true).order('id', { ascending: false }),
           supabase.from('schedule').select('*').order('time', { ascending: true }).limit(4),
           supabase.from('active_streams').select('*').eq('id', 'global-stream').maybeSingle()
         ]);
 
-        const exLive = exLiveResponse.data;
-        if (exLive) {
-          setExclusiveEvent(exLive);
-        } else {
-          const { data: exSched } = await supabase.from('schedule').select('*').eq('is_exclusive', true).order('time', { ascending: true }).limit(1).maybeSingle();
-          if (exSched) setExclusiveEvent(exSched);
-          else setExclusiveEvent(null);
-        }
+        const combinedExclusives = [
+          ...(exLiveResponse.data || []),
+          ...(exSchedResponse.data || [])
+        ];
+        setExclusiveEvents(combinedExclusives);
 
         setLiveEvents(liveResponse.data || []);
         setUpcomingEvents(upcomingResponse.data || []);
@@ -114,7 +112,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <Hero activeBroadcast={activeBroadcast} exclusiveEvent={exclusiveEvent} />
+      <Hero activeBroadcast={activeBroadcast} exclusiveEvents={exclusiveEvents} />
       
       <div className="space-y-16">
         {/* LIVE NOW SECTION */}
