@@ -190,7 +190,7 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
   const isLive = exclusiveEvent ? !!exclusiveEvent.is_live : !!activeBroadcast;
 
   return (
-    <section className="relative h-[400px] sm:h-[500px] rounded-2xl overflow-hidden mb-8 sm:mb-12 group bg-brand-surface border border-brand-border">
+    <section className="relative w-full aspect-[16/10] xs:aspect-[16/9] sm:aspect-auto h-auto sm:h-[500px] rounded-2xl overflow-hidden mb-6 sm:mb-12 group bg-brand-surface border border-brand-border">
       {displayMatch ? (
         <>
           <div className="absolute inset-0">
@@ -201,63 +201,63 @@ export function Hero({ activeBroadcast, exclusiveEvent }: { activeBroadcast?: an
               referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-black to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent sm:via-brand-black/25" />
           </div>
 
-          <div className="relative h-full flex flex-col justify-end sm:justify-center p-6 sm:px-12 pb-10 sm:pb-0 z-10">
-            <div className="max-w-2xl space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-3">
-                <span className="bg-brand-primary text-white text-[8px] sm:text-[10px] font-black px-2 py-0.5 rounded italic">ექსკლუზივი</span>
-                <span className="text-brand-primary text-[8px] sm:text-[10px] font-black tracking-[0.2em] uppercase text-shadow-sm">{displayMatch.event}</span>
+          <div className="relative h-full flex flex-col justify-end p-4 xs:p-6 sm:p-12 z-10">
+            <div className="max-w-2xl space-y-1.5 xs:space-y-3 sm:space-y-6">
+              <div className="flex items-center gap-1.5 sm:gap-3">
+                <span className="bg-brand-primary text-white text-[7px] sm:text-[10px] font-black px-1.5 py-0.5 rounded italic whitespace-nowrap">ექსკლუზივი</span>
+                <span className="text-brand-primary text-[7px] sm:text-[10px] font-black tracking-[0.2em] uppercase text-shadow-sm truncate">{displayMatch.event}</span>
               </div>
               
-              <h1 className="text-3xl sm:text-6xl font-black italic tracking-tighter uppercase leading-[0.9]">
+              <h1 className="text-base xs:text-xl sm:text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-[0.9]">
                 {displayMatch.title.includes('VS') ? displayMatch.title.split('VS').map((part: string, i: number) => (
                   <React.Fragment key={i}>
-                    {i > 0 && <span className="text-brand-primary mx-2 sm:mx-4 text-shadow-glow drop-shadow-[0_0_15px_rgba(255,0,51,0.8)]">VS</span>}
+                    {i > 0 && <span className="text-brand-primary mx-1 sm:mx-4 text-shadow-glow drop-shadow-[0_0_15px_rgba(255,0,51,0.8)]">VS</span>}
                     {part.trim()}
                   </React.Fragment>
                 )) : displayMatch.title}
               </h1>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-zinc-400 font-bold uppercase tracking-widest text-[9px] sm:text-[11px]">
-                <div className="flex items-center gap-2">
-                  <Calendar className="text-brand-primary" size={14} />
-                  {displayMatch.date}
+              <div className="flex flex-row items-center gap-3 sm:gap-6 text-zinc-400 font-bold uppercase tracking-widest text-[7px] xs:text-[9px] sm:text-[11px]">
+                <div className="flex items-center gap-1">
+                  <Calendar className="text-brand-primary min-w-[10px]" size={10} />
+                  <span className="truncate">{displayMatch.date}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="text-brand-primary" size={14} />
-                  სრული ტრანსლაცია
+                <div className="flex items-center gap-1">
+                  <Clock className="text-brand-primary min-w-[10px]" size={10} />
+                  <span className="truncate">სრული ტრანსლაცია</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 sm:gap-4 pt-2 sm:pt-4">
+              <div className="flex items-center gap-2 sm:gap-4 pt-1 sm:pt-4">
                 {isLive && (
                   <Link 
                     to={`/watch/${displayMatch.room_id}`}
-                    className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 bg-brand-primary text-white font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-lg hover:bg-brand-primary-dark transition-all transform hover:scale-105 shadow-2xl shadow-brand-primary/40 animate-pulse"
+                    className="flex items-center gap-1 text-center justify-center sm:gap-3 px-3 sm:px-8 py-2 sm:py-4 bg-brand-primary text-white font-black uppercase tracking-widest text-[8px] sm:text-xs rounded-lg hover:bg-brand-primary-dark transition-all transform hover:scale-105 shadow-2xl shadow-brand-primary/40 animate-pulse whitespace-nowrap"
                   >
-                    <Play fill="currentColor" size={16} />
+                    <Play fill="currentColor" size={10} className="sm:w-4 sm:h-4" />
                     ლაივის ყურება
                   </Link>
                 )}
-                <button className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 bg-white/10 hover:bg-white/20 text-white font-black uppercase tracking-widest text-[10px] sm:text-xs rounded-lg transition-all backdrop-blur-md border border-white/10">
+                <button className="flex items-center gap-1 text-center justify-center sm:gap-3 px-3 sm:px-8 py-2 sm:py-4 bg-white/10 hover:bg-white/20 text-white font-black uppercase tracking-widest text-[8px] sm:text-xs rounded-lg transition-all backdrop-blur-md border border-white/10 whitespace-nowrap">
                   დეტალები
                 </button>
               </div>
             </div>
 
             {displayMatch.targetDate && (
-              <div className="absolute right-3 top-3 sm:right-12 sm:top-12 flex gap-1.5 xs:gap-2 sm:gap-4 scale-[0.65] xs:scale-75 sm:scale-100 origin-top-right">
+              <div className="absolute right-2 top-2 sm:right-12 sm:top-12 flex gap-1 sm:gap-4 scale-[0.55] min-[380px]:scale-[0.65] xs:scale-75 sm:scale-100 origin-top-right">
                 {[
                   { label: 'დღე', value: timeLeft.days },
                   { label: 'სთ', value: timeLeft.hours },
                   { label: 'წთ', value: timeLeft.minutes },
                   { label: 'წმ', value: timeLeft.seconds }
                 ].map((item, i) => (
-                  <div key={i} className="glass-card p-2 sm:p-4 min-w-[42px] xs:min-w-[50px] sm:min-w-[70px] text-center">
-                    <div className="text-sm xs:text-base sm:text-xl font-black text-white leading-none whitespace-nowrap">{item.value}</div>
-                    <div className="text-[7px] sm:text-[9px] font-black text-brand-primary uppercase mt-0.5 sm:mt-1">{item.label}</div>
+                  <div key={i} className="glass-card p-1 sm:p-4 min-w-[32px] xs:min-w-[50px] sm:min-w-[70px] text-center">
+                    <div className="text-[10px] xs:text-base sm:text-xl font-black text-white leading-none whitespace-nowrap">{item.value}</div>
+                    <div className="text-[5px] sm:text-[9px] font-black text-brand-primary uppercase mt-0.5 sm:mt-1">{item.label}</div>
                   </div>
                 ))}
               </div>
