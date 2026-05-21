@@ -53,8 +53,8 @@ export default function AuthPage({ mode = 'login' }: { mode?: 'login' | 'registe
   };
 
   return (
-    <div className="min-h-screen pt-32 pb-20 px-6 flex items-center justify-center text-white">
-      <div className="bento-card max-w-md w-full p-10 bg-zinc-900/40 space-y-8 animate-in fade-in zoom-in duration-500">
+    <div className="min-h-screen pt-32 pb-20 px-4 xs:px-6 flex items-center justify-center text-white">
+      <div className="bento-card max-w-md w-full p-6 sm:p-10 bg-zinc-900/40 space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white">
             {mode === 'login' ? 'ავტორიზაცია' : 'რეგისტრაცია'}
