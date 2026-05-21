@@ -28,9 +28,16 @@ export function Sidebar() {
     { icon: Users, path: '/fighters', label: 'მებრძოლები' },
   ];
 
+  const handleSamePageClick = (path: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (location.pathname === path) {
+      e.preventDefault();
+      window.location.reload();
+    }
+  };
+
   return (
     <aside className="fixed sm:left-0 bottom-0 sm:top-0 h-16 sm:h-full w-full sm:w-20 bg-brand-surface/95 backdrop-blur-xl border-t sm:border-t-0 sm:border-r border-brand-border flex sm:flex-col flex-row items-center justify-around sm:justify-start sm:py-6 z-[60]">
-      <Link to="/" className="mb-10 hidden sm:flex">
+      <Link to="/" onClick={handleSamePageClick('/')} className="mb-10 hidden sm:flex">
         <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/20">
           <Play fill="white" size={24} className="ml-1" />
         </div>
@@ -41,6 +48,7 @@ export function Sidebar() {
           <Link
             key={item.path}
             to={item.path}
+            onClick={handleSamePageClick(item.path)}
             className={cn(
               "group relative p-2 sm:p-3 rounded-xl transition-all duration-300 flex flex-col items-center justify-center",
               location.pathname === item.path 
@@ -80,10 +88,17 @@ export function Navbar() {
     { name: 'სტატისტიკა', path: '/stats' },
   ];
 
+  const handleSamePageClick = (path: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (location.pathname === path) {
+      e.preventDefault();
+      window.location.reload();
+    }
+  };
+
   return (
     <header className="fixed top-0 sm:left-20 left-0 right-0 h-16 sm:h-20 bg-brand-black/80 backdrop-blur-xl border-b border-brand-border z-50 flex items-center justify-between px-4 sm:px-8">
       <div className="flex items-center gap-4">
-        <Link to="/" className="sm:hidden">
+        <Link to="/" onClick={handleSamePageClick('/')} className="sm:hidden">
           <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
             <Play fill="white" size={16} className="ml-0.5" />
           </div>
@@ -93,6 +108,7 @@ export function Navbar() {
             <Link
               key={tab.path}
               to={tab.path}
+              onClick={handleSamePageClick(tab.path)}
               className={cn(
                 "text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                 location.pathname === tab.path ? "text-brand-primary" : "text-zinc-400 hover:text-white"
@@ -110,6 +126,7 @@ export function Navbar() {
             {ADMIN_EMAILS.includes(user.email || '') && (
               <Link 
                 to="/admin" 
+                onClick={handleSamePageClick('/admin')}
                 className="flex items-center gap-2 px-2 sm:px-3 py-1.5 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-brand-primary hover:text-white transition-all animate-fade-in"
               >
                 <Settings size={12} className="sm:w-[14px] sm:h-[14px]" />
