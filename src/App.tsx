@@ -54,7 +54,9 @@ function AppContent() {
             <Routes>
               <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/football" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/sports" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/ufc" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/fighters" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/watch/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
               <Route path="/live" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/stats" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
