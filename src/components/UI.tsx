@@ -335,7 +335,7 @@ export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: 
             </AnimatePresence>
 
             {activeSlide.targetDate && (
-              <div className="absolute right-2 top-2 sm:right-12 sm:top-12 flex gap-1 sm:gap-4 scale-[0.55] min-[380px]:scale-[0.65] xs:scale-75 sm:scale-100 origin-top-right">
+              <div className="absolute right-4 bottom-4 sm:right-12 sm:bottom-12 flex gap-1 sm:gap-4 scale-[0.55] min-[380px]:scale-[0.65] xs:scale-75 sm:scale-100 origin-bottom-right z-20">
                 {[
                   { label: 'დღე', value: timeLeft.days },
                   { label: 'სთ', value: timeLeft.hours },
