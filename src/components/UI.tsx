@@ -69,9 +69,20 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="hidden sm:flex flex-col gap-6 text-zinc-600">
-        <a href="#" className="hover:text-white transition-colors"><Facebook size={20} /></a>
-        <a href="#" className="hover:text-white transition-colors"><Instagram size={20} /></a>
+      <div className="hidden sm:flex flex-col gap-6 items-center justify-center">
+        <Link
+          to="/profile"
+          onClick={handleSamePageClick('/profile')}
+          className={cn(
+            "p-3 rounded-xl transition-all duration-300 flex items-center justify-center border border-transparent",
+            location.pathname === '/profile'
+              ? "text-brand-primary bg-brand-primary/10 border-brand-primary/20"
+              : "text-zinc-500 hover:text-white hover:bg-white/5"
+          )}
+          title="პროფილი"
+        >
+          <User className="w-[22px] h-[22px]" strokeWidth={2.5} />
+        </Link>
       </div>
     </aside>
   );
@@ -133,12 +144,16 @@ export function Navbar() {
                 <span className="hidden sm:inline">ადმინ</span>
               </Link>
             )}
-            <div className="flex items-center gap-2 bg-brand-surface border border-brand-border rounded-lg p-1.5 sm:px-3 sm:py-1.5">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-brand-primary flex items-center justify-center text-[9px] sm:text-[10px] font-black">
+            <Link 
+              to="/profile" 
+              onClick={handleSamePageClick('/profile')}
+              className="flex items-center gap-2 bg-brand-surface border border-brand-border rounded-lg p-1.5 sm:px-3 sm:py-1.5 hover:border-brand-primary/30 transition-all cursor-pointer"
+            >
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-brand-primary flex items-center justify-center text-[9px] sm:text-[10px] font-black text-white">
                 {user.email?.[0].toUpperCase()}
               </div>
               <span className="text-[10px] sm:text-xs font-bold text-zinc-300 truncate max-w-[60px] sm:max-w-[100px] hidden sm:inline">{user.email?.split('@')[0]}</span>
-            </div>
+            </Link>
             <button onClick={signOut} className="text-zinc-500 hover:text-brand-primary transition-colors p-1">
               <LogOut size={18} className="sm:w-[20px] sm:h-[20px]" />
             </button>
