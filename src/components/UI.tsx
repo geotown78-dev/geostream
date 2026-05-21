@@ -149,7 +149,7 @@ export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: 
         list.push({
           id: ev.id || `exclusive-${idx}`,
           title: ev.team1 ? `${ev.team1} VS ${ev.team2}` : ev.title,
-          event: ev.sport || ev.league || "FEATURED EVENT",
+          event: ev.sport || ev.league || "რჩეული ღონისძიება",
           date: ev.time ? new Date(ev.time).toLocaleString('ka-GE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : "ახლა პირდაპირ ეთერში",
           image: ev.thumbnail || "https://images.unsplash.com/photo-1504450758481-7338ef7535af?auto=format&fit=crop&q=80&w=2000",
           room_id: ev.room_name || ev.id,
@@ -162,7 +162,7 @@ export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: 
       list.push({
         id: exclusiveEvent.id || 'exclusive-event',
         title: exclusiveEvent.team1 ? `${exclusiveEvent.team1} VS ${exclusiveEvent.team2}` : exclusiveEvent.title,
-        event: exclusiveEvent.sport || exclusiveEvent.league || "FEATURED EVENT",
+        event: exclusiveEvent.sport || exclusiveEvent.league || "რჩეული ღონისძიება",
         date: exclusiveEvent.time ? new Date(exclusiveEvent.time).toLocaleString('ka-GE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : "ახლა პირდაპირ ეთერში",
         image: exclusiveEvent.thumbnail || "https://images.unsplash.com/photo-1504450758481-7338ef7535af?auto=format&fit=crop&q=80&w=2000",
         room_id: exclusiveEvent.room_name || exclusiveEvent.id,
@@ -174,7 +174,7 @@ export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: 
       list.push({
         id: 'active-broadcast',
         title: activeBroadcast.room_id.replace(/-/g, ' ').toUpperCase(),
-        event: "LIVE BROADCAST",
+        event: "პირდაპირი ეთერი",
         date: "მიმდინარეობს პირდაპირი ეთერი",
         image: "https://images.unsplash.com/photo-1541252260730-0412e3e2108e?auto=format&fit=crop&q=80&w=2000",
         room_id: activeBroadcast.room_id,
@@ -415,7 +415,7 @@ export function LiveCard({ event, onDelete }: { event: any, onDelete?: (id: stri
       <div className="absolute top-3 left-3 flex items-center gap-2 z-20">
         <div className="bg-brand-primary text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1.5 uppercase">
           <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-          LIVE
+          ლაივი
         </div>
         <div className="bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-black flex items-center gap-1 text-zinc-300">
           <Users size={10} />
@@ -459,9 +459,9 @@ export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: 
   const { user } = useAuth();
   const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
   const date = new Date(event.time || Date.now());
-  const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+  const month = date.toLocaleString('ka-GE', { month: 'short' }).toUpperCase();
   const day = date.getDate();
-  const time = date.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const time = date.toLocaleString('ka-GE', { hour: '2-digit', minute: '2-digit', hour12: false });
 
   return (
     <Link 
@@ -502,19 +502,19 @@ export function UpcomingCard({ event, onDelete }: { event: any, onDelete?: (id: 
             <div className="w-10 h-10 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm group-hover:border-brand-primary/50 transition-all">
               <Trophy size={16} className="text-zinc-400 group-hover:text-brand-primary transition-colors" />
             </div>
-            <div className="text-[10px] font-black text-zinc-300 uppercase truncate">{event.team1 || 'TEAM A'}</div>
+            <div className="text-[10px] font-black text-zinc-300 uppercase truncate">{event.team1 || 'გუნდი ა'}</div>
           </div>
           <div className="text-[10px] font-black italic text-brand-primary text-shadow-glow">VS</div>
           <div className="text-center flex-1">
             <div className="w-10 h-10 mx-auto mb-2 bg-white/5 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm group-hover:border-brand-primary/50 transition-all">
               <Trophy size={16} className="text-zinc-400 group-hover:text-brand-primary transition-colors" />
             </div>
-            <div className="text-[10px] font-black text-zinc-300 uppercase truncate">{event.team2 || 'TEAM B'}</div>
+            <div className="text-[10px] font-black text-zinc-300 uppercase truncate">{event.team2 || 'გუნდი ბ'}</div>
           </div>
         </div>
 
         <div className="flex justify-between items-center">
-          <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{event.sport || event.league || 'Event'}</div>
+          <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{event.sport || event.league || 'ღონისძიება'}</div>
           <span className="text-[8px] font-black uppercase text-brand-primary tracking-widest bg-brand-primary/10 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
             მოლოდინი
           </span>
