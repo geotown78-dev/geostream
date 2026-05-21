@@ -120,9 +120,9 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-brand-primary rounded-full animate-pulse" />
-              <h2 className="text-xl font-black uppercase tracking-tighter italic">LIVE <span className="text-brand-primary">NOW</span></h2>
+              <h2 className="text-xl font-black uppercase tracking-tighter italic">პირდაპირი <span className="text-brand-primary">ეთერი</span></h2>
             </div>
-            <button className="text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white transition-colors">View All</button>
+            <button className="text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white transition-colors">ყველას ნახვა</button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -154,20 +154,29 @@ export default function Home() {
         {/* UPCOMING EVENTS SECTION */}
         <section className="space-y-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <h2 className="text-xl font-black uppercase tracking-tighter italic">UPCOMING <span className="text-brand-primary">EVENTS</span></h2>
+            <h2 className="text-xl font-black uppercase tracking-tighter italic">მომავალი <span className="text-brand-primary">ღონისძიებები</span></h2>
             
             <div className="flex items-center p-1 bg-brand-surface border border-brand-border rounded-xl overflow-x-auto no-scrollbar shrink-0 max-w-full">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveTab(cat)}
-                  className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${
-                    activeTab === cat ? 'bg-brand-primary text-white' : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+              {categories.map((cat) => {
+                const categoryLabels: { [key: string]: string } = {
+                  All: 'ყველა',
+                  Football: 'ფეხბურთი',
+                  UFC: 'UFC',
+                  Boxing: 'კრივი',
+                  NBA: 'NBA'
+                };
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveTab(cat)}
+                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${
+                      activeTab === cat ? 'bg-brand-primary text-white' : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    {categoryLabels[cat] || cat}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
