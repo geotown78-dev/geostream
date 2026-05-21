@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
 import { Volume2, VolumeX, Pause, Play as PlayIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
+import ImageCropperModal from '../components/ImageCropperModal';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -13,6 +14,31 @@ export default function AdminDashboard() {
   const [sessionSport, setSessionSport] = useState('Football');
   const [sessionIsExclusive, setSessionIsExclusive] = useState(false);
   const [sessionThumbnail, setSessionThumbnail] = useState('');
+
+  // Image Cropper States
+  const [cropperFile, setCropperFile] = useState<File | null>(null);
+  const [cropperTarget, setCropperTarget] = useState<'create_session' | 'create_sched' | 'edit_session' | 'edit_sched' | null>(null);
+
+  const handleCropComplete = async (croppedFile: File) => {
+    const target = cropperTarget;
+    setCropperFile(null);
+    setCropperTarget(null);
+
+    if (target === 'create_session') {
+      await handleFileUpload(croppedFile);
+    } else if (target === 'create_sched') {
+      await handleSchedFileUpload(croppedFile);
+    } else if (target === 'edit_session') {
+      await handleEditFileUpload(croppedFile);
+    } else if (target === 'edit_sched') {
+      await handleEditSchedFileUpload(croppedFile);
+    }
+  };
+
+  const handleCropperClose = () => {
+    setCropperFile(null);
+    setCropperTarget(null);
+  };
   const [vdsIp, setVdsIp] = useState(localStorage.getItem('vds_ip') || '5.83.153.142');
   const [srsPort, setSrsPort] = useState('1935');
   const [showSessionDetails, setShowSessionDetails] = useState(false);
@@ -580,7 +606,13 @@ export default function AdminDashboard() {
                         />
                         <label className="cursor-pointer bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 flex items-center justify-center hover:bg-blue-500/20 transition-all group">
                           {uploading ? <Loader2 className="animate-spin text-blue-500" size={18} /> : <Upload size={18} className="text-blue-500" />}
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} />
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              setCropperFile(e.target.files[0]);
+                              setCropperTarget('create_session');
+                              e.target.value = '';
+                            }
+                          }} />
                         </label>
                       </div>
                     </div>
@@ -813,7 +845,13 @@ export default function AdminDashboard() {
                     />
                     <label className="cursor-pointer bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 flex items-center justify-center hover:bg-blue-500/20 transition-all group shrink-0">
                       {uploadingSched ? <Loader2 className="animate-spin text-blue-500" size={16} /> : <Upload size={16} className="text-blue-500" />}
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleSchedFileUpload(e.target.files[0])} />
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          setCropperFile(e.target.files[0]);
+                          setCropperTarget('create_sched');
+                          e.target.value = '';
+                        }
+                      }} />
                     </label>
                   </div>
                 </div>
@@ -1115,7 +1153,13 @@ export default function AdminDashboard() {
                     />
                     <label className="cursor-pointer bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 flex items-center justify-center hover:bg-blue-500/20 transition-all group">
                       {uploadingEdit ? <Loader2 className="animate-spin text-blue-500" size={18} /> : <Upload size={18} className="text-blue-500" />}
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleEditFileUpload(e.target.files[0])} />
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          setCropperFile(e.target.files[0]);
+                          setCropperTarget('edit_session');
+                          e.target.value = '';
+                        }
+                      }} />
                     </label>
                   </div>
                 </div>
@@ -1284,7 +1328,13 @@ export default function AdminDashboard() {
                     />
                     <label className="cursor-pointer bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 flex items-center justify-center hover:bg-blue-500/20 transition-all group">
                       {uploadingSchedEdit ? <Loader2 className="animate-spin text-blue-500" size={18} /> : <Upload size={18} className="text-blue-500" />}
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleEditSchedFileUpload(e.target.files[0])} />
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          setCropperFile(e.target.files[0]);
+                          setCropperTarget('edit_sched');
+                          e.target.value = '';
+                        }
+                      }} />
                     </label>
                   </div>
                 </div>
@@ -1324,6 +1374,14 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {cropperFile && cropperTarget && (
+        <ImageCropperModal
+          file={cropperFile}
+          onCropComplete={handleCropComplete}
+          onClose={handleCropperClose}
+        />
       )}
     </div>
   );
