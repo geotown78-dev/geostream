@@ -7,6 +7,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AuthPage from './pages/Auth';
 import BroadcasterRoom from './pages/BroadcasterRoom';
 import Leaderboard from './pages/Leaderboard';
+import Profile from './pages/Profile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AnimatePresence } from 'motion/react';
 
@@ -63,6 +64,7 @@ function AppContent() {
               <Route path="/watch/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
               <Route path="/live" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/stats" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/login" element={<AuthPage mode="login" />} />
               <Route path="/register" element={<AuthPage mode="register" />} />
               <Route 
