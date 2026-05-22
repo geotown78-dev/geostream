@@ -42,9 +42,11 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
           levelLoadingMaxRetry: 10,
           backBufferLength: 0,
           maxBufferLength: 5,
-          maxMaxBufferLength: 10,
-          liveSyncDurationCount: 3, // Highly optimized for instant playback start using ready Nginx segments
-          liveMaxLatencyDurationCount: 6,
+          maxMaxBufferLength: 8,
+          liveSyncDuration: 5, // Target exactly 5 seconds of live stream latency
+          liveMaxLatencyDuration: 8, // Max latency allowable (8s) before seeking to catch up
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDurationCount: 5,
           liveDurationInfinity: true,
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
