@@ -33,14 +33,35 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
           return;
         }
 
-        console.log("Initializing HLS for:", cleanUrl);
+        console.log("Initializing HLS with optimized latency parameters for:", cleanUrl);
 
         hls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
-          manifestLoadingMaxRetry: 6,
-          levelLoadingMaxRetry: 6,
-          backBufferLength: 90,
+          
+          // Enhanced loading recovery configurations
+          manifestLoadingMaxRetry: 10,
+          manifestLoadingRetryDelay: 500,
+          manifestLoadingMaxRetryTimeout: 2000,
+          levelLoadingMaxRetry: 10,
+          levelLoadingRetryDelay: 500,
+          levelLoadingMaxRetryTimeout: 2000,
+          fragLoadingMaxRetry: 10,
+          fragLoadingRetryDelay: 500,
+          fragLoadingMaxRetryTimeout: 2000,
+
+          // Buffer sizes tuned specifically for 3-second fragments and 30-second playlist
+          maxBufferLength: 8,          // Maintain maximum of 8 seconds of buffer ahead (approx. 2.6 targets)
+          maxMaxBufferLength: 12,      // Absolute ceiling for buffer allocation
+          backBufferLength: 6,         // Evict old/past fragments aggressively from memory
+          highBufferWatchdogPeriod: 2, // Check for stalled decoder pipeline every 2 seconds
+
+          // Live edge tracking settings to avoid freezing and minimize latency
+          liveSyncDuration: 9,         // Anchor position exactly 9 seconds (3 fragments) behind live edge - prevents freezing on network jitters
+          liveMaxLatencyDuration: 18,  // Maximum allowable drift before catch-up triggers (6 fragments)
+          maxLiveSyncPlaybackRate: 1.15, // Let player play up to 1.15x speed to smoothly recover drift
+          liveDurationInfinity: true,
+
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
           }
@@ -65,6 +86,8 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         });
         
         hls.on(Hls.Events.ERROR, (event, data) => {
+          console.warn(`HLS Player Error [${data.type} / ${data.details}]:`, data);
+
           if (data.response?.code === 404 || data.response?.code === 406) {
             setErrorStatus('სტრიმი მზადდება... (404)');
           }
@@ -72,18 +95,35 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                console.log("Fatal network error encountered, try to recover");
+                console.log("Fatal network error encountered, scheduling reload/recovery...");
                 hls?.startLoad();
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
-                console.log("Fatal media error encountered, try to recover");
+                console.log("Fatal media error encountered, recovering media stream...");
                 hls?.recoverMediaError();
                 break;
               default:
-                console.log("Fatal error, cannot recover");
-                setErrorStatus('სტრიმის ჩატვირთვა ვერ მოხერხდა.');
-                hls?.destroy();
+                console.log("Fatal player error, recreating HLS engine in 3 seconds...");
+                setErrorStatus('სტრიმი გადაიტვირთება 3 წამში...');
+                setTimeout(() => {
+                  if (hls) {
+                    hls.destroy();
+                    hls.loadSource(cleanUrl);
+                    hls.attachMedia(video);
+                  }
+                }, 3000);
                 break;
+            }
+          } else {
+            // Recover from non-fatal pipeline stalls (e.g. BUFFER_STALLED_ERROR)
+            if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
+              console.log("Buffer stall detected. Nudging the video pipeline...");
+              if (video.paused) {
+                video.play().catch(e => console.log("Failed to resume playback on stall:", e));
+              } else {
+                // If rendering is active but stalled, nudge current timeline forward slightly to force-trigger decode block
+                video.currentTime = video.currentTime + 0.15;
+              }
             }
           }
         });
