@@ -33,34 +33,40 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
           return;
         }
 
-        console.log("Initializing HLS with optimized latency parameters for:", cleanUrl);
+        // Add a query parameter to defeat cache-busting of the playlist file
+        const separator = cleanUrl.includes('?') ? '&' : '?';
+        const cacheBustedUrl = `${cleanUrl}${separator}_t=${Date.now()}`;
+
+        console.log("Initializing HLS with optimized latency parameters for:", cacheBustedUrl);
 
         hls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
           
-          // Enhanced loading recovery configurations
-          manifestLoadingMaxRetry: 10,
+          // Retry more aggressively of failure
+          manifestLoadingMaxRetry: 15,
           manifestLoadingRetryDelay: 500,
-          manifestLoadingMaxRetryTimeout: 2000,
-          levelLoadingMaxRetry: 10,
+          manifestLoadingMaxRetryTimeout: 3000,
+          levelLoadingMaxRetry: 15,
           levelLoadingRetryDelay: 500,
-          levelLoadingMaxRetryTimeout: 2000,
-          fragLoadingMaxRetry: 10,
+          levelLoadingMaxRetryTimeout: 3000,
+          fragLoadingMaxRetry: 15,
           fragLoadingRetryDelay: 500,
-          fragLoadingMaxRetryTimeout: 2000,
+          fragLoadingMaxRetryTimeout: 3000,
 
-          // Buffer sizes tuned specifically for 3-second fragments and 30-second playlist
-          maxBufferLength: 8,          // Maintain maximum of 8 seconds of buffer ahead (approx. 2.6 targets)
-          maxMaxBufferLength: 12,      // Absolute ceiling for buffer allocation
-          backBufferLength: 6,         // Evict old/past fragments aggressively from memory
-          highBufferWatchdogPeriod: 2, // Check for stalled decoder pipeline every 2 seconds
+          // Keep buffers minimal so there's less delay and memory buildup
+          maxBufferLength: 5,            // Max 5 seconds of buffer ahead (approx. 1.6 fragments)
+          maxMaxBufferLength: 8,         // Hard ceiling to avoid rendering old frames
+          backBufferLength: 3,           // Clear past buffers instantly
+          highBufferWatchdogPeriod: 1,   // Check for decoder freezes every second
 
-          // Live edge tracking settings to avoid freezing and minimize latency
-          liveSyncDuration: 9,         // Anchor position exactly 9 seconds (3 fragments) behind live edge - prevents freezing on network jitters
-          liveMaxLatencyDuration: 18,  // Maximum allowable drift before catch-up triggers (6 fragments)
-          maxLiveSyncPlaybackRate: 1.15, // Let player play up to 1.15x speed to smoothly recover drift
+          // Sync tightly with the absolute live edge
+          liveSyncDurationCount: 2.2,     // Start playing exactly 2.2 fragments behind live edge
+          liveMaxLatencyDurationCount: 4, // Max allowed latency before catching up is 4 fragments (~12 seconds)
+          maxLiveSyncPlaybackRate: 1.2,   // Safely fast-forward at 1.2x speed to catch up if minor drift occurs
+          
           liveDurationInfinity: true,
+          enableSoftwareAES: true,
 
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -70,8 +76,8 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         hls.attachMedia(video);
 
         hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-          console.log("HLS Media Attached, loading source:", cleanUrl);
-          hls?.loadSource(cleanUrl);
+          console.log("HLS Media Attached, loading source:", cacheBustedUrl);
+          hls?.loadSource(cacheBustedUrl);
         });
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -84,6 +90,31 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
             });
           }
         });
+
+        // Whenever the segment changes, verify that the viewer hasn't fallen too far behind.
+        // If they fall behind by > 12 seconds, we jump them immediately to the live sync point.
+        // This solves freezing caused by seeking old chunks that are already deleted from the server.
+        hls.on(Hls.Events.FRAG_CHANGED, () => {
+          if (hls && hls.liveSyncPosition && video.currentTime > 0) {
+            const drift = hls.liveSyncPosition - video.currentTime;
+            if (drift > 12) {
+              console.log(`Drift detected (${drift.toFixed(1)}s). Instantly seeking to live edge:`, hls.liveSyncPosition);
+              video.currentTime = hls.liveSyncPosition;
+            }
+          }
+        });
+
+        // Also force alignment to the live edge when resuming play from a paused/minimized state
+        const handlePlayEvent = () => {
+          if (hls && hls.liveSyncPosition) {
+            const drift = hls.liveSyncPosition - video.currentTime;
+            if (drift > 6) {
+              console.log("Resuming stream: jumping directly to live sync position", hls.liveSyncPosition);
+              video.currentTime = hls.liveSyncPosition;
+            }
+          }
+        };
+        video.addEventListener('play', handlePlayEvent);
         
         hls.on(Hls.Events.ERROR, (event, data) => {
           console.warn(`HLS Player Error [${data.type} / ${data.details}]:`, data);
@@ -108,7 +139,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
                 setTimeout(() => {
                   if (hls) {
                     hls.destroy();
-                    hls.loadSource(cleanUrl);
+                    hls.loadSource(cacheBustedUrl);
                     hls.attachMedia(video);
                   }
                 }, 3000);
@@ -127,6 +158,10 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
             }
           }
         });
+
+        // Cleanup listener
+        (hls as any)._customPlayHandler = handlePlayEvent;
+
       } catch (err) {
         console.error("HLS init error:", err);
         setErrorStatus('ფლეიერის ინიციალიზაცია ვერ მოხერხდა.');
@@ -137,7 +172,9 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         setErrorStatus('სტრიმის მისამართი ცარიელია');
         return;
       }
-      video.src = cleanUrl;
+      const separator = cleanUrl.includes('?') ? '&' : '?';
+      const cacheBustedUrl = `${cleanUrl}${separator}_t=${Date.now()}`;
+      video.src = cacheBustedUrl;
       video.addEventListener('loadedmetadata', () => {
         if (autoPlay) {
           video.play().catch(e => console.log("Autoplay blocked:", e));
@@ -150,6 +187,9 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
 
     return () => {
       if (hls) {
+        if ((hls as any)._customPlayHandler) {
+          video.removeEventListener('play', (hls as any)._customPlayHandler);
+        }
         hls.destroy();
       }
     };
