@@ -8,11 +8,24 @@ interface HLSPlayerProps {
   muted?: boolean;
   volume?: number;
   className?: string;
+  onVideoElement?: (el: HTMLVideoElement | null) => void;
 }
 
-const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = true, muted = true, volume = 1, className }) => {
+const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = true, muted = true, volume = 1, className, onVideoElement }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [errorStatus, setErrorStatus] = React.useState<string | null>(null);
+
+  // Expose video element to parent if callback is provided
+  useEffect(() => {
+    if (onVideoElement) {
+      onVideoElement(videoRef.current);
+    }
+    return () => {
+      if (onVideoElement) {
+        onVideoElement(null);
+      }
+    };
+  }, [onVideoElement, videoRef.current]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -91,15 +104,18 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
           }
         });
 
-        // Whenever the segment changes, verify that the viewer hasn't fallen too far behind.
-        // If they fall behind by > 12 seconds, we jump them immediately to the live sync point.
-        // This solves freezing caused by seeking old chunks that are already deleted from the server.
+        // Whenever the segment changes, verify that the viewer hasn't fallen behind the oldest available chunk in the stream.
+        // This solves freezing caused by seeking or stalling past the edge of the Nginx HLS buffer.
         hls.on(Hls.Events.FRAG_CHANGED, () => {
-          if (hls && hls.liveSyncPosition && video.currentTime > 0) {
-            const drift = hls.liveSyncPosition - video.currentTime;
-            if (drift > 12) {
-              console.log(`Drift detected (${drift.toFixed(1)}s). Instantly seeking to live edge:`, hls.liveSyncPosition);
-              video.currentTime = hls.liveSyncPosition;
+          if (video && video.seekable && video.seekable.length > 0) {
+            const start = video.seekable.start(0);
+            const end = video.seekable.end(0);
+            
+            // Allow manual rewinding within the 30 seconds buffer. Only snap if they fall completely out-of-bounds (which causes freezes)
+            if (video.currentTime > 0 && video.currentTime < start - 2) {
+              const livePos = hls?.liveSyncPosition || end;
+              console.log(`Fallback: Player fell completely below seekable buffer limits (${video.currentTime.toFixed(1)}s < ${start.toFixed(1)}s). Recovering back to live edge:`, livePos);
+              video.currentTime = livePos;
             }
           }
         });
