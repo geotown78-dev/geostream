@@ -38,9 +38,14 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         hls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
-          manifestLoadingMaxRetry: 6,
-          levelLoadingMaxRetry: 6,
-          backBufferLength: 90,
+          manifestLoadingMaxRetry: 10,
+          levelLoadingMaxRetry: 10,
+          backBufferLength: 0,
+          maxBufferLength: 5,
+          maxMaxBufferLength: 10,
+          liveSyncDurationCount: 3, // Highly optimized for instant playback start using ready Nginx segments
+          liveMaxLatencyDurationCount: 6,
+          liveDurationInfinity: true,
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
           }
@@ -143,6 +148,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         controls={controls}
         playsInline
         muted={muted}
+        preload="auto"
       />
       {errorStatus && (
         <div className="absolute top-4 left-4 right-4 flex items-center gap-3 p-3 bg-zinc-950/80 backdrop-blur-md border border-white/5 rounded-xl z-50 animate-in fade-in slide-in-from-top-2 duration-500">
