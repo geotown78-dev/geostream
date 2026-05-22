@@ -238,7 +238,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         className={className}
         controls={controls}
         playsInline
-        muted={muted}
+        defaultMuted={muted}
       />
       {errorStatus && (
         <div className="absolute top-4 left-4 right-4 flex items-center gap-3 p-3 bg-zinc-950/80 backdrop-blur-md border border-white/5 rounded-xl z-50 animate-in fade-in slide-in-from-top-2 duration-500">
