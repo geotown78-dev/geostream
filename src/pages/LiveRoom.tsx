@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
-import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX, Trophy } from 'lucide-react';
+import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX, Trophy, RotateCcw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ADMIN_EMAILS } from '../constants';
@@ -91,6 +91,69 @@ function ViewerStream({
 
   const effectivePaused = isPaused || isGlobalPaused;
 
+  const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [seekableStart, setSeekableStart] = useState(0);
+  const [seekableEnd, setSeekableEnd] = useState(0);
+  const [isLive, setIsLive] = useState(true);
+
+  useEffect(() => {
+    if (!videoEl) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(videoEl.currentTime);
+      
+      if (videoEl.seekable && videoEl.seekable.length > 0) {
+        const start = videoEl.seekable.start(0);
+        const end = videoEl.seekable.end(0);
+        setSeekableStart(start);
+        setSeekableEnd(end);
+        
+        // If current playback head is within 5 seconds of the end of the buffer range, consider it Live.
+        const drift = end - videoEl.currentTime;
+        setIsLive(drift <= 5);
+      } else {
+        setIsLive(true);
+      }
+    };
+
+    videoEl.addEventListener('timeupdate', handleTimeUpdate);
+    videoEl.addEventListener('progress', handleTimeUpdate);
+    
+    // Trigger initial calculation
+    handleTimeUpdate();
+
+    const interval = setInterval(handleTimeUpdate, 500);
+
+    return () => {
+      videoEl.removeEventListener('timeupdate', handleTimeUpdate);
+      videoEl.removeEventListener('progress', handleTimeUpdate);
+      clearInterval(interval);
+    };
+  }, [videoEl]);
+
+  const handleRewind30s = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!videoEl) return;
+    if (videoEl.seekable && videoEl.seekable.length > 0) {
+      const start = videoEl.seekable.start(0);
+      const newTime = Math.max(start, videoEl.currentTime - 30);
+      videoEl.currentTime = newTime;
+    } else {
+      videoEl.currentTime = Math.max(0, videoEl.currentTime - 30);
+    }
+  };
+
+  const handleSeekToLive = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!videoEl) return;
+    if (videoEl.seekable && videoEl.seekable.length > 0) {
+      const end = videoEl.seekable.end(0);
+      videoEl.currentTime = end;
+      setIsLive(true);
+    }
+  };
+
   return (
     <div 
       ref={containerRef} 
@@ -106,6 +169,7 @@ function ViewerStream({
           controls={false}
           muted={isMuted}
           volume={volume}
+          onVideoElement={setVideoEl}
           className={cn(
             "h-full w-full object-contain transition-all duration-300",
             effectivePaused ? 'opacity-40 grayscale blur-sm' : ''
@@ -160,75 +224,130 @@ function ViewerStream({
       </div>
 
       <div className={cn(
-        "absolute inset-x-0 bottom-0 p-4 sm:p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity z-30",
+        "absolute inset-x-0 bottom-0 p-4 sm:p-6 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex flex-col gap-3 justify-end transition-opacity duration-300 z-30",
         (effectivePaused || !isFullscreen)
           ? "opacity-100" 
           : (overlayVisible ? "opacity-100" : "opacity-0 pointer-events-none")
       )}>
-        <div className="flex items-center gap-3 sm:gap-4">
-          <button 
-            onClick={() => setIsPaused(!isPaused)}
-            disabled={isGlobalPaused}
-            className={cn(
-              "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border backdrop-blur-md flex items-center justify-center transition-all shadow-lg",
-              isGlobalPaused 
-                ? "bg-zinc-800/50 border-white/5 cursor-not-allowed opacity-50" 
-                : "bg-brand-primary/20 border-brand-primary/30 hover:bg-brand-primary/40"
-            )}
-          >
-            {effectivePaused ? <Play size={20} fill="white" className="ml-0.5 sm:ml-1" /> : <Pause size={20} fill="white" />}
-          </button>
-          
-          <div className="flex flex-col">
-            <span className="text-[8px] sm:text-[10px] font-black text-brand-primary uppercase tracking-widest">
-              {effectivePaused ? (isGlobalPaused ? 'დაპაუზებულია ადმინის მიერ' : 'დაპაუზებულია') : 'ლაივი'}
-            </span>
-          </div>
-
-          {isMuted && !effectivePaused && (
-            <button 
-              onClick={() => setIsMuted(false)}
-              className="ml-2 sm:ml-4 px-3 py-1 bg-brand-primary text-black text-[8px] sm:text-[9px] font-black uppercase rounded animate-pulse hover:scale-105 transition-all"
+        {/* DVR Timeline Seeker & Rewind Controls */}
+        {videoEl && seekableEnd > seekableStart && (
+          <div className="flex items-center gap-3 w-full bg-black/40 backdrop-blur-md p-2.5 rounded-xl border border-white/5 select-none transition-all">
+            {/* -30s Rewind Button */}
+            <button
+              onClick={handleRewind30s}
+              className="p-1.5 px-2 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white rounded-lg border border-white/5 flex items-center gap-1.5 transition-all text-[10px] font-black uppercase tracking-wider cursor-pointer shrink-0"
+              title="30 წამით უკან გადახვევა"
             >
-              ჩართეთ ხმა
+              <RotateCcw size={11} className="text-brand-primary" />
+              <span>-30წმ</span>
             </button>
-          )}
-          
-          <div className="flex items-center gap-2 sm:gap-3 ml-1 sm:ml-6 bg-black/40 p-2 px-2 sm:px-4 rounded-lg sm:rounded-xl border border-white/5 backdrop-blur-md">
-             <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMuted(!isMuted);
-              }}
-              className={cn(
-                "text-white hover:text-brand-primary transition-all p-1",
-                isMuted ? "animate-bounce text-brand-primary" : ""
-              )}
-             >
-               {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-             </button>
-             <input 
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={isMuted ? 0 : volume}
-              onChange={(e) => {
-                setVolume(parseFloat(e.target.value));
-                if (isMuted) setIsMuted(false);
-              }}
-              className="w-12 sm:w-24 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-primary"
-             />
-          </div>
-        </div>
 
-        <div className="flex items-center gap-3 sm:gap-4">
-          <button 
-            onClick={toggleFullscreen}
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-zinc-800/40 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-zinc-800 transition-all"
-          >
-            <Maximize size={18} className="text-white" />
-          </button>
+            {/* Drift Offset Label */}
+            <span className="text-[10px] sm:text-xs font-mono font-bold text-zinc-400 shrink-0 select-none min-w-[32px] text-center">
+              -{Math.round(Math.max(0, seekableEnd - currentTime))}წმ
+            </span>
+
+            {/* Live Seeker Range Slider */}
+            <input
+              type="range"
+              min={seekableStart}
+              max={seekableEnd}
+              step="0.1"
+              value={Math.max(seekableStart, Math.min(currentTime, seekableEnd))}
+              onChange={(e) => {
+                videoEl.currentTime = parseFloat(e.target.value);
+              }}
+              className="flex-grow h-1.5 bg-white/10 hover:bg-white/15 rounded-lg appearance-none cursor-pointer accent-brand-primary transition-all duration-150"
+            />
+
+            {/* LIVE Label */}
+            <span className="text-[9px] sm:text-[10px] font-black text-brand-primary/80 uppercase tracking-widest shrink-0 hidden xs:inline select-none">
+              DVR LIVE
+            </span>
+
+            {/* Jump to Live Button */}
+            <button
+              onClick={handleSeekToLive}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-lg active:scale-95 duration-200",
+                isLive 
+                  ? "bg-red-500/10 text-red-500 border border-red-500/15" 
+                  : "bg-brand-primary text-black hover:bg-white hover:scale-105"
+              )}
+            >
+              <span className={cn("w-1.5 h-1.5 rounded-full", isLive ? "bg-red-500 animate-pulse" : "bg-black animate-ping")} />
+              ლაივი
+            </button>
+          </div>
+        )}
+
+        {/* Action Button Row */}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button 
+              onClick={() => setIsPaused(!isPaused)}
+              disabled={isGlobalPaused}
+              className={cn(
+                "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border backdrop-blur-md flex items-center justify-center transition-all shadow-lg cursor-pointer",
+                isGlobalPaused 
+                  ? "bg-zinc-800/50 border-white/5 cursor-not-allowed opacity-50" 
+                  : "bg-brand-primary/20 border-brand-primary/30 hover:bg-brand-primary/40"
+              )}
+            >
+              {effectivePaused ? <Play size={20} fill="white" className="ml-0.5 sm:ml-1" /> : <Pause size={20} fill="white" />}
+            </button>
+            
+            <div className="flex flex-col">
+              <span className="text-[8px] sm:text-[10px] font-black text-brand-primary uppercase tracking-widest">
+                {effectivePaused ? (isGlobalPaused ? 'დაპაუზებულია ადმინის მიერ' : 'დაპაუზებულია') : 'ლაივი'}
+              </span>
+            </div>
+
+            {isMuted && !effectivePaused && (
+              <button 
+                onClick={() => setIsMuted(false)}
+                className="ml-2 sm:ml-4 px-3 py-1 bg-brand-primary text-black text-[8px] sm:text-[9px] font-black uppercase rounded animate-pulse hover:scale-105 transition-all cursor-pointer"
+              >
+                ჩართეთ ხმა
+              </button>
+            )}
+            
+            <div className="flex items-center gap-2 sm:gap-3 ml-1 sm:ml-6 bg-black/40 p-2 px-2 sm:px-4 rounded-lg sm:rounded-xl border border-white/5 backdrop-blur-md">
+               <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMuted(!isMuted);
+                }}
+                className={cn(
+                  "text-white hover:text-brand-primary transition-all p-1 cursor-pointer",
+                  isMuted ? "animate-bounce text-brand-primary" : ""
+                )}
+               >
+                 {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+               </button>
+               <input 
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={isMuted ? 0 : volume}
+                onChange={(e) => {
+                  setVolume(parseFloat(e.target.value));
+                  if (isMuted) setIsMuted(false);
+                }}
+                className="w-12 sm:w-24 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+               />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button 
+              onClick={toggleFullscreen}
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-zinc-800/40 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-zinc-800 transition-all cursor-pointer"
+            >
+              <Maximize size={18} className="text-white" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
