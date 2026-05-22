@@ -37,14 +37,14 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
 
         hls = new Hls({
           enableWorker: true,
-          lowLatencyMode: true,
+          lowLatencyMode: false,
           manifestLoadingMaxRetry: 6,
           levelLoadingMaxRetry: 6,
           backBufferLength: 30,
-          maxBufferLength: 2,
-          maxMaxBufferLength: 4,
-          liveSyncDurationCount: 1.5,
-          liveMaxLatencyDurationCount: 3,
+          maxBufferLength: 15,
+          maxMaxBufferLength: 25,
+          liveSyncDurationCount: 4,
+          liveMaxLatencyDurationCount: 6,
           liveDurationInfinity: true,
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
