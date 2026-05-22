@@ -22,6 +22,25 @@ function getDeterministic6DigitId(userId: string): string {
   return sixDigits.toString();
 }
 
+function transliterateGeorgianToLatin(text: string): string {
+  if (!text) return '';
+  const geoToLat: Record<string, string> = {
+    'ა': 'a', 'ბ': 'b', 'გ': 'g', 'დ': 'd', 'ე': 'e', 'ვ': 'v', 'ზ': 'z',
+    'თ': 't', 'ი': 'i', 'კ': 'k', 'ლ': 'l', 'მ': 'm', 'ნ': 'n', 'ო': 'o',
+    'პ': 'p', 'ჟ': 'zh', 'რ': 'r', 'ს': 's', 'ტ': 't', 'უ': 'u', 'ფ': 'p',
+    'ქ': 'k', 'ღ': 'gh', 'ყ': 'q', 'შ': 'sh', 'ჩ': 'ch', 'ც': 'ts', 'ძ': 'dz',
+    'წ': 'ts', 'ჭ': 'ch', 'ხ': 'kh', 'ჯ': 'j', 'ჰ': 'h'
+  };
+  return text
+    .split('')
+    .map(char => geoToLat[char] || char)
+    .join('')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'lives' | 'users'>('lives');
@@ -353,7 +372,9 @@ export default function AdminDashboard() {
     if (!window.confirm(`ნამდვილად გსურთ მატჩის "${sched.team2 ? `${sched.team1} VS ${sched.team2}` : sched.team1}" ეთერში გაშვება?`)) return;
     
     localStorage.setItem('vds_ip', vdsIp);
-    const slug = `${sched.team1.toLowerCase().trim().replace(/\s+/g, '-')}${sched.team2 ? `-vs-${sched.team2.toLowerCase().trim().replace(/\s+/g, '-')}` : ''}`;
+    const t1 = transliterateGeorgianToLatin(sched.team1) || 'team1';
+    const t2 = sched.sched_team2 || sched.team2 ? transliterateGeorgianToLatin(sched.team2) : '';
+    const slug = `${t1}${t2 ? `-vs-${t2}` : ''}`;
     const key = `${slug}-${sched.id}`;
     
     const isHttps = window.location.protocol === 'https:';
@@ -513,7 +534,9 @@ export default function AdminDashboard() {
     }
     
     localStorage.setItem('vds_ip', vdsIp);
-    const slug = `${team1.toLowerCase().trim().replace(/\s+/g, '-')}${team2 ? `-vs-${team2.toLowerCase().trim().replace(/\s+/g, '-')}` : ''}`;
+    const t1 = transliterateGeorgianToLatin(team1) || 'team1';
+    const t2 = team2 ? transliterateGeorgianToLatin(team2) : '';
+    const slug = `${t1}${t2 ? `-vs-${t2}` : ''}`;
     const key = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
     
     const isHttps = window.location.protocol === 'https:';
