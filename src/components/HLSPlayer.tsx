@@ -36,17 +36,15 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         console.log("Initializing HLS for:", cleanUrl);
 
         hls = new Hls({
-          enableWorker: true,
+          enableWorker: false, // Safe fallback to avoid potential Web Worker blocked SecurityError in iframe sandboxes
           lowLatencyMode: true,
-          manifestLoadingMaxRetry: 10,
-          levelLoadingMaxRetry: 10,
+          manifestLoadingMaxRetry: 15,
+          levelLoadingMaxRetry: 15,
           backBufferLength: 0,
           maxBufferLength: 5,
           maxMaxBufferLength: 8,
           liveSyncDuration: 5, // Target exactly 5 seconds of live stream latency
-          liveMaxLatencyDuration: 8, // Max latency allowable (8s) before seeking to catch up
-          liveSyncDurationCount: 3,
-          liveMaxLatencyDurationCount: 5,
+          liveMaxLatencyDuration: 8, // Max latency allowed (8s) before seeking to catch up
           liveDurationInfinity: true,
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -94,9 +92,9 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
             }
           }
         });
-      } catch (err) {
+      } catch (err: any) {
         console.error("HLS init error:", err);
-        setErrorStatus('ფლეიერის ინიციალიზაცია ვერ მოხერხდა.');
+        setErrorStatus(`ფლეიერის ინიციალიზაცია ვერ მოხერხდა: ${err?.message || err}`);
       }
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       const cleanUrl = url?.trim();
