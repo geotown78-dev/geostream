@@ -128,24 +128,42 @@ interface ChatMessage {
 }
 
 const chats: Record<string, ChatMessage[]> = {};
-const mutedUsers = new Set<string>();
+const mutedUsers = new Map<string, number>(); // username -> expireTimestamp (0 = permanent)
 const blockedUsers = new Set<string>();
 
 // Get chat moderation lists
 app.get("/api/chat/moderation", (req, res) => {
+  const now = Date.now();
+  // Clean up expired mutes
+  for (const [user, expire] of mutedUsers.entries()) {
+    if (expire !== 0 && expire < now) {
+      mutedUsers.delete(user);
+    }
+  }
+
   res.json({
-    muted: Array.from(mutedUsers),
+    muted: Array.from(mutedUsers.entries()).map(([username, expire]) => ({ username, expire })),
     blocked: Array.from(blockedUsers)
   });
 });
 
 // Moderation actions
 app.post("/api/chat/moderation/mute", (req, res) => {
-  const { username } = req.body;
+  const { username, duration } = req.body; // duration in seconds
   if (!username) return res.status(400).json({ error: "ნიკნეიმი არ არის მითითებული" });
-  mutedUsers.add(String(username).trim().toUpperCase());
-  console.log(`🔇 Muted user chat: ${username}`);
-  res.json({ success: true, muted: Array.from(mutedUsers) });
+  
+  const normalizedUser = String(username).trim().toUpperCase();
+  let expireTime = 0; // permanent
+  if (duration && Number(duration) > 0) {
+    expireTime = Date.now() + Number(duration) * 1000;
+  }
+  
+  mutedUsers.set(normalizedUser, expireTime);
+  console.log(`🔇 Muted user chat: ${username} (duration: ${duration ? duration + 's' : 'perm'})`);
+  res.json({ 
+    success: true, 
+    muted: Array.from(mutedUsers.entries()).map(([u, exp]) => ({ username: u, expire: exp })) 
+  });
 });
 
 app.post("/api/chat/moderation/unmute", (req, res) => {
@@ -153,7 +171,10 @@ app.post("/api/chat/moderation/unmute", (req, res) => {
   if (!username) return res.status(400).json({ error: "ნიკნეიმი არ არის მითითებული" });
   mutedUsers.delete(String(username).trim().toUpperCase());
   console.log(`🔊 Unmuted user chat: ${username}`);
-  res.json({ success: true, muted: Array.from(mutedUsers) });
+  res.json({ 
+    success: true, 
+    muted: Array.from(mutedUsers.entries()).map(([u, exp]) => ({ username: u, expire: exp })) 
+  });
 });
 
 app.post("/api/chat/moderation/block", (req, res) => {
@@ -191,7 +212,14 @@ app.post("/api/chat/:roomId", (req, res) => {
     return res.status(403).json({ error: "BLOCKED", message: "თქვენ დაბლოკილი ხართ ჩატიდან" });
   }
   if (mutedUsers.has(normalizedUser)) {
-    return res.status(403).json({ error: "MUTED", message: "თქვენ გაჩუმებული ხართ ჩატიდან" });
+    const expireTime = mutedUsers.get(normalizedUser);
+    if (expireTime !== 0 && expireTime && expireTime < Date.now()) {
+      mutedUsers.delete(normalizedUser);
+    } else {
+      const remainingSecs = expireTime ? Math.ceil((expireTime - Date.now()) / 1000) : 0;
+      const msgStr = expireTime === 0 ? "თქვენ გაჩუმებული ხართ ჩატიდან" : `თქვენ გაჩუმებული ხართ ჩატიდან კიდევ ${remainingSecs} წამით`;
+      return res.status(403).json({ error: "MUTED", message: msgStr });
+    }
   }
 
   if (!chats[roomId]) {
