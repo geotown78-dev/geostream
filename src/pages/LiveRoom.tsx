@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
-import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX, Trophy, RotateCcw } from 'lucide-react';
+import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX, Trophy, RotateCcw, UserX } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ADMIN_EMAILS } from '../constants';
@@ -476,6 +476,9 @@ export default function LiveRoom() {
   const [isStreamLive, setIsStreamLive] = useState<boolean>(true);
   const [schedItem, setSchedItem] = useState<any>(null);
   const [liveEvent, setLiveEvent] = useState<any>(null);
+  const [localMuted, setLocalMuted] = useState<boolean>(localStorage.getItem('chat_is_muted') === 'true');
+  const [localBlocked, setLocalBlocked] = useState<boolean>(localStorage.getItem('chat_is_blocked') === 'true');
+  const [selectedModerationUser, setSelectedModerationUser] = useState<{ username: string; x: number; y: number } | null>(null);
 
   const formatViewerCount = (num: number) => {
     if (num >= 1000000) {
@@ -576,22 +579,123 @@ export default function LiveRoom() {
       }
     });
 
+    const globalChannel = supabase.channel('live-chat-global');
+
+    const handleModerationBroadcast = (envelope: any) => {
+      const payload = envelope?.payload;
+      if (payload && payload.username) {
+        const myName = (localStorage.getItem('chat_nickname') || '').trim().toUpperCase();
+        const targetName = String(payload.username).trim().toUpperCase();
+        if (myName === targetName) {
+          if (payload.action === 'mute') {
+            setLocalMuted(true);
+            localStorage.setItem('chat_is_muted', 'true');
+          } else if (payload.action === 'unmute') {
+            setLocalMuted(false);
+            localStorage.removeItem('chat_is_muted');
+          } else if (payload.action === 'block') {
+            setLocalBlocked(true);
+            localStorage.setItem('chat_is_blocked', 'true');
+          } else if (payload.action === 'unblock') {
+            setLocalBlocked(false);
+            localStorage.removeItem('chat_is_blocked');
+          }
+        }
+      }
+    };
+
+    chatChannel.on('broadcast', { event: 'moderation' }, handleModerationBroadcast);
+    globalChannel.on('broadcast', { event: 'moderation' }, handleModerationBroadcast);
+
     chatChannel.subscribe();
+    globalChannel.subscribe();
 
     return () => {
       clearInterval(pollInterval);
       chatChannelRef.current = null;
       supabase.removeChannel(chatChannel);
+      supabase.removeChannel(globalChannel);
     };
   }, [roomId]);
+
+  // Synchronize moderation list from Express server
+  useEffect(() => {
+    const syncModeration = async () => {
+      const myName = (nickname || localStorage.getItem('chat_nickname') || '').trim().toUpperCase();
+      if (!myName) return;
+      try {
+        const res = await fetch('/api/chat/moderation');
+        const data = await res.json();
+        if (data && data.muted && data.blocked) {
+          const isM = data.muted.map((n: string) => n.toUpperCase()).includes(myName);
+          const isB = data.blocked.map((n: string) => n.toUpperCase()).includes(myName);
+          setLocalMuted(isM);
+          setLocalBlocked(isB);
+          
+          if (isM) localStorage.setItem('chat_is_muted', 'true');
+          else localStorage.removeItem('chat_is_muted');
+          
+          if (isB) localStorage.setItem('chat_is_blocked', 'true');
+          else localStorage.removeItem('chat_is_blocked');
+        }
+      } catch (err) {
+        console.error('Failed to sync moderation list:', err);
+      }
+    };
+    
+    syncModeration();
+
+    const handleStorageChange = () => {
+      setLocalMuted(localStorage.getItem('chat_is_muted') === 'true');
+      setLocalBlocked(localStorage.getItem('chat_is_blocked') === 'true');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [nickname]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleModAction = async (action: 'mute' | 'block', targetUser: string) => {
+    try {
+      await fetch(`/api/chat/moderation/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: targetUser })
+      });
+
+      // Broadcast immediately to everyone
+      if (chatChannelRef.current) {
+        await chatChannelRef.current.send({
+          type: 'broadcast',
+          event: 'moderation',
+          payload: { action, username: targetUser }
+        });
+      } else {
+        const channel = supabase.channel(`live-chat-${roomId}`);
+        await channel.send({
+          type: 'broadcast',
+          event: 'moderation',
+          payload: { action, username: targetUser }
+        });
+      }
+    } catch (err) {
+      console.error('Moderation action request failed:', err);
+    }
+  };
+
   const sendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (localBlocked) {
+      alert('თქვენ დაბლოკილი ხართ ჩატიდან.');
+      return;
+    }
+    if (localMuted) {
+      alert('თქვენ გაჩუმებული ხართ ჩატიდან.');
+      return;
+    }
     if (!inputText.trim()) return;
 
     const chatMsg = inputText.trim();
@@ -989,7 +1093,23 @@ export default function LiveRoom() {
                     {(chat.user || 'G').charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 truncate ${chat.color}`}>
+                    <p 
+                      onClick={(e) => {
+                        if (!isAdmin) return;
+                        e.preventDefault();
+                        setSelectedModerationUser({
+                          username: chat.user,
+                          x: e.clientX,
+                          y: e.clientY
+                        });
+                      }}
+                      title={isAdmin ? "სამართავი მენიუ (დააწკაპუნეთ)" : undefined}
+                      className={cn(
+                        "text-[10px] font-black uppercase tracking-widest mb-0.5 truncate select-none", 
+                        chat.color, 
+                        isAdmin && "cursor-pointer hover:underline text-brand-primary"
+                      )}
+                    >
                       {chat.user}
                     </p>
                     <p className="text-xs text-zinc-300 leading-normal font-medium break-words">
@@ -1066,21 +1186,72 @@ export default function LiveRoom() {
             </div>
 
             {/* Input Form */}
-            <form onSubmit={sendMessage} className="relative flex items-center bg-brand-surface border border-brand-border rounded-xl focus-within:border-brand-primary/50 transition-colors">
-              <input 
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="დაწერეთ შეტყობინება..."
-                className="flex-1 bg-transparent px-4 py-3 text-xs text-white outline-none placeholder-zinc-600 font-medium"
-              />
-              <button type="submit" className="p-3 pr-4 text-brand-primary hover:text-white transition-colors">
-                <Play size={12} className="rotate-[-45deg]" fill="currentColor" />
-              </button>
-            </form>
+            {localBlocked ? (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-center text-[10px] font-black uppercase text-red-500 tracking-wider">
+                🚫 თქვენ დაბლოკილი ხართ ჩატიდან
+              </div>
+            ) : localMuted ? (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 text-center text-[10px] font-black uppercase text-yellow-500 tracking-wider">
+                🔇 თქვენ გაჩუმებული ხართ ჩატიდან
+              </div>
+            ) : (
+              <form onSubmit={sendMessage} className="relative flex items-center bg-brand-surface border border-brand-border rounded-xl focus-within:border-brand-primary/50 transition-colors">
+                <input 
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="დაწერეთ შეტყობინება..."
+                  className="flex-1 bg-transparent px-4 py-3 text-xs text-white outline-none placeholder-zinc-600 font-medium"
+                />
+                <button type="submit" className="p-3 pr-4 text-brand-primary hover:text-white transition-colors">
+                  <Play size={12} className="rotate-[-45deg]" fill="currentColor" />
+                </button>
+              </form>
+            )}
           </div>
         </aside>
       </div>
+
+      {/* Absolute Admin Dropdown Menu for Mute/Block */}
+      {selectedModerationUser && (
+        <>
+          <div 
+            className="fixed inset-0 z-50 bg-black/10" 
+            onClick={() => setSelectedModerationUser(null)} 
+          />
+          <div 
+            className="fixed bg-zinc-950/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl p-2 z-[60] min-w-[150px] animate-in zoom-in-95 duration-100 flex flex-col gap-1 text-white text-left"
+            style={{ 
+              left: `${Math.min(selectedModerationUser.x, window.innerWidth - 170)}px`, 
+              top: `${Math.min(selectedModerationUser.y, window.innerHeight - 130)}px` 
+            }}
+          >
+            <div className="px-3 py-2 border-b border-white/5 text-[9px] font-black uppercase tracking-wider text-zinc-500 truncate max-w-[150px]">
+              {selectedModerationUser.username}
+            </div>
+            <button
+              onClick={async () => {
+                await handleModAction('mute', selectedModerationUser.username);
+                setSelectedModerationUser(null);
+              }}
+              className="w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-wide text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <VolumeX size={12} />
+              გაჩუმება (MUTE)
+            </button>
+            <button
+              onClick={async () => {
+                await handleModAction('block', selectedModerationUser.username);
+                setSelectedModerationUser(null);
+              }}
+              className="w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-wide text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <UserX size={12} />
+              დაბლოკვა (BLOCK)
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
