@@ -128,6 +128,49 @@ interface ChatMessage {
 }
 
 const chats: Record<string, ChatMessage[]> = {};
+const mutedUsers = new Set<string>();
+const blockedUsers = new Set<string>();
+
+// Get chat moderation lists
+app.get("/api/chat/moderation", (req, res) => {
+  res.json({
+    muted: Array.from(mutedUsers),
+    blocked: Array.from(blockedUsers)
+  });
+});
+
+// Moderation actions
+app.post("/api/chat/moderation/mute", (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: "ნიკნეიმი არ არის მითითებული" });
+  mutedUsers.add(String(username).trim().toUpperCase());
+  console.log(`🔇 Muted user chat: ${username}`);
+  res.json({ success: true, muted: Array.from(mutedUsers) });
+});
+
+app.post("/api/chat/moderation/unmute", (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: "ნიკნეიმი არ არის მითითებული" });
+  mutedUsers.delete(String(username).trim().toUpperCase());
+  console.log(`🔊 Unmuted user chat: ${username}`);
+  res.json({ success: true, muted: Array.from(mutedUsers) });
+});
+
+app.post("/api/chat/moderation/block", (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: "ნიკნეიმი არ არის მითითებული" });
+  blockedUsers.add(String(username).trim().toUpperCase());
+  console.log(`🚫 Blocked user chat: ${username}`);
+  res.json({ success: true, blocked: Array.from(blockedUsers) });
+});
+
+app.post("/api/chat/moderation/unblock", (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: "ნიკნეიმი არ არის მითითებული" });
+  blockedUsers.delete(String(username).trim().toUpperCase());
+  console.log(`✅ Unblocked user chat: ${username}`);
+  res.json({ success: true, blocked: Array.from(blockedUsers) });
+});
 
 // Get chat history
 app.get("/api/chat/:roomId", (req, res) => {
@@ -141,6 +184,14 @@ app.post("/api/chat/:roomId", (req, res) => {
   const { user, msg, color, id } = req.body;
   if (!user || !msg) {
     return res.status(400).json({ error: "Missing user or msg" });
+  }
+
+  const normalizedUser = String(user).trim().toUpperCase();
+  if (blockedUsers.has(normalizedUser)) {
+    return res.status(403).json({ error: "BLOCKED", message: "თქვენ დაბლოკილი ხართ ჩატიდან" });
+  }
+  if (mutedUsers.has(normalizedUser)) {
+    return res.status(403).json({ error: "MUTED", message: "თქვენ გაჩუმებული ხართ ჩატიდან" });
   }
 
   if (!chats[roomId]) {
