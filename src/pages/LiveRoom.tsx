@@ -497,6 +497,29 @@ export default function LiveRoom() {
     }
   }, []);
 
+  // Check and enforce local mute expiration
+  useEffect(() => {
+    const checkMuteExpiry = () => {
+      const isMutedStr = localStorage.getItem('chat_is_muted') === 'true';
+      if (isMutedStr) {
+        const expiresStr = localStorage.getItem('chat_mute_expires');
+        if (expiresStr) {
+          const expires = Number(expiresStr);
+          if (expires !== 0 && Date.now() >= expires) {
+            localStorage.removeItem('chat_is_muted');
+            localStorage.removeItem('chat_mute_expires');
+            setLocalMuted(false);
+          }
+        }
+      }
+    };
+    
+    // Check initially and run every 2 seconds
+    checkMuteExpiry();
+    const interval = setInterval(checkMuteExpiry, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Initialize Nickname and Chat Color
   useEffect(() => {
     const colors = [
@@ -590,9 +613,16 @@ export default function LiveRoom() {
           if (payload.action === 'mute') {
             setLocalMuted(true);
             localStorage.setItem('chat_is_muted', 'true');
+            if (payload.duration) {
+              const expireTimestamp = Date.now() + payload.duration * 1000;
+              localStorage.setItem('chat_mute_expires', expireTimestamp.toString());
+            } else {
+              localStorage.removeItem('chat_mute_expires');
+            }
           } else if (payload.action === 'unmute') {
             setLocalMuted(false);
             localStorage.removeItem('chat_is_muted');
+            localStorage.removeItem('chat_mute_expires');
           } else if (payload.action === 'block') {
             setLocalBlocked(true);
             localStorage.setItem('chat_is_blocked', 'true');
@@ -627,7 +657,11 @@ export default function LiveRoom() {
         const res = await fetch('/api/chat/moderation');
         const data = await res.json();
         if (data && data.muted && data.blocked) {
-          const isM = data.muted.map((n: string) => n.toUpperCase()).includes(myName);
+          const isM = data.muted.some((item: any) => {
+            const matchesUser = item.username.toUpperCase() === myName;
+            const isNotExpired = item.expire === 0 || item.expire > Date.now();
+            return matchesUser && isNotExpired;
+          });
           const isB = data.blocked.map((n: string) => n.toUpperCase()).includes(myName);
           setLocalMuted(isM);
           setLocalBlocked(isB);
@@ -658,12 +692,12 @@ export default function LiveRoom() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleModAction = async (action: 'mute' | 'block', targetUser: string) => {
+  const handleModAction = async (action: 'mute' | 'block', targetUser: string, duration?: number) => {
     try {
       await fetch(`/api/chat/moderation/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: targetUser })
+        body: JSON.stringify({ username: targetUser, duration })
       });
 
       // Broadcast immediately to everyone
@@ -671,14 +705,14 @@ export default function LiveRoom() {
         await chatChannelRef.current.send({
           type: 'broadcast',
           event: 'moderation',
-          payload: { action, username: targetUser }
+          payload: { action, username: targetUser, duration }
         });
       } else {
         const channel = supabase.channel(`live-chat-${roomId}`);
         await channel.send({
           type: 'broadcast',
           event: 'moderation',
-          payload: { action, username: targetUser }
+          payload: { action, username: targetUser, duration }
         });
       }
     } catch (err) {
@@ -1220,31 +1254,66 @@ export default function LiveRoom() {
             onClick={() => setSelectedModerationUser(null)} 
           />
           <div 
-            className="fixed bg-zinc-950/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl p-2 z-[60] min-w-[150px] animate-in zoom-in-95 duration-100 flex flex-col gap-1 text-white text-left"
+            className="fixed bg-zinc-950/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl p-2 z-[60] min-w-[170px] animate-in zoom-in-95 duration-100 flex flex-col gap-1 text-white text-left"
             style={{ 
-              left: `${Math.min(selectedModerationUser.x, window.innerWidth - 170)}px`, 
-              top: `${Math.min(selectedModerationUser.y, window.innerHeight - 130)}px` 
+              left: `${Math.min(selectedModerationUser.x, window.innerWidth - 190)}px`, 
+              top: `${Math.min(selectedModerationUser.y, window.innerHeight - 250)}px` 
             }}
           >
-            <div className="px-3 py-2 border-b border-white/5 text-[9px] font-black uppercase tracking-wider text-zinc-500 truncate max-w-[150px]">
+            <div className="px-3 py-2 border-b border-white/5 text-[9px] font-black uppercase tracking-wider text-zinc-500 truncate max-w-[170px]">
               {selectedModerationUser.username}
             </div>
+            
             <button
               onClick={async () => {
-                await handleModAction('mute', selectedModerationUser.username);
+                await handleModAction('mute', selectedModerationUser.username, 60);
                 setSelectedModerationUser(null);
               }}
-              className="w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-wide text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors flex items-center gap-2"
+              className="w-full text-left px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors flex items-center gap-2"
             >
               <VolumeX size={12} />
-              გაჩუმება (MUTE)
+              გაჩუმება: 1 წუთით
             </button>
+
+            <button
+              onClick={async () => {
+                await handleModAction('mute', selectedModerationUser.username, 600);
+                setSelectedModerationUser(null);
+              }}
+              className="w-full text-left px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <VolumeX size={12} />
+              გაჩუმება: 10 წუთით
+            </button>
+
+            <button
+              onClick={async () => {
+                await handleModAction('mute', selectedModerationUser.username, 3600);
+                setSelectedModerationUser(null);
+              }}
+              className="w-full text-left px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <VolumeX size={12} />
+              გაჩუმება: 1 საათით
+            </button>
+
+            <button
+              onClick={async () => {
+                await handleModAction('mute', selectedModerationUser.username, 0);
+                setSelectedModerationUser(null);
+              }}
+              className="w-full text-left px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors flex items-center gap-2 border-b border-white/5 pb-2"
+            >
+              <VolumeX size={12} />
+              გაჩუმება: სამუდამოდ
+            </button>
+
             <button
               onClick={async () => {
                 await handleModAction('block', selectedModerationUser.username);
                 setSelectedModerationUser(null);
               }}
-              className="w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-wide text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2"
+              className="w-full text-left px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2"
             >
               <UserX size={12} />
               დაბლოკვა (BLOCK)
