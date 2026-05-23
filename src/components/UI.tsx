@@ -302,20 +302,33 @@ export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: 
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5 }}
-                className="absolute inset-0"
+                className="absolute inset-0 flex items-center justify-center bg-zinc-950"
               >
+                {/* 1. Ambient blurred backdrop so there are no empty gaps/spaces */}
+                <div className="absolute inset-0 overflow-hidden select-none pointer-events-none">
+                  <img 
+                    src={activeSlide.image} 
+                    className="w-full h-full object-cover scale-110 blur-3xl opacity-35 saturate-125"
+                    alt=""
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                
+                {/* 2. Foreground crisp image displayed completely without cropping */}
                 <img 
                   src={activeSlide.image} 
-                  className="w-full h-full object-cover scale-105 transition-transform duration-[2s]"
+                  className="w-full h-full object-contain relative z-10 transition-transform duration-[2s]"
                   alt=""
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/20 to-transparent" />
+                
+                {/* 3. Gradient mask for readable text labels */}
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-black/95 via-brand-black/40 to-transparent z-20" />
               </motion.div>
             </AnimatePresence>
           </div>
 
-          <div className="relative h-full flex flex-col justify-end p-4 xs:p-6 sm:p-12 z-10 pb-12 sm:pb-16 select-none">
+          <div className="relative h-full flex flex-col justify-end p-4 xs:p-6 sm:p-12 z-30 pb-12 sm:pb-16 select-none">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentIndex}
