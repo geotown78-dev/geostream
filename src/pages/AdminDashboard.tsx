@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe, Edit, X, Users, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import HLSPlayer from '../components/HLSPlayer';
-import { Volume2, VolumeX, Pause, Play as PlayIcon } from 'lucide-react';
+import { Volume2, VolumeX, Pause, Play as PlayIcon, UserX, MessageSquareOff } from 'lucide-react';
 import { cn } from '../lib/utils';
 import ImageCropperModal from '../components/ImageCropperModal';
 
@@ -47,6 +47,8 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState<boolean>(false);
   const [usersSearchQuery, setUsersSearchQuery] = useState<string>('');
+  const [mutedUsers, setMutedUsers] = useState<string[]>([]);
+  const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   
   const [team1, setTeam1] = useState('');
   const [team2, setTeam2] = useState('');
@@ -479,10 +481,72 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchModeration = async () => {
+    try {
+      const res = await fetch('/api/chat/moderation');
+      const data = await res.json();
+      if (data) {
+        setMutedUsers(data.muted || []);
+        setBlockedUsers(data.blocked || []);
+      }
+    } catch (err) {
+      console.error('Error fetching chat moderation list:', err);
+    }
+  };
+
+  const handleUnmute = async (username: string) => {
+    try {
+      const res = await fetch('/api/chat/moderation/unmute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        const channel = supabase.channel('live-chat-global');
+        await channel.send({
+          type: 'broadcast',
+          event: 'moderation',
+          payload: { action: 'unmute', username }
+        });
+        await fetchModeration();
+      }
+    } catch (err) {
+      console.error('Unmute request failed:', err);
+    }
+  };
+
+  const handleUnblock = async (username: string) => {
+    try {
+      const res = await fetch('/api/chat/moderation/unblock', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        const channel = supabase.channel('live-chat-global');
+        await channel.send({
+          type: 'broadcast',
+          event: 'moderation',
+          payload: { action: 'unblock', username }
+        });
+        await fetchModeration();
+      }
+    } catch (err) {
+      console.error('Unblock request failed:', err);
+    }
+  };
+
   useEffect(() => {
     fetchEvents();
     fetchSchedules();
     fetchUsers();
+    fetchModeration();
   }, []);
 
   useEffect(() => {
@@ -783,6 +847,87 @@ export default function AdminDashboard() {
                     </div>
                   );
                 })()}
+
+                {/* ლაივ ჩატის მოდერაცია (გაჩუმებული და დაბლოკილი მომხმარებლები) */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4 pt-12">
+                  <div>
+                    <h2 className="text-2xl font-black uppercase text-white tracking-tight flex items-center gap-3">
+                      <span className="p-2 bg-brand-primary/10 rounded-lg text-brand-primary">
+                        <MessageSquareOff size={20} />
+                      </span>
+                      ლაივ ჩატის მოდერაცია
+                    </h2>
+                    <p className="text-zinc-500 font-bold uppercase text-[9px] tracking-[0.2em] mt-1">
+                      გაჩუმებული და დაბლოკილი ჩატის მომხმარებლების სია და მართვა
+                    </p>
+                  </div>
+                  <button 
+                    onClick={fetchModeration}
+                    className="self-start md:self-auto text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-white px-4 py-2 bg-zinc-900 border border-white/10 rounded-xl transition-all hover:border-white/20"
+                  >
+                    განახლება
+                  </button>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Muted Users list card */}
+                  <div className="bento-card bg-zinc-950/40 p-6 border border-white/5 rounded-2xl flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black uppercase tracking-wider text-yellow-500 flex items-center gap-2">
+                        <VolumeX size={16} />
+                        გაჩუმებულები ({mutedUsers.length})
+                      </h3>
+                    </div>
+                    {mutedUsers.length === 0 ? (
+                      <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 py-8 text-center italic">
+                        გაჩუმებული მომხმარებლები არ არიან
+                      </p>
+                    ) : (
+                      <div className="divide-y divide-white/5 max-h-[300px] overflow-y-auto pr-1">
+                        {mutedUsers.map((item) => (
+                          <div key={item} className="flex items-center justify-between py-3">
+                            <span className="text-xs font-mono font-bold text-white uppercase">{item}</span>
+                            <button
+                              onClick={() => handleUnmute(item)}
+                              className="px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500 text-yellow-500 hover:text-black rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors"
+                            >
+                              მიუთის მოხსნა
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Blocked Users list card */}
+                  <div className="bento-card bg-zinc-950/40 p-6 border border-white/5 rounded-2xl flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black uppercase tracking-wider text-red-500 flex items-center gap-2">
+                        <UserX size={16} />
+                        დაბლოკილები ({blockedUsers.length})
+                      </h3>
+                    </div>
+                    {blockedUsers.length === 0 ? (
+                      <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 py-8 text-center italic">
+                        დაბლოკილი მომხმარებლები არ არიან
+                      </p>
+                    ) : (
+                      <div className="divide-y divide-white/5 max-h-[300px] overflow-y-auto pr-1">
+                        {blockedUsers.map((item) => (
+                          <div key={item} className="flex items-center justify-between py-3">
+                            <span className="text-xs font-mono font-bold text-white uppercase">{item}</span>
+                            <button
+                              onClick={() => handleUnblock(item)}
+                              className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-black rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors"
+                            >
+                              ბლოკის მოხსნა
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : (
               <>
