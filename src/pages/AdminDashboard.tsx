@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Radio, Play, StopCircle, Settings, TrendingUp, Monitor, Trash2, Plus, Calendar, Image as ImageIcon, LayoutDashboard, Upload, Loader2, Copy, Check, ExternalLink, Globe, Edit, X, Users, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -43,11 +43,11 @@ function transliterateGeorgianToLatin(text: string): string {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'lives' | 'users'>('lives');
+  const [activeTab, setActiveTab] = useState<'lives' | 'users' | 'monitor'>('lives');
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState<boolean>(false);
   const [usersSearchQuery, setUsersSearchQuery] = useState<string>('');
-  const [mutedUsers, setMutedUsers] = useState<string[]>([]);
+  const [mutedUsers, setMutedUsers] = useState<any[]>([]);
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   
   const [team1, setTeam1] = useState('');
@@ -562,6 +562,18 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const lastShowDetailsRef = useRef(showSessionDetails);
+  useEffect(() => {
+    if (showSessionDetails !== lastShowDetailsRef.current) {
+      if (showSessionDetails) {
+        setActiveTab('monitor');
+      } else {
+        setActiveTab('lives');
+      }
+      lastShowDetailsRef.current = showSessionDetails;
+    }
+  }, [showSessionDetails]);
+
   const copyToClipboard = async (text: string, type: 'url' | 'key') => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
@@ -679,38 +691,51 @@ export default function AdminDashboard() {
         </header>
 
         {/* TAB SWITCHER */}
-        {!showSessionDetails && (
-          <div className="flex border-b border-white/10 mb-8 gap-6">
+        <div className="flex border-b border-white/10 mb-8 gap-6">
+          {showSessionDetails && (
             <button
-              id="admin-lives-tab-btn"
-              onClick={() => setActiveTab('lives')}
+              id="admin-monitor-tab-btn"
+              onClick={() => setActiveTab('monitor')}
               className={cn(
                 "pb-4 font-black text-xs uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border-b-2 outline-none",
-                activeTab === 'lives'
+                activeTab === 'monitor'
                   ? "border-brand-primary text-white"
                   : "border-transparent text-zinc-500 hover:text-zinc-300"
               )}
             >
-              <Radio size={14} className={activeTab === 'lives' ? "animate-pulse text-brand-primary" : ""} />
-              ლაივების პარამეტრები
+              <Radio size={14} className={activeTab === 'monitor' ? "animate-pulse text-brand-primary" : ""} />
+              სტრიმის მონიტორი (LIVE)
             </button>
-            <button
-              id="admin-users-tab-btn"
-              onClick={() => setActiveTab('users')}
-              className={cn(
-                "pb-4 font-black text-xs uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border-b-2 outline-none",
-                activeTab === 'users'
-                  ? "border-brand-primary text-white"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
-              )}
-            >
-              <Users size={14} className={activeTab === 'users' ? "text-brand-primary" : ""} />
-              მომხმარებლები
-            </button>
-          </div>
-        )}
+          )}
+          <button
+            id="admin-lives-tab-btn"
+            onClick={() => setActiveTab('lives')}
+            className={cn(
+              "pb-4 font-black text-xs uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border-b-2 outline-none",
+              activeTab === 'lives'
+                ? "border-brand-primary text-white"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            <Settings size={14} className={activeTab === 'lives' ? "text-brand-primary" : ""} />
+            ლაივების პარამეტრები
+          </button>
+          <button
+            id="admin-users-tab-btn"
+            onClick={() => setActiveTab('users')}
+            className={cn(
+              "pb-4 font-black text-xs uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border-b-2 outline-none",
+              activeTab === 'users'
+                ? "border-brand-primary text-white"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            <Users size={14} className={activeTab === 'users' ? "text-brand-primary" : ""} />
+            მომხმარებლები
+          </button>
+        </div>
 
-        {!showSessionDetails ? (
+        {!(activeTab === 'monitor' && showSessionDetails) ? (
           <>
             {activeTab === 'users' ? (
               <div className="space-y-8 animate-in fade-in duration-300" id="admin-users-tab-content">
@@ -885,10 +910,17 @@ export default function AdminDashboard() {
                     ) : (
                       <div className="divide-y divide-white/5 max-h-[300px] overflow-y-auto pr-1">
                         {mutedUsers.map((item) => (
-                          <div key={item} className="flex items-center justify-between py-3">
-                            <span className="text-xs font-mono font-bold text-white uppercase">{item}</span>
+                          <div key={item.username} className="flex items-center justify-between py-3">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-mono font-bold text-white uppercase">{item.username}</span>
+                              <span className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5">
+                                {item.expire === 0 
+                                  ? 'სამუდამო' 
+                                  : `დარჩა: ${Math.max(0, Math.ceil((item.expire - Date.now()) / 1000))} წამი`}
+                              </span>
+                            </div>
                             <button
-                              onClick={() => handleUnmute(item)}
+                              onClick={() => handleUnmute(item.username)}
                               className="px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500 text-yellow-500 hover:text-black rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors"
                             >
                               მიუთის მოხსნა
