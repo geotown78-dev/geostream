@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Navbar, Sidebar } from './components/UI';
 import Home from './pages/Home';
 import LiveRoom from './pages/LiveRoom';
@@ -8,6 +8,7 @@ import AuthPage from './pages/Auth';
 import BroadcasterRoom from './pages/BroadcasterRoom';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
+import Terms from './pages/Terms';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AnimatePresence } from 'motion/react';
 
@@ -67,6 +68,7 @@ function AppContent() {
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/login" element={<AuthPage mode="login" />} />
               <Route path="/register" element={<AuthPage mode="register" />} />
+              <Route path="/terms" element={<Terms />} />
               <Route 
                 path="/admin" 
                 element={
@@ -95,7 +97,7 @@ function AppContent() {
           </div>
           <div className="flex flex-wrap justify-center gap-6 sm:gap-8 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-600">
             <a href="#" className="hover:text-brand-primary transition-colors">კონფიდენციალურობის პოლიტიკა</a>
-            <a href="#" className="hover:text-brand-primary transition-colors">წესები და პირობები</a>
+            <Link to="/terms" className="hover:text-brand-primary transition-colors">წესები და პირობები</Link>
             <a href="#" className="hover:text-brand-primary transition-colors">კონტაქტი</a>
           </div>
           <div className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest">
