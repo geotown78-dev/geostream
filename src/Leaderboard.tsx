@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, ChevronUp, ChevronDown, Minus, Edit2, Check, X, Save, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -162,6 +163,14 @@ export default function Leaderboard() {
           </div>
           
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            {!isAdmin && (
+              <Link 
+                to="/login"
+                className="flex items-center gap-2 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/5 rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all"
+              >
+                ადმინ შესვლა (სინქრონიზაციისთვის)
+              </Link>
+            )}
             {isAdmin && (
               <div className="flex items-center gap-2">
                 <button 
