@@ -399,14 +399,14 @@ export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: 
             <>
               <button 
                 onClick={(e) => { e.preventDefault(); prevSlide(); }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-brand-primary text-white border border-white/10 flex items-center justify-center transition-all opacity-0 group-hover/hero:opacity-100 backdrop-blur-sm cursor-pointer hover:scale-105"
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-40 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-brand-primary text-white border border-white/10 flex items-center justify-center transition-all opacity-0 group-hover/hero:opacity-100 backdrop-blur-sm cursor-pointer hover:scale-105"
                 title="წინა"
               >
                 <ChevronLeft size={18} className="sm:w-6 sm:h-6" />
               </button>
               <button 
                 onClick={(e) => { e.preventDefault(); nextSlide(); }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-brand-primary text-white border border-white/10 flex items-center justify-center transition-all opacity-0 group-hover/hero:opacity-100 backdrop-blur-sm cursor-pointer hover:scale-105"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-40 w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-brand-primary text-white border border-white/10 flex items-center justify-center transition-all opacity-0 group-hover/hero:opacity-100 backdrop-blur-sm cursor-pointer hover:scale-105"
                 title="შემდეგი"
               >
                 <ChevronRight size={18} className="sm:w-6 sm:h-6" />
@@ -416,7 +416,7 @@ export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: 
 
           {/* Dot indicators */}
           {slides.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 flex gap-2">
               {slides.map((_, idx) => (
                 <button
                   key={idx}
