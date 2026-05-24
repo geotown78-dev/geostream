@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, ChevronUp, ChevronDown, Minus, Edit2, Check, X, Save } from 'lucide-react';
+import { Trophy, ChevronUp, ChevronDown, Minus, Edit2, Check, X, Save, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ADMIN_EMAILS } from '../constants';
 import { TeamLogo } from '../components/TeamLogo';
@@ -72,6 +72,39 @@ export default function Leaderboard() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<TeamData[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const handleSync = async () => {
+    if (!window.confirm("ნამდვილად გსურთ ლა ლიგის მიმდინარე ქულების ავტომატური სინქრონიზაცია Google-ის ძიებიდან (Gemini AI-ის საშუალებით)?")) {
+      return;
+    }
+    setIsSyncing(true);
+    setSyncError(null);
+    try {
+      const response = await fetch("/api/laliga/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const result = await response.json();
+      if (result.success && result.standings) {
+        setData(result.standings);
+        localStorage.setItem('laliga_leaderboard', JSON.stringify(result.standings));
+        if (isEditing) {
+          setEditData([...result.standings]);
+        }
+        alert("ლა ლიგის ლიდერბორდი წარმატებით დასინქრონირდა Google-ის ძიების ინფორმაციასთან!");
+      } else {
+        throw new Error(result.error || "მონაცემების მიღება ვერ მოხერხდა");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setSyncError(err.message || "სინქრონიზაცია ჩაიშალა");
+      alert("შეცდომა სინქრონიზაციისას: " + (err.message || "უცნობი ხარვეზი"));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const toggleEdit = () => {
     if (isEditing) {
@@ -131,6 +164,15 @@ export default function Leaderboard() {
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 w-full sm:w-auto">
             {isAdmin && (
               <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="flex items-center gap-1.5 px-3 sm:px-4 py-3 bg-brand-primary text-white hover:bg-brand-primary/90 disabled:bg-brand-primary/50 disabled:cursor-not-allowed rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all"
+                  title="Google-დან ინფორმაციის სინქრონიზაცია"
+                >
+                  <RefreshCw size={12} className={cn("shrink-0", isSyncing ? "animate-spin" : "")} />
+                  {isSyncing ? "სინქრონიზაცია..." : "გუგლ სინქრონიზაცია"}
+                </button>
                 <button 
                   onClick={resetToDefaults}
                   className="px-3 sm:px-4 py-3 bg-zinc-800 text-zinc-400 hover:text-white rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all"
