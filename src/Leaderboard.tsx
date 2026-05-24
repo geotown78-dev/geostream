@@ -163,25 +163,28 @@ export default function Leaderboard() {
           </div>
           
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            {/* Google Sync Button - Always Visible to All Users */}
+            <button 
+              onClick={handleSync}
+              disabled={isSyncing}
+              className="flex items-center gap-2 px-4 py-3 bg-brand-primary text-white hover:bg-brand-primary/95 disabled:bg-brand-primary/50 disabled:cursor-not-allowed rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-brand-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+              title="Google-დან ინფორმაციის სინქრონიზაცია"
+            >
+              <RefreshCw size={12} className={cn("shrink-0", isSyncing ? "animate-spin" : "")} />
+              {isSyncing ? "სინქრონიზაცია..." : "გუგლ სინქრონიზაცია"}
+            </button>
+
             {!isAdmin && (
               <Link 
                 to="/login"
                 className="flex items-center gap-2 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/5 rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all"
               >
-                ადმინ შესვლა (სინქრონიზაციისთვის)
+                ადმინ შესვლა
               </Link>
             )}
+            
             {isAdmin && (
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={handleSync}
-                  disabled={isSyncing}
-                  className="flex items-center gap-1.5 px-3 sm:px-4 py-3 bg-brand-primary text-white hover:bg-brand-primary/90 disabled:bg-brand-primary/50 disabled:cursor-not-allowed rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all"
-                  title="Google-დან ინფორმაციის სინქრონიზაცია"
-                >
-                  <RefreshCw size={12} className={cn("shrink-0", isSyncing ? "animate-spin" : "")} />
-                  {isSyncing ? "სინქრონიზაცია..." : "გუგლ სინქრონიზაცია"}
-                </button>
                 <button 
                   onClick={resetToDefaults}
                   className="px-3 sm:px-4 py-3 bg-zinc-800 text-zinc-400 hover:text-white rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all"
