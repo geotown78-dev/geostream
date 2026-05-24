@@ -23,26 +23,26 @@ interface TeamData {
 }
 
 const INITIAL_BOARD_DATA: TeamData[] = [
-  { rank: 1, name: 'ბარსელონა', logo: 'https://api.sofascore.app/api/v1/team/2817/image', played: 36, won: 30, drawn: 1, lost: 5, gf: 91, ga: 32, gd: 59, points: 91, status: 'same', form: ['W', 'W', 'W', 'W', 'L'] },
-  { rank: 2, name: 'რეალ მადრიდი', logo: 'https://api.sofascore.app/api/v1/team/2829/image', played: 36, won: 25, drawn: 5, lost: 6, gf: 72, ga: 33, gd: 39, points: 80, status: 'same', form: ['W', 'D', 'W', 'L', 'W'] },
-  { rank: 3, name: 'ვილიარეალი', logo: 'https://api.sofascore.app/api/v1/team/2819/image', played: 36, won: 21, drawn: 6, lost: 9, gf: 67, ga: 43, gd: 24, points: 69, status: 'up', form: ['D', 'W', 'W', 'W', 'L'] },
-  { rank: 4, name: 'ატლეტიკო მადრიდი', logo: 'https://api.sofascore.app/api/v1/team/2836/image', played: 36, won: 20, drawn: 6, lost: 10, gf: 60, ga: 39, gd: 21, points: 66, status: 'down', form: ['L', 'W', 'W', 'W', 'W'] },
-  { rank: 5, name: 'რეალ ბეტისი', logo: 'https://api.sofascore.app/api/v1/team/2816/image', played: 36, won: 14, drawn: 15, lost: 7, gf: 56, ga: 44, gd: 12, points: 57, status: 'same', form: ['W', 'D', 'W', 'D', 'W'] },
-  { rank: 6, name: 'სელტა', logo: 'https://api.sofascore.app/api/v1/team/2821/image', played: 36, won: 13, drawn: 11, lost: 12, gf: 51, ga: 47, gd: 4, points: 50, status: 'up', form: ['L', 'L', 'W', 'W', 'L'] },
-  { rank: 7, name: 'ხეტაფე', logo: 'https://api.sofascore.app/api/v1/team/2824/image', played: 36, won: 14, drawn: 6, lost: 16, gf: 31, ga: 37, gd: -6, points: 48, status: 'same', form: ['W', 'L', 'L', 'D', 'W'] },
-  { rank: 8, name: 'რეალ სოსიედადი', logo: 'https://api.sofascore.app/api/v1/team/2825/image', played: 36, won: 11, drawn: 12, lost: 13, gf: 55, ga: 56, gd: -1, points: 45, status: 'same', form: ['L', 'D', 'L', 'W', 'D'] },
-  { rank: 9, name: 'ატლეტიკ კლუბი', logo: 'https://api.sofascore.app/api/v1/team/2820/image', played: 36, won: 13, drawn: 5, lost: 18, gf: 40, ga: 53, gd: -13, points: 44, status: 'down', form: ['W', 'D', 'W', 'L', 'L'] },
-  { rank: 10, name: 'რაიო ვალეკანო', logo: 'https://api.sofascore.app/api/v1/team/2818/image', played: 36, won: 10, drawn: 14, lost: 12, gf: 37, ga: 43, gd: -6, points: 44, status: 'up', form: ['W', 'D', 'W', 'D', 'D'] },
-  { rank: 11, name: 'ვალენსია', logo: 'https://api.sofascore.app/api/v1/team/2828/image', played: 36, won: 11, drawn: 10, lost: 15, gf: 39, ga: 51, gd: -12, points: 43, status: 'same', form: ['D', 'W', 'L', 'W', 'D'] },
-  { rank: 12, name: 'სევილია', logo: 'https://api.sofascore.app/api/v1/team/2833/image', played: 36, won: 12, drawn: 7, lost: 17, gf: 46, ga: 58, gd: -12, points: 43, status: 'down', form: ['L', 'L', 'W', 'W', 'W'] },
-  { rank: 13, name: 'ოსასუნა', logo: 'https://api.sofascore.app/api/v1/team/2826/image', played: 36, won: 11, drawn: 9, lost: 16, gf: 43, ga: 47, gd: -4, points: 42, status: 'same', form: ['L', 'W', 'L', 'L', 'L'] },
-  { rank: 14, name: 'ესპანიოლი', logo: 'https://api.sofascore.app/api/v1/team/2814/image', played: 36, won: 11, drawn: 9, lost: 16, gf: 40, ga: 53, gd: -13, points: 42, status: 'up', form: ['L', 'D', 'L', 'L', 'W'] },
-  { rank: 15, name: 'ჟირონა', logo: 'https://api.sofascore.app/api/v1/team/2823/image', played: 36, won: 9, drawn: 13, lost: 14, gf: 38, ga: 53, gd: -15, points: 40, status: 'same', form: ['L', 'L', 'L', 'D', 'D'] },
-  { rank: 16, name: 'ალავესი', logo: 'https://api.sofascore.app/api/v1/team/2885/image', played: 36, won: 10, drawn: 10, lost: 16, gf: 42, ga: 54, gd: -12, points: 40, status: 'down', form: ['L', 'W', 'W', 'D', 'L'] },
-  { rank: 17, name: 'ელჩე', logo: 'https://api.sofascore.app/api/v1/team/2827/image', played: 36, won: 9, drawn: 12, lost: 15, gf: 47, ga: 56, gd: -9, points: 39, status: 'same', form: ['W', 'D', 'L', 'L', 'L'] },
-  { rank: 18, name: 'მალიორკა', logo: 'https://api.sofascore.app/api/v1/team/2822/image', played: 36, won: 10, drawn: 9, lost: 17, gf: 44, ga: 55, gd: -11, points: 39, status: 'up', form: ['D', 'L', 'W', 'D', 'L'] },
-  { rank: 19, name: 'ლევანტე', logo: 'https://api.sofascore.app/api/v1/team/2815/image', played: 36, won: 10, drawn: 9, lost: 17, gf: 44, ga: 59, gd: -15, points: 39, status: 'down', form: ['W', 'D', 'L', 'W', 'W'] },
-  { rank: 20, name: 'რეალ ოვიედო', logo: 'https://api.sofascore.app/api/v1/team/2832/image', played: 36, won: 6, drawn: 11, lost: 19, gf: 26, ga: 56, gd: -30, points: 29, status: 'same', form: ['D', 'L', 'W', 'L', 'L'] },
+  { rank: 1, name: 'ბარსელონა', logo: 'https://api.sofascore.app/api/v1/team/2817/image', played: 38, won: 28, drawn: 4, lost: 6, gf: 88, ga: 35, gd: 53, points: 88, status: 'same', form: ['W', 'W', 'W', 'W', 'L'] },
+  { rank: 2, name: 'რეალ მადრიდი', logo: 'https://api.sofascore.app/api/v1/team/2829/image', played: 38, won: 26, drawn: 8, lost: 4, gf: 80, ga: 28, gd: 52, points: 86, status: 'same', form: ['W', 'D', 'W', 'L', 'W'] },
+  { rank: 3, name: 'ატლეტიკო მადრიდი', logo: 'https://api.sofascore.app/api/v1/team/2836/image', played: 38, won: 22, drawn: 9, lost: 7, gf: 68, ga: 36, gd: 32, points: 75, status: 'same', form: ['W', 'D', 'W', 'W', 'W'] },
+  { rank: 4, name: 'ვილიარეალი', logo: 'https://api.sofascore.app/api/v1/team/2819/image', played: 38, won: 19, drawn: 10, lost: 9, gf: 64, ga: 48, gd: 16, points: 67, status: 'up', form: ['D', 'W', 'W', 'W', 'L'] },
+  { rank: 5, name: 'რეალ ბეტისი', logo: 'https://api.sofascore.app/api/v1/team/2816/image', played: 38, won: 16, drawn: 13, lost: 9, gf: 48, ga: 40, gd: 8, points: 61, status: 'same', form: ['W', 'D', 'W', 'D', 'W'] },
+  { rank: 6, name: 'ატლეტიკ კლუბი', logo: 'https://api.sofascore.app/api/v1/team/2820/image', played: 38, won: 17, drawn: 10, lost: 11, gf: 52, ga: 42, gd: 10, points: 61, status: 'down', form: ['W', 'D', 'W', 'L', 'L'] },
+  { rank: 7, name: 'რეალ სოსიედადი', logo: 'https://api.sofascore.app/api/v1/team/2825/image', played: 38, won: 16, drawn: 11, lost: 11, gf: 47, ga: 38, gd: 9, points: 59, status: 'same', form: ['L', 'D', 'L', 'W', 'D'] },
+  { rank: 8, name: 'ჟირონა', logo: 'https://api.sofascore.app/api/v1/team/2823/image', played: 38, won: 15, drawn: 12, lost: 11, gf: 58, ga: 46, gd: 12, points: 57, status: 'same', form: ['L', 'L', 'L', 'D', 'D'] },
+  { rank: 9, name: 'სელტა', logo: 'https://api.sofascore.app/api/v1/team/2821/image', played: 38, won: 14, drawn: 11, lost: 13, gf: 51, ga: 52, gd: -1, points: 53, status: 'up', form: ['L', 'L', 'W', 'W', 'L'] },
+  { rank: 10, name: 'ოსასუნა', logo: 'https://api.sofascore.app/api/v1/team/2826/image', played: 38, won: 13, drawn: 12, lost: 13, gf: 45, ga: 49, gd: -4, points: 51, status: 'same', form: ['L', 'W', 'L', 'L', 'L'] },
+  { rank: 11, name: 'სევილია', logo: 'https://api.sofascore.app/api/v1/team/2833/image', played: 38, won: 12, drawn: 13, lost: 13, gf: 42, ga: 44, gd: -2, points: 49, status: 'down', form: ['L', 'L', 'W', 'W', 'W'] },
+  { rank: 12, name: 'ალავესი', logo: 'https://api.sofascore.app/api/v1/team/2885/image', played: 38, won: 12, drawn: 10, lost: 16, gf: 39, ga: 46, gd: -7, points: 46, status: 'down', form: ['L', 'W', 'W', 'D', 'L'] },
+  { rank: 13, name: 'მალიორკა', logo: 'https://api.sofascore.app/api/v1/team/2822/image', played: 38, won: 11, drawn: 11, lost: 16, gf: 35, ga: 42, gd: -7, points: 44, status: 'up', form: ['D', 'L', 'W', 'D', 'L'] },
+  { rank: 14, name: 'რაიო ვალეკანო', logo: 'https://api.sofascore.app/api/v1/team/2818/image', played: 38, won: 10, drawn: 13, lost: 15, gf: 34, ga: 45, gd: -11, points: 43, status: 'up', form: ['W', 'D', 'W', 'D', 'D'] },
+  { rank: 15, name: 'ლეგანესი', logo: 'https://api.sofascore.app/api/v1/team/2810/image', played: 38, won: 10, drawn: 13, lost: 15, gf: 32, ga: 44, gd: -12, points: 43, status: 'same', form: ['D', 'L', 'D', 'W', 'L'] },
+  { rank: 16, name: 'ხეტაფე', logo: 'https://api.sofascore.app/api/v1/team/2824/image', played: 38, won: 9, drawn: 15, lost: 14, gf: 30, ga: 38, gd: -8, points: 42, status: 'down', form: ['W', 'L', 'L', 'D', 'W'] },
+  { rank: 17, name: 'ლას პალმასი', logo: 'https://api.sofascore.app/api/v1/team/6512/image', played: 38, won: 9, drawn: 13, lost: 16, gf: 38, ga: 51, gd: -13, points: 40, status: 'same', form: ['D', 'L', 'W', 'W', 'D'] },
+  { rank: 18, name: 'ვალენსია', logo: 'https://api.sofascore.app/api/v1/team/2828/image', played: 38, won: 9, drawn: 11, lost: 18, gf: 35, ga: 48, gd: -13, points: 38, status: 'same', form: ['D', 'W', 'L', 'W', 'D'] },
+  { rank: 19, name: 'ვალიადოლიდი', logo: 'https://api.sofascore.app/api/v1/team/2831/image', played: 38, won: 8, drawn: 10, lost: 20, gf: 28, ga: 55, gd: -27, points: 34, status: 'same', form: ['L', 'D', 'W', 'L', 'L'] },
+  { rank: 20, name: 'ესპანიოლი', logo: 'https://api.sofascore.app/api/v1/team/2814/image', played: 38, won: 7, drawn: 11, lost: 20, gf: 31, ga: 58, gd: -27, points: 32, status: 'same', form: ['D', 'L', 'L', 'D', 'L'] },
 ];
 
 export default function Leaderboard() {
@@ -50,7 +50,7 @@ export default function Leaderboard() {
   const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
   
   const [data, setData] = useState<TeamData[]>(() => {
-    const saved = localStorage.getItem('laliga_leaderboard');
+    const saved = localStorage.getItem('laliga_leaderboard_v3');
     if (saved) {
       try {
         const parsed: TeamData[] = JSON.parse(saved);
@@ -60,7 +60,7 @@ export default function Leaderboard() {
             const match = INITIAL_BOARD_DATA.find(init => init.name.toLowerCase() === t.name.toLowerCase());
             return match ? { ...t, logo: match.logo } : t;
           });
-          localStorage.setItem('laliga_leaderboard', JSON.stringify(updated));
+          localStorage.setItem('laliga_leaderboard_v3', JSON.stringify(updated));
           return updated;
         }
         return parsed;
@@ -90,7 +90,7 @@ export default function Leaderboard() {
       const result = await response.json();
       if (result.success && result.standings) {
         setData(result.standings);
-        localStorage.setItem('laliga_leaderboard', JSON.stringify(result.standings));
+        localStorage.setItem('laliga_leaderboard_v3', JSON.stringify(result.standings));
         if (isEditing) {
           setEditData([...result.standings]);
         }
@@ -119,14 +119,14 @@ export default function Leaderboard() {
   const resetToDefaults = () => {
     if (window.confirm('ნამდვილად გსურთ მონაცემების საწყის მდგომარეობაში დაბრუნება? (ეს წაშლის თქვენს ცვლილებებს)')) {
       setData(INITIAL_BOARD_DATA);
-      localStorage.setItem('laliga_leaderboard', JSON.stringify(INITIAL_BOARD_DATA));
+      localStorage.setItem('laliga_leaderboard_v3', JSON.stringify(INITIAL_BOARD_DATA));
       setIsEditing(false);
     }
   };
 
   const handleSave = () => {
     setData(editData);
-    localStorage.setItem('laliga_leaderboard', JSON.stringify(editData));
+    localStorage.setItem('laliga_leaderboard_v3', JSON.stringify(editData));
     setIsEditing(false);
   };
 
