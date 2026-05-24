@@ -317,7 +317,7 @@ export function Hero({ activeBroadcast, exclusiveEvent, exclusiveEvents = [] }: 
                 {/* 2. Foreground crisp image displayed completely without cropping */}
                 <img 
                   src={activeSlide.image} 
-                  className="w-full h-full object-contain relative z-10 transition-transform duration-[2s]"
+                  className="w-full h-full object-cover relative z-10 transition-transform duration-[2s]"
                   alt=""
                   referrerPolicy="no-referrer"
                 />
