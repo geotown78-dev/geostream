@@ -41,7 +41,7 @@ export default function AuthPage({ mode = 'login' }: { mode?: 'login' | 'registe
         }
 
         // 2. Sign up via Supabase with metadata
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
@@ -65,7 +65,18 @@ export default function AuthPage({ mode = 'login' }: { mode?: 'login' | 'registe
           throw new Error(regData.error || 'იუზერნეიმის რეგისტრაცია ვერ მოხერხდა');
         }
 
+        // 4. Auto-sign-in if not automatically authenticated by signup
+        if (!signUpData.session) {
+          await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password
+          });
+        }
+
         setSuccess(true);
+        setTimeout(() => {
+          navigate('/');
+        }, 1500);
       } else {
         // Resolve input identifier to actual email address
         let targetEmail = email.toLowerCase().trim();
@@ -130,7 +141,7 @@ export default function AuthPage({ mode = 'login' }: { mode?: 'login' | 'registe
 
         {success && (
           <div className="p-4 bg-brand-secondary/10 border border-brand-secondary/20 text-brand-secondary text-xs font-bold rounded-xl animate-in slide-in-from-top-4 duration-300">
-            რეგისტრაცია წარმატებულია! გთხოვთ შეამოწმოთ იმეილი აქტივაციისთვის.
+            რეგისტრაცია წარმატებით დასრულდა! მიმდინარეობს სისტემაში შესვლა...
           </div>
         )}
 
