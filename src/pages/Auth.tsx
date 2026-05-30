@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { LogIn, UserPlus, Loader2, Mail, Lock } from 'lucide-react';
+import { LogIn, UserPlus, Loader2, Mail, Lock, User } from 'lucide-react';
 
 export default function AuthPage({ mode = 'login' }: { mode?: 'login' | 'register' }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,11 +21,68 @@ export default function AuthPage({ mode = 'login' }: { mode?: 'login' | 'registe
 
     try {
       if (mode === 'register') {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
+        const cleanUsername = username.trim().toLowerCase();
+        if (!cleanUsername) {
+          throw new Error('იუზერნეიმი აუცილებელია');
+        }
+        if (!/^[a-zA-Z0-9_.-]+$/.test(cleanUsername)) {
+          throw new Error('იუზერნეიმი უნდა შეიცავდეს მხოლოდ ლათინურ ასოებს, ციფრებს და სიმბოლოებს: _ . -');
+        }
+
+        // 1. Check if username is taken on backend
+        const checkRes = await fetch('/api/auth/check-username', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: cleanUsername })
+        });
+        const checkData = await checkRes.json();
+        if (!checkRes.ok || checkData.available === false) {
+          throw new Error(checkData.error || 'ეს იუზერნეიმი უკვე დაკავებულია');
+        }
+
+        // 2. Sign up via Supabase with metadata
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: {
+              username: cleanUsername,
+              full_name: username.trim(),
+              name: username.trim()
+            }
+          }
+        });
+        if (signUpError) throw signUpError;
+
+        // 3. Register the association in our database mapping
+        const regRes = await fetch('/api/auth/register-username', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.toLowerCase().trim(), username: cleanUsername })
+        });
+        const regData = await regRes.json();
+        if (!regRes.ok) {
+          throw new Error(regData.error || 'იუზერნეიმის რეგისტრაცია ვერ მოხერხდა');
+        }
+
         setSuccess(true);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        // Resolve input identifier to actual email address
+        let targetEmail = email.toLowerCase().trim();
+        if (!targetEmail.includes('@')) {
+          const resolveRes = await fetch('/api/auth/resolve-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ identifier: targetEmail })
+          });
+          const resolveData = await resolveRes.json();
+          if (!resolveRes.ok || !resolveData.email) {
+            throw new Error(resolveData.error || 'მომხმარებელი ამ იუზერნეიმით ვერ მოიძებნა');
+          }
+          targetEmail = resolveData.email;
+        }
+
+        const { error } = await supabase.auth.signInWithPassword({ email: targetEmail, password });
         if (error) throw error;
         navigate('/');
       }
@@ -114,16 +172,35 @@ export default function AuthPage({ mode = 'login' }: { mode?: 'login' | 'registe
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {mode === 'register' && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">იუზერნეიმი</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+                <input
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="giorgi123"
+                  className="w-full bg-black border border-brand-border rounded-2xl p-4 pl-12 focus:border-brand-primary outline-none transition-all font-bold text-sm text-white"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">იმეილი</label>
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">
+              {mode === 'login' ? 'იმეილი ან იუზერნეიმი' : 'იმეილი'}
+            </label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
               <input
-                type="email"
+                type={mode === 'login' ? 'text' : 'email'}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={mode === 'login' ? 'you@example.com ან იუზერნეიმი' : 'you@example.com'}
                 className="w-full bg-black border border-brand-border rounded-2xl p-4 pl-12 focus:border-brand-primary outline-none transition-all font-bold text-sm text-white"
               />
             </div>
