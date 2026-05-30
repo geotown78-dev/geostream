@@ -111,6 +111,165 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
 });
 
+// Username resolution & verification endpoints
+const USERS_MAP_FILE = path.join(process.cwd(), "users_map.json");
+let usersMap: Record<string, string> = {};
+
+const DEFAULT_MAPPINGS: Record<string, string> = {
+  "giorgi": "georgetchedia74@gmail.com",
+  "admin": "admin@geostream.ge",
+  "sandro": "sandro99@gmail.com",
+  "luka": "luka.k@yahoo.com",
+  "nini": "nini_baramidze@gmail.com"
+};
+
+function loadUsersMap() {
+  try {
+    if (fs.existsSync(USERS_MAP_FILE)) {
+      usersMap = JSON.parse(fs.readFileSync(USERS_MAP_FILE, "utf-8"));
+    } else {
+      usersMap = { ...DEFAULT_MAPPINGS };
+      fs.writeFileSync(USERS_MAP_FILE, JSON.stringify(usersMap, null, 2), "utf-8");
+    }
+  } catch (err) {
+    console.error("Error loading users map:", err);
+    usersMap = { ...DEFAULT_MAPPINGS };
+  }
+}
+loadUsersMap();
+
+function saveUsersMap() {
+  try {
+    fs.writeFileSync(USERS_MAP_FILE, JSON.stringify(usersMap, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Error saving users map:", err);
+  }
+}
+
+app.post("/api/auth/check-username", async (req, res) => {
+  const { username, currentEmail } = req.body;
+  if (!username) {
+    return res.status(400).json({ error: "იუზერნეიმი აუცილებელია" });
+  }
+
+  const cleanUsername = String(username).trim().toLowerCase();
+  const cleanEmail = currentEmail ? String(currentEmail).trim().toLowerCase() : null;
+
+  if (!/^[a-zA-Z0-9_.-]+$/.test(cleanUsername)) {
+    return res.status(400).json({ error: "იუზერნეიმი უნდა შეიცავდეს მხოლოდ ლათინურ ასოებს, ციფრებს და სიმბოლოებს: _ . -" });
+  }
+
+  if (usersMap[cleanUsername]) {
+    if (cleanEmail && usersMap[cleanUsername] === cleanEmail) {
+      return res.json({ available: true });
+    }
+    return res.json({ available: false, error: "ეს იუზერნეიმი უკვე დაკავებულია" });
+  }
+
+  if (supabaseAdmin) {
+    try {
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+      if (!error && data && data.users) {
+        const usernameExists = data.users.some((u: any) => {
+          if (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) return false;
+          const m = u.user_metadata || {};
+          const metaUsername = String(m.username || m.full_name || m.name || "").trim().toLowerCase();
+          return metaUsername === cleanUsername;
+        });
+        if (usernameExists) {
+          return res.json({ available: false, error: "ეს იუზერნეიმი უკვე დაკავებულია" });
+        }
+      }
+    } catch (err) {
+      console.error("Error checking username in Supabase list:", err);
+    }
+  }
+
+  return res.json({ available: true });
+});
+
+app.post("/api/auth/register-username", async (req, res) => {
+  const { email, username } = req.body;
+  if (!email || !username) {
+    return res.status(400).json({ error: "იმეილი და იუზერნეიმი აუცილებელია" });
+  }
+
+  const cleanEmail = String(email).trim().toLowerCase();
+  const cleanUsername = String(username).trim().toLowerCase();
+
+  if (!/^[a-zA-Z0-9_.-]+$/.test(cleanUsername)) {
+    return res.status(400).json({ error: "იუზერნეიმი უნდა შეიცავდეს მხოლოდ ლათინურ ასოებს, ციფრებს და სიმბოლოებს: _ . -" });
+  }
+
+  // Check if taken locally
+  if (usersMap[cleanUsername] && usersMap[cleanUsername] !== cleanEmail) {
+    return res.status(400).json({ error: "ეს იუზერნეიმი უკვე დაკავებულია" });
+  }
+
+  // Check if taken in Supabase
+  if (supabaseAdmin) {
+    try {
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+      if (!error && data && data.users) {
+        const usernameExists = data.users.some((u: any) => {
+          if (u.email && u.email.toLowerCase() === cleanEmail) return false;
+          const m = u.user_metadata || {};
+          const metaUsername = String(m.username || m.full_name || m.name || "").trim().toLowerCase();
+          return metaUsername === cleanUsername;
+        });
+        if (usernameExists) {
+          return res.status(400).json({ error: "ეს იუზერნეიმი უკვე დაკავებულია" });
+        }
+      }
+    } catch (err) {
+      console.error("Error checking username in Supabase:", err);
+    }
+  }
+
+  usersMap[cleanUsername] = cleanEmail;
+  saveUsersMap();
+  res.json({ success: true });
+});
+
+app.post("/api/auth/resolve-email", async (req, res) => {
+  const { identifier } = req.body;
+  if (!identifier) {
+    return res.status(400).json({ error: "იდენტიფიკატორი არ არის მითითებული" });
+  }
+
+  const cleanId = String(identifier).trim().toLowerCase();
+
+  if (cleanId.includes("@")) {
+    return res.json({ email: cleanId });
+  }
+
+  if (usersMap[cleanId]) {
+    return res.json({ email: usersMap[cleanId] });
+  }
+
+  if (supabaseAdmin) {
+    try {
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+      if (!error && data && data.users) {
+        const foundUser = data.users.find((u: any) => {
+          const m = u.user_metadata || {};
+          const username = String(m.username || m.full_name || m.name || "").trim().toLowerCase();
+          return username === cleanId;
+        });
+        if (foundUser && foundUser.email) {
+          usersMap[cleanId] = foundUser.email.toLowerCase();
+          saveUsersMap();
+          return res.json({ email: foundUser.email.toLowerCase() });
+        }
+      }
+    } catch (err) {
+      console.error("Error resolving email from Supabase:", err);
+    }
+  }
+
+  return res.status(404).json({ error: "მომხმარებელი ამ იუზერნეიმით ვერ მოიძებნა" });
+});
+
 // Favicon redirects to custom user icon to bypass any cached / missing public file issues
 app.get("/favicon.ico", (req, res) => {
   res.redirect("https://zhtllxbbexcwvgrmxdux.supabase.co/storage/v1/object/public/GEOSTREAM/f23282a4-c96c-4da4-8ebb-b298708c9a6f.png");
