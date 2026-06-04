@@ -187,6 +187,20 @@ function ViewerStream({
     };
   }, [isFullscreen]);
 
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.classList.add('player-fullscreen-active');
+      document.documentElement.classList.add('player-fullscreen-active');
+    } else {
+      document.body.classList.remove('player-fullscreen-active');
+      document.documentElement.classList.remove('player-fullscreen-active');
+    }
+    return () => {
+      document.body.classList.remove('player-fullscreen-active');
+      document.documentElement.classList.remove('player-fullscreen-active');
+    };
+  }, [isFullscreen]);
+
   const effectivePaused = isPaused || isGlobalPaused;
 
   useEffect(() => {
@@ -254,9 +268,7 @@ function ViewerStream({
       onTouchStart={resetActivityTimer}
       className={cn(
         "relative h-full w-full group overflow-hidden bg-black transition-all duration-300",
-        (isFullscreen && !document.fullscreenElement && !(document as any).webkitFullscreenElement)
-          ? "fixed inset-0 z-[1000] w-full h-full" 
-          : ""
+        isFullscreen ? "fixed inset-0 z-[100000] w-screen h-screen w-full h-full" : ""
       )}
     >
       {streamUrl && streamUrl.endsWith('.m3u8') ? (
