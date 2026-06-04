@@ -238,6 +238,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ url, autoPlay = true, controls = 
         className={className}
         controls={controls}
         playsInline
+        webkitPlaysInline={true}
         defaultMuted={muted}
       />
       {errorStatus && (
