@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
-import { Loader2, ArrowLeft, Play, Pause, Maximize, Volume2, VolumeX, Trophy, RotateCcw, UserX } from 'lucide-react';
+import { Loader2, ArrowLeft, Play, Pause, Maximize, Minimize, Volume2, VolumeX, Trophy, RotateCcw, UserX } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ADMIN_EMAILS } from '../constants';
@@ -66,66 +66,57 @@ function ViewerStream({
     const container = containerRef.current as any;
     const doc = document as any;
 
-    // Check prefixed and unprefixed fullscreen states
-    const isCurrentlyFS = !!(
+    const isTrueFS = !!(
       doc.fullscreenElement ||
       doc.webkitFullscreenElement ||
       doc.mozFullScreenElement ||
       doc.msFullscreenElement
     );
 
-    if (isCurrentlyFS) {
-      const exitFS = doc.exitFullscreen ||
-                     doc.webkitExitFullscreen ||
-                     doc.webkitCancelFullScreen ||
-                     doc.mozCancelFullScreen ||
-                     doc.msExitFullscreen;
-      if (exitFS) {
-        exitFS.call(doc);
-      }
-    } else {
-      const requestFS = container.requestFullscreen ||
-                        container.webkitRequestFullscreen ||
-                        container.webkitRequestFullScreen ||
-                        container.mozRequestFullScreen ||
-                        container.msRequestFullscreen;
-      
-      if (requestFS) {
-        requestFS.call(container).catch((err: any) => {
-          console.warn("Element fullscreen request rejected, trying direct video fallback:", err);
-          if (videoEl) {
-            const video = videoEl as any;
-            if (video.webkitEnterFullscreen) {
-              try {
-                video.webkitEnterFullscreen();
-              } catch (e) {
-                console.error("webkitEnterFullscreen failed:", e);
-              }
-            } else if (video.requestFullscreen) {
-              video.requestFullscreen();
-            }
-          }
-        });
-      } else if (videoEl) {
-        // iPhone Safari doesn't support requestFullscreen on divs but supports webkitEnterFullscreen on video element
-        const video = videoEl as any;
-        if (video.webkitEnterFullscreen) {
+    // If we are currently in either true fullscreen or pseudo-fullscreen, we exit
+    if (isTrueFS || isFullscreen) {
+      if (isTrueFS) {
+        const exitFS = doc.exitFullscreen ||
+                       doc.webkitExitFullscreen ||
+                       doc.webkitCancelFullScreen ||
+                       doc.mozCancelFullScreen ||
+                       doc.msExitFullscreen;
+        if (exitFS) {
           try {
-            video.webkitEnterFullscreen();
+            exitFS.call(doc);
           } catch (e) {
-            console.error("Direct webkitEnterFullscreen failed on iOS iPhone:", e);
+            console.warn("exitFullscreen failed:", e);
           }
-        } else if (video.enterFullscreen) {
-          try {
-            video.enterFullscreen();
-          } catch (e) {
-            console.error("Direct enterFullscreen failed:", e);
-          }
-        } else {
-          setIsFullscreen(!isFullscreen);
         }
+      }
+      setIsFullscreen(false);
+    } else {
+      // Check if it's iPhone or mobile iOS device.
+      // iOS devices don't support requestFullscreen on standard HTML divs at all,
+      // and calling webkitEnterFullscreen on the video element directly locks into iOS native player (which lacks chat, overlays, DVR).
+      // So pseudo-fullscreen (CSS overlay mode) is 1000x better! It retains the custom controls, DVR, live chat overlay, and looks flawless.
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isIOS) {
+        setIsFullscreen(true);
       } else {
-        setIsFullscreen(!isFullscreen);
+        const requestFS = container.requestFullscreen ||
+                          container.webkitRequestFullscreen ||
+                          container.webkitRequestFullScreen ||
+                          container.mozRequestFullScreen ||
+                          container.msRequestFullscreen;
+        
+        if (requestFS) {
+          requestFS.call(container)
+            .then(() => {
+              setIsFullscreen(true);
+            })
+            .catch((err: any) => {
+              console.warn("Element requestFullscreen failed, using pseudo-fullscreen fallback:", err);
+              setIsFullscreen(true);
+            });
+        } else {
+          setIsFullscreen(true);
+        }
       }
     }
   };
@@ -133,13 +124,17 @@ function ViewerStream({
   useEffect(() => {
     const handleFullscreenChange = () => {
       const doc = document as any;
-      const isFS = !!(
+      const isTrueFS = !!(
         doc.fullscreenElement ||
         doc.webkitFullscreenElement ||
         doc.mozFullScreenElement ||
         doc.msFullscreenElement
       );
-      setIsFullscreen(isFS);
+      if (!isTrueFS) {
+        setIsFullscreen(false);
+      } else {
+        setIsFullscreen(true);
+      }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -446,8 +441,9 @@ function ViewerStream({
             <button 
               onClick={toggleFullscreen}
               className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-zinc-800/40 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-zinc-800 transition-all cursor-pointer"
+              title={isFullscreen ? "პატარა ფანჯარა" : "სრული ეკრანი"}
             >
-              <Maximize size={18} className="text-white" />
+              {isFullscreen ? <Minimize size={18} className="text-white" /> : <Maximize size={18} className="text-white" />}
             </button>
           </div>
         </div>
