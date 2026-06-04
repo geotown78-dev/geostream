@@ -40,3 +40,61 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Fullscreen helper styles to guarantee 100% viewport coverage on all devices including iOS Safari */
+html.player-fullscreen-active,
+body.player-fullscreen-active {
+  overflow: hidden !important;
+  height: 100% !important;
+  width: 100% !important;
+  position: fixed !important;
+  /* Prevent scroll bouncing on iOS */
+  overscroll-behavior-y: contain !important;
+}
+
+body.player-fullscreen-active aside,
+body.player-fullscreen-active header,
+body.player-fullscreen-active footer {
+  display: none !important;
+}
+
+/* Clear padding, margins, constraints, and force the main view to fill the screen */
+body.player-fullscreen-active main {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important; /* dynamic viewport height */
+  z-index: 99999 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+}
+
+body.player-fullscreen-active main > div {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure the full screen layout targets the stream column properly */
+body.player-fullscreen-active .max-w-\[1600px\] {
+  max-width: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important; 
+}
+
+body.player-fullscreen-active .aspect-video {
+  aspect-ratio: auto !important; 
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+
+
