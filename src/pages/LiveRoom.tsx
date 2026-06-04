@@ -32,6 +32,12 @@ function ViewerStream({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const activityTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
+  const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [seekableStart, setSeekableStart] = useState(0);
+  const [seekableEnd, setSeekableEnd] = useState(0);
+  const [isLive, setIsLive] = useState(true);
+
   const formatViewerCount = (num: number) => {
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
@@ -56,22 +62,119 @@ function ViewerStream({
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen();
+    
+    const container = containerRef.current as any;
+    const doc = document as any;
+
+    // Check prefixed and unprefixed fullscreen states
+    const isCurrentlyFS = !!(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
+    );
+
+    if (isCurrentlyFS) {
+      const exitFS = doc.exitFullscreen ||
+                     doc.webkitExitFullscreen ||
+                     doc.webkitCancelFullScreen ||
+                     doc.mozCancelFullScreen ||
+                     doc.msExitFullscreen;
+      if (exitFS) {
+        exitFS.call(doc);
+      }
     } else {
-      document.exitFullscreen();
+      const requestFS = container.requestFullscreen ||
+                        container.webkitRequestFullscreen ||
+                        container.webkitRequestFullScreen ||
+                        container.mozRequestFullScreen ||
+                        container.msRequestFullscreen;
+      
+      if (requestFS) {
+        requestFS.call(container).catch((err: any) => {
+          console.warn("Element fullscreen request rejected, trying direct video fallback:", err);
+          if (videoEl) {
+            const video = videoEl as any;
+            if (video.webkitEnterFullscreen) {
+              try {
+                video.webkitEnterFullscreen();
+              } catch (e) {
+                console.error("webkitEnterFullscreen failed:", e);
+              }
+            } else if (video.requestFullscreen) {
+              video.requestFullscreen();
+            }
+          }
+        });
+      } else if (videoEl) {
+        // iPhone Safari doesn't support requestFullscreen on divs but supports webkitEnterFullscreen on video element
+        const video = videoEl as any;
+        if (video.webkitEnterFullscreen) {
+          try {
+            video.webkitEnterFullscreen();
+          } catch (e) {
+            console.error("Direct webkitEnterFullscreen failed on iOS iPhone:", e);
+          }
+        } else if (video.enterFullscreen) {
+          try {
+            video.enterFullscreen();
+          } catch (e) {
+            console.error("Direct enterFullscreen failed:", e);
+          }
+        } else {
+          setIsFullscreen(!isFullscreen);
+        }
+      } else {
+        setIsFullscreen(!isFullscreen);
+      }
     }
   };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const doc = document as any;
+      const isFS = !!(
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.mozFullScreenElement ||
+        doc.msFullscreenElement
+      );
+      setIsFullscreen(isFS);
     };
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
   }, []);
+
+  // Listen to video native fullscreen events on iOS (iPhone Safari)
+  useEffect(() => {
+    if (!videoEl) return;
+    
+    const handleBeginFS = () => {
+      setIsFullscreen(true);
+    };
+    
+    const handleEndFS = () => {
+      setIsFullscreen(false);
+    };
+
+    videoEl.addEventListener('webkitbeginfullscreen', handleBeginFS);
+    videoEl.addEventListener('webkitendfullscreen', handleEndFS);
+
+    return () => {
+      videoEl.removeEventListener('webkitbeginfullscreen', handleBeginFS);
+      videoEl.removeEventListener('webkitendfullscreen', handleEndFS);
+    };
+  }, [videoEl]);
 
   useEffect(() => {
     if (!isFullscreen) {
@@ -90,12 +193,6 @@ function ViewerStream({
   }, [isFullscreen]);
 
   const effectivePaused = isPaused || isGlobalPaused;
-
-  const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [seekableStart, setSeekableStart] = useState(0);
-  const [seekableEnd, setSeekableEnd] = useState(0);
-  const [isLive, setIsLive] = useState(true);
 
   useEffect(() => {
     if (!videoEl) return;
@@ -160,7 +257,12 @@ function ViewerStream({
       onClick={resetActivityTimer}
       onMouseMove={resetActivityTimer}
       onTouchStart={resetActivityTimer}
-      className="relative h-full w-full group overflow-hidden bg-black"
+      className={cn(
+        "relative h-full w-full group overflow-hidden bg-black transition-all duration-300",
+        (isFullscreen && !document.fullscreenElement && !(document as any).webkitFullscreenElement)
+          ? "fixed inset-0 z-[1000] w-full h-full" 
+          : ""
+      )}
     >
       {streamUrl && streamUrl.endsWith('.m3u8') ? (
         <HLSPlayer 
@@ -312,7 +414,7 @@ function ViewerStream({
               </button>
             )}
             
-            <div className="flex items-center gap-2 sm:gap-3 ml-1 sm:ml-6 bg-black/40 p-2 px-2 sm:px-4 rounded-lg sm:rounded-xl border border-white/5 backdrop-blur-md">
+            <div className="flex items-center gap-1 sm:gap-3 ml-1 sm:ml-6 bg-black/40 p-1.5 xs:p-2 px-2 sm:px-4 rounded-lg sm:rounded-xl border border-white/5 backdrop-blur-md">
                <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -335,7 +437,7 @@ function ViewerStream({
                   setVolume(parseFloat(e.target.value));
                   if (isMuted) setIsMuted(false);
                 }}
-                className="w-12 sm:w-24 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+                className="w-12 sm:w-24 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-primary hidden xs:block"
                />
             </div>
           </div>
