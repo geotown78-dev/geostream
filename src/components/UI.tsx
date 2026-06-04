@@ -36,7 +36,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="fixed sm:left-0 bottom-0 sm:top-0 h-16 sm:h-full w-full sm:w-20 bg-brand-surface/95 backdrop-blur-xl border-t sm:border-t-0 sm:border-r border-brand-border flex sm:flex-col flex-row items-center justify-around sm:justify-start sm:py-6 z-[60]">
+    <aside className="fixed sm:left-0 bottom-0 sm:top-0 h-[72px] sm:h-full w-full sm:w-20 bg-brand-surface/95 backdrop-blur-xl border-t sm:border-t-0 sm:border-r border-brand-border flex sm:flex-col flex-row items-center justify-around sm:justify-start sm:py-6 pb-[env(safe-area-inset-bottom,14px)] sm:pb-6 z-[60]">
       <Link to="/" onClick={handleSamePageClick('/')} className="mb-10 hidden sm:flex">
         <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/20">
           <Play fill="white" size={24} className="ml-1" />
